@@ -159,7 +159,7 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 800; color: #14102b;
     box-shadow: 0 0 10px currentColor, 0 2px 4px rgba(0,0,0,0.4);
-    transition: left 0.12s linear, top 0.12s linear;
+    transition: left 0.22s linear, top 0.22s linear;
     transform: translate(-50%, -50%);
     z-index: 2; border: 2px solid rgba(255,255,255,0.5);
   }
@@ -984,10 +984,10 @@
 
   // ========== Firebase Realtime Database ==========
   var POLL_MS = 250;
-  var STEP_MS = 100;
-  var REMOTE_STEP_MS = 60;
-  var POST_ROLL_DELAY = 250;
-  var EFFECT_READ_MS = 700;
+  var STEP_MS = 240;
+  var REMOTE_STEP_MS = 200;
+  var POST_ROLL_DELAY = 550;
+  var EFFECT_READ_MS = 1600;
 
   var firebaseConfig = {
     apiKey: "AIzaSyCTepeJ1fNygtOvRfVL009QtAft651TGQ4",
@@ -1194,7 +1194,7 @@
       if (panel) panel.classList.add('hidden');
       if (idle) idle.classList.remove('hidden');
       if (boardCenter) boardCenter.classList.remove('flash');
-    }, 4500);
+    }, 5200);
   }
 
   function clearCenterAnnounce() {
@@ -1904,7 +1904,7 @@ refreshRoomList();
       clearTimeout(spinCube._rt);
       spinCube._rt = setTimeout(function () {
         res.textContent = '🎲 ' + finalFace;
-      }, 700);
+      }, 1050);
     }
   }
 
@@ -2662,7 +2662,7 @@ refreshRoomList();
         var syn = synergyBonus(me || {});
         if (syn.duelPlus) faceS = Math.min(6, faceS + syn.duelPlus);
         spinCube(faceS);
-        await new Promise(function (r) { setTimeout(r, 900); });
+        await new Promise(function (r) { setTimeout(r, 1100); });
         room = await getRoom(myRoomCode) || room;
         ch = room.relicChallenge;
         if (!ch || ch.phase !== 'contest') return;
@@ -2739,7 +2739,7 @@ refreshRoomList();
       // 유물 칸: 증강 미적용, 순수 1~6
       var face = 1 + Math.floor(Math.random() * 6);
       spinCube(face);
-      await new Promise(function (r) { setTimeout(r, 900); });
+      await new Promise(function (r) { setTimeout(r, 1100); });
 
       room = await getRoom(myRoomCode) || room;
       ch = room.relicChallenge;
@@ -2847,7 +2847,7 @@ refreshRoomList();
         }
         if (meP && hasAug(meP, 'fortress') && meP.position === 0) face = Math.min(6, face + 1);
         spinCube(face);
-        await new Promise(function (r) { setTimeout(r, 900); });
+        await new Promise(function (r) { setTimeout(r, 1100); });
 
         room = await getRoom(myRoomCode) || room;
         duel = room.duel;
@@ -2895,7 +2895,7 @@ refreshRoomList();
         var winnerP = room.players.find(function (p) { return p.id === myPlayerId; });
         if (winnerP && hasAug(winnerP, 'bully')) punish = Math.min(6, punish + 1);
         spinCube(punish);
-        await new Promise(function (r) { setTimeout(r, 900); });
+        await new Promise(function (r) { setTimeout(r, 1100); });
 
         room = await getRoom(myRoomCode) || room;
         duel = room.duel;
@@ -3034,8 +3034,8 @@ refreshRoomList();
 
       // 1) spin dice
       spinCube(finalFace);
-      await new Promise(function (r) { setTimeout(r, 520); });
-      // 2) show result briefly, then move
+      await new Promise(function (r) { setTimeout(r, 1100); });
+      // 2) show result, then move
       els.turnBanner.className = 'ld-turn-banner rb-' + (RESULT_KIND[Math.min(6, finalFace)] || 'mid');
       els.turnBanner.textContent = finalFace + '이(가) 나왔습니다!';
       await new Promise(function (r) { setTimeout(r, POST_ROLL_DELAY); });
@@ -3248,7 +3248,7 @@ refreshRoomList();
       } else {
         setTimeout(function () {
           if (!rolling) renderGame(lastRoomSnapshot);
-        }, 1600);
+        }, 2200);
       }
     } catch (e) {
       rolling = false;
@@ -3344,10 +3344,10 @@ refreshRoomList();
           els.btnRoll.textContent = '상대가 굴리는 중...';
 
           spinCube(pending.face);
-          await new Promise(function (r) { setTimeout(r, 420); });
+          await new Promise(function (r) { setTimeout(r, 1100); });
           els.turnBanner.className = 'ld-turn-banner rb-' + (RESULT_KIND[Math.min(6, pending.face)] || 'mid');
           els.turnBanner.textContent = pending.name + ' · ' + pending.face;
-          await new Promise(function (r) { setTimeout(r, 200); });
+          await new Promise(function (r) { setTimeout(r, 450); });
 
           var updated = await getRoom(myRoomCode) || room;
           var mover = updated.players.find(function (p) { return p.id === pending.playerId; });
