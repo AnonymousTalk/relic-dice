@@ -639,8 +639,8 @@
           <div class="ld-field-label">칸 번호로 이동</div>
           <input type="number" id="adminCell" min="0" max="31" placeholder="0~31" />
           <button class="ld-btn ld-btn-primary" id="btnAdminMove">해당 칸으로 이동</button>
-          <div class="ld-field-label">승리 유물 개수 (1~5)</div>
-          <input type="number" id="adminRelicWin" min="1" max="5" value="5" />
+          <div class="ld-field-label">승리 유물 개수 (1~9)</div>
+          <input type="number" id="adminRelicWin" min="1" max="9" value="5" />
           <button class="ld-btn ld-btn-primary" id="btnAdminRelicWin">유물 목표 적용</button>
           <div class="ld-field-label">턴 타이머 (초)</div>
           <input type="number" id="adminTurnSec" min="15" max="120" value="45" />
@@ -652,7 +652,7 @@
       </div>
       <h1 class="ld-title">유물 주사위</h1>
       <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.2</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.3</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -811,7 +811,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.2';
+  var GAME_VERSION = '1.0.0.3';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -911,9 +911,13 @@
   var RELIC_TYPES = [
     { id: 'sun', icon: '☀️', name: '태양 유물', desc: '이동 +1칸 (항상)' },
     { id: 'moon', icon: '🌙', name: '달 유물', desc: '함정 피해 -1 / 대결 방어 +1' },
-    { id: 'star', icon: '⭐', name: '별 유물', desc: '주사위 6 나올 확률 소폭 상승 (재굴림 1회 15%)' },
+    { id: 'star', icon: '⭐', name: '별 유물', desc: '낮은 눈에 18% 재굴림 (더 높은 눈 우선)' },
     { id: 'herb', icon: '🌿', name: '허브 유물', desc: '휴식 칸 무시 · 스킵 턴 1회 자동 회복' },
-    { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈 주사위 +1 · 벌칙 +1' }
+    { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈 주사위 +1 · 벌칙 +1' },
+    { id: 'wind', icon: '💨', name: '바람 유물', desc: '부스트 칸 추가 +1칸' },
+    { id: 'tide', icon: '🌊', name: '파도 유물', desc: '선물 이동량 +1' },
+    { id: 'crystal', icon: '💠', name: '수정 유물', desc: '일반 칸 착지 시 10% 확률 +1칸' },
+    { id: 'thunder', icon: '⚡', name: '번개 유물', desc: '짝수 눈이면 이동 +1' }
   ];
 
   function getRelicById(id) {
@@ -933,14 +937,16 @@
   function hasAllRelics(p, needed) {
     var r = playerRelics(p);
     var n = (needed != null) ? needed : 5;
-    n = Math.max(1, Math.min(5, n));
+    var maxR = RELIC_TYPES.length;
+    n = Math.max(1, Math.min(maxR, n));
     var uniq = {};
     r.forEach(function (id) { uniq[id] = true; });
     return Object.keys(uniq).length >= n;
   }
   function relicsNeeded(room) {
+    var maxR = RELIC_TYPES.length;
     var n = room && room.relicsToWin != null ? room.relicsToWin : 5;
-    return Math.max(1, Math.min(5, n));
+    return Math.max(1, Math.min(maxR, n));
   }
   function pickRelicForPlayer(p) {
     var owned = playerRelics(p);
@@ -959,12 +965,14 @@
   ];
 
   var AUGMENT_POOL = [
-    // luck — 하이롤러/럭키세븐/연승/도박꾼 제거, 1·6 및 리스크 중심
-    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '주사위가 1 또는 6일 때만 이동 +1 (약 33%)', tag: '필드', chance: '33%' },
-    { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '4가 나오면 +2칸 (약 17%) · 그 외 변화 없음', tag: '필드', chance: '17%' },
-    { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '6이 나오면 +3칸 (약 17%)', tag: '필드', chance: '17%' },
-    { id: 'momentum', cat: 'luck', icon: '⚖️', name: '기세', desc: '이전 눈 기준: 6→+2 · 5→+1 · 4→-1 · 3→0 · 2→-1 · 1→-2', tag: '필드', chance: '항상' },
-    { id: 'allin', cat: 'luck', icon: '🎯', name: '올인', desc: '1이면 이동 1로 고정 · 6이면 +4칸 (약 33% 중 절반은 리스크)', tag: '필드', chance: '33%' },
+    // luck (확률 상향)
+    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1·2·5·6이면 이동 +1 (약 67%)', tag: '필드', chance: '67%' },
+    { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '3 또는 4면 +2칸 (약 33%)', tag: '필드', chance: '33%' },
+    { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '5 또는 6이면 +3칸 (약 33%)', tag: '필드', chance: '33%' },
+    { id: 'momentum', cat: 'luck', icon: '⚖️', name: '기세', desc: '이전 눈: 6→+2 · 5→+1 · 4→0 · 3→0 · 2→-1 · 1→-1', tag: '필드', chance: '항상' },
+    { id: 'allin', cat: 'luck', icon: '🎯', name: '올인', desc: '1이면 2칸 · 6이면 +5칸 (약 33%)', tag: '필드', chance: '33%' },
+    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 25% 확률 이동 +1', tag: '필드', chance: '25%' },
+    { id: 'jackpot', cat: 'luck', icon: '🎰', name: '잭팟', desc: '6이 나오면 35% 추가 턴', tag: '필드', chance: '6일 때 35%' },
     // speed
     { id: 'swift', cat: 'speed', icon: '⚡', name: '신속', desc: '1이 나오면 재굴림 1회 (약 17%)', tag: '필드', chance: '17%' },
     { id: 'courier', cat: 'speed', icon: '📦', name: '특송', desc: '부스트 칸 착지 시 +5칸 (기본 3 대신)', tag: '필드', chance: '칸 의존' },
@@ -995,10 +1003,22 @@
     { id: 'timebend', cat: 'util', icon: '⏳', name: '시공', desc: '스킵 대신 본인 추가 턴', tag: '필드', chance: '칸 의존' },
     { id: 'phantom', cat: 'util', icon: '👻', name: '유령', desc: '워프 후 +2칸', tag: '필드', chance: '칸 의존' },
     { id: 'combo', cat: 'util', icon: '✨', name: '콤보', desc: '특수 효과 발동 후 +1칸', tag: '필드', chance: '칸 의존' },
+    // 신규
+    { id: 'sprint', cat: 'speed', icon: '🏃', name: '질주', desc: '3 이상이면 이동 +1 (약 67%)', tag: '필드', chance: '67%' },
+    { id: 'slipstream', cat: 'speed', icon: '🌀', name: '슬립스트림', desc: '이전 눈이 5~6이면 이동 +1', tag: '필드', chance: '상황' },
+    { id: 'bulwark', cat: 'defend', icon: '🧱', name: '보루', desc: '함정 피해 최소 1 남기기 · 피해 -1', tag: '필드', chance: '칸 의존' },
+    { id: 'evasion', cat: 'defend', icon: '💨', name: '회피', desc: '함정 칸 20% 무시', tag: '필드', chance: '20%' },
+    { id: 'rift', cat: 'chaos', icon: '🕳️', name: '균열', desc: '특수칸 착지 시 15% 랜덤 워프', tag: '필드', chance: '15%' },
+    { id: 'echo', cat: 'chaos', icon: '📢', name: '메아리', desc: '한 번 더 칸 착지 시 50% 추가 턴 대신 +2칸', tag: '필드', chance: '칸 의존' },
+    { id: 'prospector', cat: 'relic', icon: '⛏️', name: '탐사자', desc: '유물/강탈/아이템 칸 착지 시 +1칸', tag: '필드', chance: '칸 의존' },
+    { id: 'hoarder', cat: 'relic', icon: '📦', name: '사재기', desc: '아이템 소지 상한 +1 (최대 4)', tag: '필드', chance: '항상' },
+    { id: 'navigator', cat: 'util', icon: '🧭', name: '항해사', desc: '워프 후 +1칸 (유령과 별도 가능)', tag: '필드', chance: '칸 의존' },
+    { id: 'secondwind', cat: 'util', icon: '🌬️', name: '재기', desc: '1이 나오면 이동을 3으로', tag: '필드', chance: '17%' },
     // combat-oriented (대결/강탈)
     { id: 'duelist', cat: 'util', icon: '⚔️', name: '결투사', desc: '대결·강탈 주사위 +1', tag: '전투', chance: '전투 시' },
     { id: 'bully', cat: 'util', icon: '💪', name: '강압', desc: '대결 벌칙 주사위 +1', tag: '전투', chance: '전투 시' },
-    { id: 'intimidate', cat: 'defend', icon: '😤', name: '위압', desc: '대결 패배 시 벌칙 -1', tag: '전투', chance: '전투 시' }
+    { id: 'intimidate', cat: 'defend', icon: '😤', name: '위압', desc: '대결 패배 시 벌칙 -1', tag: '전투', chance: '전투 시' },
+    { id: 'challenger', cat: 'util', icon: '🏅', name: '도전자', desc: '대결 시 상대보다 뒤 칸이면 +1', tag: '전투', chance: '전투 시' }
   ];
 
   function hasAug(player, id) {
@@ -1106,16 +1126,22 @@
   var SYNERGY_RULES = [
     { cat: 'luck', need: 2, key: 'luckMove', value: 1, icon: '🍀', name: '행운 시너지 II', desc: '모든 이동 +1칸' },
     { cat: 'luck', need: 3, key: 'luckMove', value: 2, icon: '🍀', name: '행운 시너지 III', desc: '모든 이동 +2칸' },
+    { cat: 'luck', need: 4, key: 'luckCrit', value: 0.20, icon: '🍀', name: '행운 시너지 IV', desc: '20% 확률 이동 추가 +2' },
     { cat: 'speed', need: 2, key: 'boostExtra', value: 1, icon: '⚡', name: '신속 시너지 II', desc: '부스트 칸 +1칸' },
     { cat: 'speed', need: 3, key: 'boostExtra', value: 2, icon: '⚡', name: '신속 시너지 III', desc: '부스트 칸 +2칸' },
+    { cat: 'speed', need: 4, key: 'speedOdd', value: 1, icon: '⚡', name: '신속 시너지 IV', desc: '홀수 눈이면 이동 +1' },
     { cat: 'defend', need: 2, key: 'defendCut', value: 1, icon: '🛡️', name: '방어 시너지 II', desc: '함정 피해 -1' },
     { cat: 'defend', need: 3, key: 'defendCut', value: 2, icon: '🛡️', name: '방어 시너지 III', desc: '함정 피해 -2' },
+    { cat: 'defend', need: 4, key: 'defendRest', value: 1, icon: '🛡️', name: '방어 시너지 IV', desc: '휴식 칸 무시' },
     { cat: 'chaos', need: 2, key: 'chaosChance', value: 0.10, icon: '🌪️', name: '혼돈 시너지 II', desc: '혼돈 워프 확률 +10%' },
     { cat: 'chaos', need: 3, key: 'chaosChance', value: 0.18, icon: '🌪️', name: '혼돈 시너지 III', desc: '혼돈 워프 확률 +18%' },
+    { cat: 'chaos', need: 4, key: 'chaosStep', value: 1, icon: '🌪️', name: '혼돈 시너지 IV', desc: '일반 칸 12% ±1칸' },
     { cat: 'relic', need: 2, key: 'giftBonus', value: 1, icon: '💎', name: '유물 시너지 II', desc: '선물/부스트 보너스 +1' },
-    { cat: 'relic', need: 3, key: 'relicLuck', value: 0.15, icon: '💎', name: '유물 시너지 III', desc: '유물 도전 성공 시 15% 추가 유물' },
+    { cat: 'relic', need: 3, key: 'relicLuck', value: 0.15, icon: '💎', name: '유물 시너지 III', desc: '유물 성공 시 15% 추가 유물' },
+    { cat: 'relic', need: 4, key: 'relicItem', value: 1, icon: '💎', name: '유물 시너지 IV', desc: '아이템 칸 착지 시 이동 +1' },
     { cat: 'util', need: 2, key: 'comboExtra', value: 1, icon: '🔧', name: '유틸 시너지 II', desc: '콤보/특수 후 추가 +1칸' },
-    { cat: 'util', need: 3, key: 'utilTrapCut', value: 1, icon: '🔧', name: '유틸 시너지 III', desc: '함정 피해 추가 -1' }
+    { cat: 'util', need: 3, key: 'utilTrapCut', value: 1, icon: '🔧', name: '유틸 시너지 III', desc: '함정 피해 추가 -1' },
+    { cat: 'util', need: 4, key: 'utilDice', value: 1, icon: '🔧', name: '유틸 시너지 IV', desc: '2가 나오면 3으로' }
   ];
   function activeAugList(player) {
     return playerAugList(player).filter(function (id) { return !isAugDisabled(player, id); });
@@ -1132,6 +1158,7 @@
     var out = {
       luckMove: 0, boostExtra: 0, defendCut: 0, chaosChance: 0,
       giftBonus: 0, relicLuck: 0, comboExtra: 0, utilTrapCut: 0,
+      luckCrit: 0, speedOdd: 0, defendRest: 0, chaosStep: 0, relicItem: 0, utilDice: 0,
       active: []
     };
     var counts = categoryCounts(player);
@@ -1399,10 +1426,42 @@
     if (!fbDb) throw new Error('NO_FIREBASE');
     // Firebase는 undefined 불가 → JSON 라운드트립으로 정리
     room = JSON.parse(JSON.stringify(room));
+    // 채팅 유실 방지: 서버에 있는 채팅과 병합 후 저장
+    try {
+      var chatSnap = await fbDb.ref(roomPath(room.code) + '/chat').once('value');
+      if (chatSnap.exists()) {
+        var remote = chatSnap.val();
+        var rList = Array.isArray(remote) ? remote.slice() : Object.keys(remote || {}).map(function (k) { return remote[k]; });
+        var lList = room.chat || [];
+        if (!Array.isArray(lList)) lList = Object.keys(lList).map(function (k) { return lList[k]; });
+        var map = {};
+        rList.concat(lList).forEach(function (c) {
+          if (!c || c.text == null) return;
+          var key = (c.ts || 0) + '|' + (c.playerId || '') + '|' + c.text;
+          map[key] = c;
+        });
+        room.chat = Object.keys(map).map(function (k) { return map[k]; })
+          .sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); })
+          .slice(-50);
+      }
+    } catch (e) { console.warn('chat merge', e); }
     await fbDb.ref(roomPath(room.code)).set(room);
     if (room.status === 'waiting' || room.status === 'closed' || room.status === 'finished') {
       syncRoomToLobby(room).catch(function () {});
     }
+  }
+
+  async function appendChatOnly(msg) {
+    if (!fbDb || !myRoomCode) return;
+    var ref = fbDb.ref(roomPath(myRoomCode) + '/chat');
+    await ref.transaction(function (current) {
+      var list = [];
+      if (current) {
+        list = Array.isArray(current) ? current.slice() : Object.keys(current).map(function (k) { return current[k]; });
+      }
+      list.push(msg);
+      return list.slice(-50);
+    });
   }
 
   async function getLobby() {
@@ -1593,7 +1652,8 @@
       lastFace: 0,
       nextMoveBonus: 0,
       augDisabled: [],
-      items: []
+      items: [],
+      bonusRolls: 0
     };
   }
 
@@ -2094,6 +2154,8 @@ refreshRoomList();
       var extra = !!room.pendingPickExtraTurn;
       room.pendingPickExtraTurn = false;
       room.augmentPick = null;
+      var after = room.pendingAfterAugment || null;
+      room.pendingAfterAugment = null;
 
       var a = getAugmentById(augId);
       try { SFX.augment(); } catch (e) {}
@@ -2105,7 +2167,43 @@ refreshRoomList();
         ts: Date.now()
       };
 
-      advanceTurn(room, extra);
+      // 증강 후 미뤄 둔 유물/강탈/대결
+      if (after && after.type === 'steal') {
+        var victims = room.players.filter(function (p) {
+          if (p.id === myPlayerId) return false;
+          if (room.gameMode === 'team' && sameTeam(me, p)) return false;
+          return playerRelics(p).length > 0;
+        });
+        if (victims.length) {
+          room.relicChallenge = {
+            mode: 'steal', playerId: myPlayerId, phase: 'selectTarget', targetId: null, rolls: {},
+            pendingExtraTurn: !!after.pendingExtraTurn, pendingAugmentPick: false, pendingDuelWith: null, ts: Date.now()
+          };
+        } else if ((me.bonusRolls || 0) > 0) {
+          me.bonusRolls -= 1;
+          room.turnStartedAt = Date.now();
+        } else {
+          advanceTurn(room, extra);
+        }
+      } else if (after && after.type === 'relic') {
+        var tgt = 1 + Math.floor(Math.random() * 6);
+        room.relicChallenge = {
+          playerId: myPlayerId, target: tgt, rolls: [], noAugment: true,
+          pendingExtraTurn: !!after.pendingExtraTurn, pendingAugmentPick: false, pendingDuelWith: null, ts: Date.now()
+        };
+      } else if (after && after.type === 'duel') {
+        room.duel = {
+          attackerId: myPlayerId, defenderId: after.defenderId, phase: 'contest', rolls: {},
+          winnerId: null, loserId: null, punishRoll: null,
+          pendingExtraTurn: !!after.pendingExtraTurn, pendingAugmentPick: false, ts: Date.now()
+        };
+      } else if ((me.bonusRolls || 0) > 0) {
+        me.bonusRolls -= 1;
+        room.turnStartedAt = Date.now();
+      } else {
+        advanceTurn(room, extra);
+      }
+
       await saveRoom(room);
       lastRoomSnapshot = room;
       myAugOffers = null;
@@ -2352,7 +2450,11 @@ refreshRoomList();
         '<div class="ld-roster-aug-icon">' + (playerAugs(p).map(function (id) {
           var a = getAugmentById(id);
           return a ? a.icon : '';
-        }).join('') || '—') + '</div>';
+        }).join('') || '—') + '</div>' +
+        '<div class="ld-roster-pos" style="color:var(--green);">' + (playerItems(p).map(function (id) {
+          var it = getItemById(id);
+          return it ? it.icon : '🎒';
+        }).join('') || '') + '</div>';
       card.onclick = function () {
         selectedRosterId = p.id;
         renderRoster(room);
@@ -2477,6 +2579,21 @@ refreshRoomList();
         html += '<div class="ld-aug-item-icon">' + r.icon + '</div>';
         html += '<div class="ld-aug-item-body"><div class="ld-aug-item-name" style="color:var(--gold);">' + escapeHtml(r.name) + '</div>';
         html += '<div class="ld-aug-item-desc">' + escapeHtml(r.desc) + '</div></div></div>';
+      });
+    }
+
+    var items = playerItems(player);
+    html += '<div class="ld-player-panel-section">아이템 ' + items.length + '개</div>';
+    if (!items.length) {
+      html += '<div style="font-size:12px;color:var(--text-dim);padding:4px 0;">보유 아이템 없음</div>';
+    } else {
+      items.forEach(function (id) {
+        var it = getItemById(id);
+        html += '<div class="ld-aug-item" style="border-color:rgba(52,211,153,0.35);background:rgba(52,211,153,0.08);">';
+        html += '<div class="ld-aug-item-icon">' + (it ? it.icon : '🎒') + '</div>';
+        html += '<div class="ld-aug-item-body"><div class="ld-aug-item-name">' + escapeHtml(it ? it.name : id) + '</div>';
+        html += '<div class="ld-aug-item-desc">' + escapeHtml(it && it.desc ? it.desc : '') +
+          (it && it.target === 'enemy' ? ' · 상대에게 사용' : ' · 자신에게 사용') + '</div></div></div>';
       });
     }
 
@@ -2840,7 +2957,7 @@ refreshRoomList();
     var rawFace = face;
 
     // 별 유물: 15% 재굴림으로 더 높은 눈
-    if (hasRelic(player, 'star') && face < 6 && Math.random() < 0.15) {
+    if (hasRelic(player, 'star') && face < 6 && Math.random() < 0.18) {
       var reroll = 1 + Math.floor(Math.random() * 6);
       if (reroll > face) {
         face = reroll;
@@ -2869,72 +2986,114 @@ refreshRoomList();
       notes.push('거울: ' + face + ' → ' + move + '칸');
     }
 
-    // 행운: 1 또는 6일 때만 +1
-    if (hasAug(player, 'lucky') && (face === 1 || face === 6)) {
-      if (!(hasAug(player, 'mirror') && rawFace % 2 === 1)) {
-        move = move + 1;
-      } else {
-        move = move + 1;
-      }
+    // 행운: 1·2·5·6 → +1 (~67%)
+    if (hasAug(player, 'lucky') && (face === 1 || face === 2 || face === 5 || face === 6)) {
+      move = move + 1;
       notes.push('행운: +1');
     }
 
-    // 네잎클로버: 4 → +2
-    if (hasAug(player, 'clover') && face === 4) {
+    // 네잎클로버: 3·4 → +2 (~33%)
+    if (hasAug(player, 'clover') && (face === 3 || face === 4)) {
       move = move + 2;
       notes.push('네잎클로버: +2칸');
     }
 
-    // 대박: 6 → +3
-    if (hasAug(player, 'fortune') && face === 6) {
+    // 대박: 5·6 → +3 (~33%)
+    if (hasAug(player, 'fortune') && (face === 5 || face === 6)) {
       move = move + 3;
       notes.push('대박: +3칸');
     }
 
-    // 올인: 1이면 1칸 고정, 6이면 +4
+    // 올인: 1→2칸, 6→+5
     if (hasAug(player, 'allin')) {
       if (face === 1) {
-        move = 1;
-        notes.push('올인: 1칸 고정');
+        move = 2;
+        notes.push('올인: 2칸');
       } else if (face === 6) {
-        move = move + 4;
-        notes.push('올인: +4칸');
+        move = move + 5;
+        notes.push('올인: +5칸');
       }
     }
 
-    // 기세: 이전 눈 기준 리스크
+    // 기세 (리스크 완화)
     if (hasAug(player, 'momentum') && player.lastFace) {
       var prev = player.lastFace | 0;
       var delta = 0;
       if (prev === 6) delta = 2;
       else if (prev === 5) delta = 1;
-      else if (prev === 4) delta = -1;
+      else if (prev === 4) delta = 0;
       else if (prev === 3) delta = 0;
       else if (prev === 2) delta = -1;
-      else if (prev === 1) delta = -2;
+      else if (prev === 1) delta = -1;
       if (delta !== 0) {
         move = Math.max(1, move + delta);
         notes.push('기세(이전' + prev + '): ' + (delta > 0 ? '+' : '') + delta);
       }
     }
 
+    // 우연 25%
+    if (hasAug(player, 'serendipity') && Math.random() < 0.25) {
+      move += 1;
+      notes.push('우연: +1');
+    }
+
+    // 질주: 3+ → +1
+    if (hasAug(player, 'sprint') && face >= 3) {
+      move += 1;
+      notes.push('질주: +1');
+    }
+
+    // 슬립스트림
+    if (hasAug(player, 'slipstream') && (player.lastFace === 5 || player.lastFace === 6)) {
+      move += 1;
+      notes.push('슬립스트림: +1');
+    }
+
+    // 재기: 1 → 이동 3
+    if (hasAug(player, 'secondwind') && face === 1) {
+      move = Math.max(move, 3);
+      notes.push('재기: 3칸');
+    }
+
     if (player.nextMoveBonus) {
       move += player.nextMoveBonus;
-      notes.push('보험 보너스 +' + player.nextMoveBonus);
+      notes.push('보너스 +' + player.nextMoveBonus);
       player.nextMoveBonus = 0;
     }
 
     var extraTurn = false;
+    if (hasAug(player, 'jackpot') && face === 6 && Math.random() < 0.35) {
+      extraTurn = true;
+      notes.push('잭팟: 추가 턴');
+    }
 
     var syn = synergyBonus(player);
     if (syn.luckMove) {
       move += syn.luckMove;
       notes.push('행운 시너지 +' + syn.luckMove);
     }
+    if (syn.luckCrit && Math.random() < syn.luckCrit) {
+      move += 2;
+      notes.push('행운 IV 크리 +2');
+    }
+    if (syn.speedOdd && face % 2 === 1) {
+      move += 1;
+      notes.push('신속 IV 홀수 +1');
+    }
+    if (syn.utilDice && face === 2) {
+      face = 3;
+      move = Math.max(move, 3);
+      notes.push('유틸 IV: 2→3');
+    }
     if (hasRelic(player, 'sun')) {
       move += 1;
       notes.push('☀️ 태양 +1칸');
     }
+    if (hasRelic(player, 'thunder') && face % 2 === 0) {
+      move += 1;
+      notes.push('⚡ 번개 +1');
+    }
+    // 별 유물 18%
     player.lastFace = face;
     return { face: face, move: Math.max(1, move), notes: notes, extraTurn: extraTurn };
   }
@@ -3001,12 +3160,35 @@ refreshRoomList();
         result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '👾 글리치 ' + (g > 0 ? '+' : '') + g;
         result.announce = true;
       }
+      var synN = synergyBonus(player);
+      if (!chain && synN.chaosStep && Math.random() < 0.12) {
+        var cs = (Math.random() < 0.5 ? -1 : 1);
+        result.pos = (result.pos + cs + BOARD_SIZE) % BOARD_SIZE;
+        result.extraSteps = (result.extraSteps || 0) + cs;
+        result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🌪️시너지 IV ' + (cs > 0 ? '+' : '') + cs;
+        result.announce = true;
+      }
+      if (!chain && hasRelic(player, 'crystal') && Math.random() < 0.10) {
+        result.pos = (result.pos + 1) % BOARD_SIZE;
+        result.extraSteps = (result.extraSteps || 0) + 1;
+        result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '💠 수정 +1';
+        result.announce = true;
+      }
       return result;
     }
 
     // wildcard: 25% 다른 특수
     if (hasAug(player, 'wildcard') && Math.random() < 0.25) {
       type = CELL_TYPE_KEYS[Math.floor(Math.random() * CELL_TYPE_KEYS.length)];
+    }
+    if (hasAug(player, 'rift') && Math.random() < 0.15) {
+      var riftDest = 1 + Math.floor(Math.random() * (BOARD_SIZE - 1));
+      result.pos = riftDest;
+      result.effectText = '🕳️ 균열 워프 → ' + riftDest;
+      result.effectIcon = '🕳️';
+      result.effectTitle = '균열';
+      result.announce = true;
+      return result;
     }
 
     var shield = (player.shieldCharges || 0) > 0;
@@ -3036,6 +3218,7 @@ refreshRoomList();
       var b = hasAug(player, 'courier') ? 5 : (3 + bonus + (synB.giftBonus || 0));
       if (hasAug(player, 'chainboost')) b += 2;
       b += synB.boostExtra;
+      if (hasRelic(player, 'wind')) b += 1;
       result.pos = (landPos + b) % BOARD_SIZE;
       result.extraSteps = b;
       result.effectText = '🚀 부스트 +' + b;
@@ -3046,11 +3229,18 @@ refreshRoomList();
     } else if (type === 'trap') {
       var synD = synergyBonus(player);
       var back = 3;
+      if (hasAug(player, 'evasion') && Math.random() < 0.20) {
+        result.effectText = '💨 회피: 함정 무시';
+        result.announce = true;
+        return result;
+      }
       if (hasAug(player, 'guardian')) back = 1;
       else if (hasAug(player, 'iron')) back = Math.max(1, Math.floor(back / 2));
       if (hasRelic(player, 'moon')) back = Math.max(0, back - 1);
       if (hasAug(player, 'insurance')) back = Math.max(0, back - 1);
+      if (hasAug(player, 'bulwark')) back = Math.max(1, back - 1);
       back = Math.max(0, back - (synD.defendCut || 0) - (synD.utilTrapCut || 0));
+      if (hasAug(player, 'bulwark') && back > 0) back = Math.max(1, back);
       result.pos = (landPos - back + BOARD_SIZE) % BOARD_SIZE;
       result.extraSteps = -back;
       result.effectText = '💀 함정 -' + back;
@@ -3067,8 +3257,14 @@ refreshRoomList();
         }
       }
     } else if (type === 'again') {
-      result.extraTurn = true;
-      result.effectText = '🎲 한 번 더';
+      if (hasAug(player, 'echo') && Math.random() < 0.5) {
+        result.pos = (landPos + 2) % BOARD_SIZE;
+        result.extraSteps = 2;
+        result.effectText = '📢 메아리: +2칸 (추가 턴 대신)';
+      } else {
+        result.extraTurn = true;
+        result.effectText = '🎲 한 번 더';
+      }
     } else if (type === 'skip') {
       result.skipNext = true;
       result.effectText = '⏭️ 상대 스킵';
@@ -3090,16 +3286,21 @@ refreshRoomList();
         result.pos = (dest + 2) % BOARD_SIZE;
         result.effectText += ' · 유령 +2';
       }
+      if (hasAug(player, 'navigator')) {
+        result.pos = (result.pos + 1) % BOARD_SIZE;
+        result.effectText += ' · 항해사 +1';
+      }
     } else if (type === 'rest') {
-      if (hasRelic(player, 'herb')) {
-        result.effectText = '🌿 허브: 휴식 무시';
+      var synRest = synergyBonus(player);
+      if (hasRelic(player, 'herb') || synRest.defendRest || hasAug(player, 'steady')) {
+        result.effectText = hasAug(player, 'steady') ? '🧘 안정: 휴식 무시' : (synRest.defendRest ? '🛡️시너지 IV: 휴식 무시' : '🌿 허브: 휴식 무시');
       } else {
         player.skipTurns = (player.skipTurns || 0) + 1;
         result.effectText = '🔒 다음 턴 휴식';
       }
     } else if (type === 'gift') {
       var synG = synergyBonus(player);
-      var bonus = (hasAug(player, 'collector') ? 1 : 0) + (synG.giftBonus || 0);
+      var bonus = (hasAug(player, 'collector') ? 1 : 0) + (synG.giftBonus || 0) + (hasRelic(player, 'tide') ? 1 : 0);
       // 다양한 선물 풀
       var giftRoll = Math.random();
       if (giftRoll < 0.22) {
@@ -3202,25 +3403,43 @@ refreshRoomList();
       result.effectIcon = '💎';
       result.effectTitle = '유물';
       result.announce = true;
+      if (hasAug(player, 'prospector')) {
+        result.pos = (landPos + 1) % BOARD_SIZE;
+        result.extraSteps = 1;
+        result.effectText += ' · 탐사자 +1';
+      }
     } else if (type === 'steal') {
       result.startSteal = true;
       result.effectText = '🏴‍☠️ 유물 강탈!';
       result.effectIcon = '🏴‍☠️';
       result.effectTitle = '강탈';
       result.announce = true;
+      if (hasAug(player, 'prospector')) {
+        result.pos = (landPos + 1) % BOARD_SIZE;
+        result.extraSteps = 1;
+        result.effectText += ' · 탐사자 +1';
+      }
     } else if (type === 'item') {
       var it = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
       player.items = playerItems(player);
-      if (player.items.length < 3) {
+      var itemCap = hasAug(player, 'hoarder') ? 4 : 3;
+      if (player.items.length < itemCap) {
         player.items.push(it.id);
         result.effectText = '🎒 아이템 획득: ' + it.icon + ' ' + it.name;
         result.gotItem = it.id;
       } else {
-        result.effectText = '🎒 아이템 칸 (소지 한도 3개)';
+        result.effectText = '🎒 아이템 칸 (소지 한도 ' + itemCap + '개)';
       }
       result.effectIcon = '🎒';
       result.effectTitle = '아이템';
       result.announce = true;
+      var synI = synergyBonus(player);
+      var itemBonus = (hasAug(player, 'prospector') ? 1 : 0) + (synI.relicItem || 0);
+      if (itemBonus) {
+        result.pos = (landPos + itemBonus) % BOARD_SIZE;
+        result.extraSteps = itemBonus;
+        result.effectText += ' · +' + itemBonus + '칸';
+      }
     }
 
     var synC = synergyBonus(player);
@@ -3806,7 +4025,7 @@ refreshRoomList();
         break;
       }
 
-      // 특수칸 추가 이동으로 스타트 통과 시 증강
+      // 특수칸 추가 이동으로 스타트 통과 시 증강 (자리 교체만으로 인한 위치 변화는 제외됨 — totalExtraForward/주사위 기준)
       if (totalExtraForward > 0) {
         var crossed = Math.floor((oldPos + moveSteps + totalExtraForward) / BOARD_SIZE);
         if (crossed > lapsGained) {
@@ -3815,131 +4034,152 @@ refreshRoomList();
         }
       }
       var needAugPick = lapsGained > 0;
+      var startedDuel = false;
+      var startedRelic = false;
+
+      // 한 바퀴면 증강 선택을 최우선 — 유물/강탈/대결은 증강 이후로 미룸
       if (needAugPick) {
         fresh.augmentPick = { playerId: myPlayerId, ts: Date.now() };
         fresh.pendingPickExtraTurn = extraTurn;
-      }
-
-      // 유물/강탈 칸 도전
-      var startedRelic = false;
-      if (effect.startSteal) {
-        var victims = fresh.players.filter(function (p) {
-          if (p.id === myPlayerId) return false;
-          if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
-          return playerRelics(p).length > 0;
-        });
-        if (!victims.length) {
-          effect.effectText = '🏴‍☠️ 강탈할 유물이 있는 상대 없음';
-          fresh.announce = {
-            icon: '🏴‍☠️', title: '강탈 실패', text: me.name + ' — 대상 없음', sub: '', ts: Date.now()
-          };
+        fresh.pendingAfterAugment = null;
+        var after = null;
+        if (effect.startSteal) {
+          after = { type: 'steal', pendingExtraTurn: extraTurn };
+        } else if (effect.startRelic) {
+          after = { type: 'relic', pendingExtraTurn: extraTurn };
         } else {
-          fresh.relicChallenge = {
-            mode: 'steal',
-            playerId: myPlayerId,
-            phase: 'selectTarget',
-            targetId: null,
-            rolls: {},
-            pendingExtraTurn: extraTurn,
-            pendingAugmentPick: needAugPick,
-            pendingAugmentPlayerId: needAugPick ? myPlayerId : null,
-            pendingDuelWith: null,
-            ts: Date.now()
-          };
-          var occ2 = fresh.players.find(function (p) {
+          var occupant0 = fresh.players.find(function (p) {
             if (p.id === myPlayerId || p.position !== me.position) return false;
             if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
             return true;
           });
-          if (occ2 && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ2.id;
-          startedRelic = true;
-          if (needAugPick) fresh.augmentPick = null;
-          fresh.announce = {
-            icon: '🏴‍☠️', title: '유물 강탈!', text: me.name + ' — 대상을 선택하세요', sub: '', ts: Date.now()
-          };
+          if (occupant0 && me.position !== 0) {
+            after = { type: 'duel', defenderId: occupant0.id, pendingExtraTurn: extraTurn };
+          }
         }
-      } else if (effect.startRelic) {
-        var target = 1 + Math.floor(Math.random() * 6); // 1~6
-        fresh.relicChallenge = {
-          playerId: myPlayerId,
-          target: target,
-          rolls: [],
-          noAugment: true,
-          pendingExtraTurn: extraTurn,
-          pendingAugmentPick: needAugPick,
-          pendingAugmentPlayerId: needAugPick ? myPlayerId : null,
-          pendingDuelWith: null,
+        if (after) fresh.pendingAfterAugment = after;
+        fresh.announce = {
+          icon: '🏁',
+          title: me.name + ' 한 바퀴 완주!',
+          text: '증강을 먼저 선택하세요' + (after ? ' (이후 이어서 진행)' : ''),
+          sub: (me.laps || 0) + '바퀴',
           ts: Date.now()
         };
-        // 같은 칸 대결은 유물 도전 후로 미룸
-        var occ = fresh.players.find(function (p) {
+      } else {
+        // 증강 없을 때만 유물/강탈/대결/턴 진행
+        if (effect.startSteal) {
+          var victims = fresh.players.filter(function (p) {
+            if (p.id === myPlayerId) return false;
+            if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+            return playerRelics(p).length > 0;
+          });
+          if (!victims.length) {
+            effect.effectText = '🏴‍☠️ 강탈할 유물이 있는 상대 없음';
+            fresh.announce = {
+              icon: '🏴‍☠️', title: '강탈 실패', text: me.name + ' — 대상 없음', sub: '', ts: Date.now()
+            };
+          } else {
+            fresh.relicChallenge = {
+              mode: 'steal',
+              playerId: myPlayerId,
+              phase: 'selectTarget',
+              targetId: null,
+              rolls: {},
+              pendingExtraTurn: extraTurn,
+              pendingAugmentPick: false,
+              pendingAugmentPlayerId: null,
+              pendingDuelWith: null,
+              ts: Date.now()
+            };
+            var occ2 = fresh.players.find(function (p) {
+              if (p.id === myPlayerId || p.position !== me.position) return false;
+              if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+              return true;
+            });
+            if (occ2 && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ2.id;
+            startedRelic = true;
+            fresh.announce = {
+              icon: '🏴‍☠️', title: '유물 강탈!', text: me.name + ' — 대상을 선택하세요', sub: '', ts: Date.now()
+            };
+          }
+        } else if (effect.startRelic) {
+          var target = 1 + Math.floor(Math.random() * 6);
+          fresh.relicChallenge = {
+            playerId: myPlayerId,
+            target: target,
+            rolls: [],
+            noAugment: true,
+            pendingExtraTurn: extraTurn,
+            pendingAugmentPick: false,
+            pendingAugmentPlayerId: null,
+            pendingDuelWith: null,
+            ts: Date.now()
+          };
+          var occ = fresh.players.find(function (p) {
+            if (p.id === myPlayerId || p.position !== me.position) return false;
+            if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+            return true;
+          });
+          if (occ && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ.id;
+          startedRelic = true;
+          fresh.announce = {
+            icon: '💎',
+            title: '유물 도전!',
+            text: me.name + ' — 목표 ' + target,
+            sub: '주사위 한 번이 목표와 같으면 획득 (증강 미적용)',
+            ts: Date.now()
+          };
+        }
+
+        var occupant = fresh.players.find(function (p) {
           if (p.id === myPlayerId || p.position !== me.position) return false;
           if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
           return true;
         });
-        if (occ && me.position !== 0) {
-          fresh.relicChallenge.pendingDuelWith = occ.id;
+        if (!startedRelic && occupant && me.position !== 0) {
+          fresh.duel = {
+            attackerId: myPlayerId,
+            defenderId: occupant.id,
+            phase: 'contest',
+            rolls: {},
+            winnerId: null,
+            loserId: null,
+            punishRoll: null,
+            pendingExtraTurn: extraTurn,
+            pendingAugmentPick: false,
+            pendingAugmentPlayerId: null,
+            ts: Date.now()
+          };
+          startedDuel = true;
+          try { SFX.duel(); } catch (e) {}
+          fresh.announce = {
+            icon: '⚔️',
+            title: '같은 칸 대결!',
+            text: me.name + ' vs ' + occupant.name,
+            sub: '높은 주사위가 이깁니다',
+            ts: Date.now()
+          };
+        } else if (!startedRelic && !startedDuel) {
+          // 추가 주사위 보너스
+          if ((me.bonusRolls || 0) > 0) {
+            me.bonusRolls -= 1;
+            fresh.turnStartedAt = Date.now();
+            fresh.pendingRoll = null;
+            fresh.announce = {
+              icon: '🎲',
+              title: '추가 주사위!',
+              text: me.name + ' 한 번 더 굴리세요 (남은 ' + me.bonusRolls + ')',
+              sub: '',
+              ts: Date.now()
+            };
+          } else {
+            advanceTurn(fresh, extraTurn);
+          }
         }
-        startedRelic = true;
-        if (needAugPick) fresh.augmentPick = null;
-        var rr = getRelicById(fresh.relicChallenge.relicId);
-        fresh.announce = {
-          icon: '💎',
-          title: '유물 도전!',
-          text: me.name + ' — 목표 ' + target + (rr ? ' · ' + rr.icon + rr.name : ''),
-          sub: '주사위 한 번이 목표와 같으면 획득 (증강 미적용)',
-          ts: Date.now()
-        };
-      }
-
-      // 같은 칸에 다른 플레이어가 있으면 대결 시작 (턴 진행 보류)
-      var occupant = fresh.players.find(function (p) {
-        if (p.id === myPlayerId || p.position !== me.position) return false;
-        if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
-        return true;
-      });
-      var startedDuel = false;
-      if (!startedRelic && occupant && me.position !== 0) {
-        fresh.duel = {
-          attackerId: myPlayerId,
-          defenderId: occupant.id,
-          phase: 'contest',
-          rolls: {},
-          winnerId: null,
-          loserId: null,
-          punishRoll: null,
-          pendingExtraTurn: extraTurn,
-          pendingAugmentPick: needAugPick,
-          pendingAugmentPlayerId: needAugPick ? myPlayerId : null,
-          ts: Date.now()
-        };
-        startedDuel = true;
-        // 대결 중에는 증강 선택 UI가 뜨지 않도록 보류 (대결 종료 후 재설정)
-        if (needAugPick) {
-          fresh.augmentPick = null;
-        }
-        try { SFX.duel(); } catch (e) {}
-        fresh.announce = {
-          icon: '⚔️',
-          title: '같은 칸 대결!',
-          text: me.name + ' vs ' + occupant.name,
-          sub: '높은 주사위가 이깁니다',
-          ts: Date.now()
-        };
-      } else if (!startedRelic && needAugPick) {
-        fresh.announce = {
-          icon: '🏁',
-          title: me.name + ' 한 바퀴 완주!',
-          text: '증강을 선택합니다',
-          sub: (me.laps || 0) + '바퀴',
-          ts: Date.now()
-        };
-      } else if (!startedRelic && !startedDuel) {
-        advanceTurn(fresh, extraTurn);
       }
 
       var effectNotes = mod.notes.concat(effect.effectText ? [effect.effectText] : []);
-      if (!startedDuel && effect.announce && effect.effectText) {
+      if (!needAugPick && !startedDuel && !startedRelic && effect.announce && effect.effectText) {
         fresh.announce = {
           icon: effect.effectIcon || '✨',
           title: (effect.effectTitle || '특수 효과') + '!',
@@ -4353,8 +4593,8 @@ refreshRoomList();
         }
       } else if (kind === 'relicWin') {
         var rw = parseInt(document.getElementById('adminRelicWin').value, 10);
-        if (isNaN(rw) || rw < 1 || rw > 5) {
-          document.getElementById('adminMsg').textContent = '1~5 사이 숫자를 입력하세요';
+        if (isNaN(rw) || rw < 1 || rw > RELIC_TYPES.length) {
+          document.getElementById('adminMsg').textContent = '1~' + RELIC_TYPES.length + ' 사이 숫자를 입력하세요';
           return;
         }
         room.relicsToWin = rw;
@@ -4412,12 +4652,29 @@ refreshRoomList();
   if (btnAdminDeleteRoom) btnAdminDeleteRoom.onclick = function () { adminAct('deleteRoom'); };
 
   // ---- Chat ----
+  function chatNameColor(room, name, playerId, stored) {
+    if (stored) return stored;
+    if (room && room.players) {
+      var p = null;
+      if (playerId) p = room.players.find(function (x) { return x.id === playerId; });
+      if (!p && name) p = room.players.find(function (x) { return x.name === name; });
+      if (p && p.color) return p.color;
+    }
+    var h = 0;
+    var s = name || '?';
+    for (var i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+    return COLORS[Math.abs(h) % COLORS.length];
+  }
   function renderChat(room) {
     var log = document.getElementById('chatLog');
     if (!log) return;
     var lines = room.chat || [];
+    if (!Array.isArray(lines)) {
+      lines = Object.keys(lines).map(function (k) { return lines[k]; });
+    }
     log.innerHTML = lines.slice(-40).map(function (c) {
-      return '<div class="ld-chat-line"><span class="who">' + escapeHtml(c.name) + '</span> ' + escapeHtml(c.text) + '</div>';
+      var col = chatNameColor(room, c.name, c.playerId, c.color);
+      return '<div class="ld-chat-line"><span class="who" style="color:' + col + '">' + escapeHtml(c.name) + '</span> ' + escapeHtml(c.text) + '</div>';
     }).join('');
     log.scrollTop = log.scrollHeight;
   }
@@ -4443,16 +4700,31 @@ refreshRoomList();
         if (!Array.isArray(room.chat)) {
           room.chat = Object.keys(room.chat).map(function (k) { return room.chat[k]; });
         }
-        room.chat.push({
+        var chatMsg = {
           name: me ? me.name : '?',
+          playerId: myPlayerId,
+          color: me ? me.color : null,
           text: payload.text,
           ts: Date.now(),
           react: !!payload.react
-        });
+        };
+        // 채팅만 트랜잭션으로 먼저 기록 (전체 set 레이스 완화)
+        try {
+          await appendChatOnly(chatMsg);
+        } catch (e1) {
+          console.warn(e1);
+        }
+        room.chat = room.chat || [];
+        if (!Array.isArray(room.chat)) {
+          room.chat = Object.keys(room.chat).map(function (k) { return room.chat[k]; });
+        }
+        room.chat.push(chatMsg);
         room.chat = room.chat.slice(-50);
-        await saveRoom(room);
-        lastRoomSnapshot = room;
-        renderChat(room);
+        // 로컬 스냅샷만 갱신 (전체 saveRoom은 게임 액션이 함)
+        if (lastRoomSnapshot) {
+          lastRoomSnapshot.chat = room.chat;
+        }
+        renderChat(lastRoomSnapshot || room);
       } catch (err) {
         console.warn('chat send fail', err);
         // 실패 시 한 번만 재시도 큐 앞에 복구
@@ -4475,7 +4747,8 @@ refreshRoomList();
       var me = (lastRoomSnapshot.players || []).find(function (p) { return p.id === myPlayerId; });
       var line = document.createElement('div');
       line.className = 'ld-chat-line';
-      line.innerHTML = '<span class="who">' + escapeHtml(me ? me.name : '?') + '</span> ' + escapeHtml(text);
+      var col = me && me.color ? me.color : COLORS[0];
+      line.innerHTML = '<span class="who" style="color:' + col + '">' + escapeHtml(me ? me.name : '?') + '</span> ' + escapeHtml(text);
       log.appendChild(line);
       log.scrollTop = log.scrollHeight;
     }
@@ -4641,7 +4914,7 @@ refreshRoomList();
       chip.type = 'button';
       chip.className = 'ld-item-chip';
       chip.textContent = (it ? it.icon + ' ' + it.name : id);
-      chip.title = it ? it.desc : id;
+      chip.title = it ? (it.desc + (it.target === 'enemy' ? ' (상대)' : ' (자신)')) : id;
       chip.onclick = function () { openItemUse(room, id, idx); };
       bar.appendChild(chip);
     });
@@ -4737,10 +5010,10 @@ refreshRoomList();
         target.position = tmp;
         msg = me.name + ' ⇄ ' + target.name;
       } else if (itemId === 'extra_dice') {
-        // 턴 유지: turnStartedAt 갱신만
+        me.bonusRolls = (me.bonusRolls || 0) + 1;
         room.turnStartedAt = Date.now();
-        msg = me.name + ' 추가 주사위 기회!';
-        // advanceTurn 하지 않음 — 이미 내 턴
+        room.pendingRoll = null;
+        msg = me.name + ' 추가 주사위 +1 (남은 보너스 ' + me.bonusRolls + '회)';
       } else if (itemId === 'steal_chip') {
         target.items = playerItems(target);
         if (target.items.length) {
