@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>유물 주사위 - Multiplayer</title>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <style>
   :root {
     --bg-deep: #0a0a1f;
@@ -394,6 +396,18 @@
   .ld-room-card:hover { border-color: var(--gold); background: rgba(251,191,36,0.08); }
   .ld-room-card .meta { font-size: 12px; color: var(--text-dim); }
   .ld-room-card .title { font-size: 14px; font-weight: 700; color: var(--text-main); }
+  .ld-fb-setup {
+    margin-top: 12px; padding: 12px; border-radius: 12px;
+    background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.3);
+    font-size: 12px; color: var(--text-dim); line-height: 1.45;
+  }
+  .ld-fb-setup textarea {
+    width: 100%; min-height: 72px; margin-top: 8px; padding: 8px;
+    border-radius: 8px; border: 1px solid rgba(165,160,201,0.3);
+    background: rgba(0,0,0,0.25); color: var(--text-main); font-size: 11px; font-family: monospace;
+  }
+  .ld-fb-ok { color: var(--green); font-weight: 700; }
+  .ld-fb-bad { color: var(--red); font-weight: 700; }
   .ld-room-empty { text-align: center; font-size: 12px; color: var(--text-dim); padding: 16px 8px; }
   .ld-room-actions { display: flex; gap: 8px; margin-top: 10px; }
 
@@ -455,7 +469,7 @@
         </div>
       </div>
       <h1 class="ld-title">유물 주사위</h1>
-      <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 5종 유물을 모으면 승리!</p>
+      <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 실시간 멀티플레이 · 유물 수집</p>
 
       <div class="ld-screen active" id="screen-home">
         <div class="ld-field-label" style="margin-top:0;">닉네임</div>
@@ -587,299 +601,100 @@
   var AVATARS = ['🦊', '🐱', '🐼', '🐯', '🐸', '🐧', '🦄', '🐲', '🐶', '🐰', '🦁', '🐨'];
   var BOARD_G = 9;
   var BOARD_SIZE = 4 * (BOARD_G - 1);
-  var KV_BASE = 'https://kvs.ix.workers.dev/lucky-dice/';
-  var POLL_MS = 280;
-  var STEP_MS = 110;
-  var REMOTE_STEP_MS = 70;
-  var POST_ROLL_DELAY = 280;
-  var EFFECT_READ_MS = 800;
+  // ========== Firebase Realtime Database ==========
+  var POLL_MS = 250;
+  var STEP_MS = 100;
+  var REMOTE_STEP_MS = 60;
+  var POST_ROLL_DELAY = 250;
+  var EFFECT_READ_MS = 700;
 
-  var FACE_ROTATION = {
-    1: { x: 0, y: 0 }, 2: { x: 0, y: -90 }, 3: { x: -90, y: 0 },
-    4: { x: 90, y: 0 }, 5: { x: 0, y: 90 }, 6: { x: 0, y: 180 }
+  var firebaseConfig = {
+    apiKey: "AIzaSyCTepeJ1fNygtOvRfVL009QtAft651TGQ4",
+    authDomain: "relic-dice.firebaseapp.com",
+    databaseURL: "https://relic-dice-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "relic-dice",
+    storageBucket: "relic-dice.firebasestorage.app",
+    messagingSenderId: "422610779753",
+    appId: "1:422610779753:web:fdce8c9cff07704259ecf8"
   };
-  var PIP_LAYOUT = {
-    1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
-    5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
-  };
-  var RESULT_KIND = { 1: 'low', 2: 'mid', 3: 'mid', 4: 'good', 5: 'good', 6: 'great' };
 
-  var CELL_TYPES = {
-    boost:  { icon: '🚀', label: '부스트', desc: '+3칸 추가 이동', color: '#22d3ee' },
-    trap:   { icon: '💀', label: '함정', desc: '3칸 뒤로', color: '#f87171' },
-    again:  { icon: '🎲', label: '한 번 더', desc: '한 번 더 굴림', color: '#a78bfa' },
-    skip:   { icon: '⏭️', label: '스킵', desc: '다음 상대 턴 스킵', color: '#fbbf24' },
-    warp:   { icon: '🌀', label: '워프', desc: '랜덤 칸으로 이동', color: '#8b5cf6' },
-    rest:   { icon: '🔒', label: '휴식', desc: '다음 턴 쉬기', color: '#94a3b8' },
-    gift:   { icon: '🎁', label: '선물', desc: '1~3칸 앞으로', color: '#34d399' },
-    swap:   { icon: '🔄', label: '교체', desc: '랜덤 상대와 위치 교환', color: '#fb7185' },
-    relic:  { icon: '💎', label: '유물', desc: '목표 수(1~6)를 주사위 한 번으로 맞추면 유물 획득 (증강 미적용)', color: '#f0abfc' },
-    steal:  { icon: '🏴‍☠️', label: '강탈', desc: '원하는 상대와 주사위 배틀 후 유물 1개 강탈', color: '#fb7185' }
-  };
-  var CELL_TYPE_KEYS = Object.keys(CELL_TYPES);
+  var USE_FIREBASE = false;
+  var fbDb = null;
+  var roomListener = null;
+  var lobbyListener = null;
 
-  var RELIC_TYPES = [
-    { id: 'flame', name: '불꽃 유물', icon: '🔥' },
-    { id: 'tide', name: '파도 유물', icon: '🌊' },
-    { id: 'herb', name: '허브 유물', icon: '🌿' },
-    { id: 'storm', name: '번개 유물', icon: '⚡' },
-    { id: 'moon', name: '달 유물', icon: '🌙' }
-  ];
-  function getRelicById(id) {
-    return RELIC_TYPES.find(function (r) { return r.id === id; }) || null;
-  }
-  function playerRelics(p) {
-    return (p && p.relics) ? p.relics : [];
-  }
-  function hasAllRelics(p, needed) {
-    var r = playerRelics(p);
-    var n = (needed != null) ? needed : 5;
-    n = Math.max(1, Math.min(5, n));
-    // 고유 유물 개수로 판정
-    var uniq = {};
-    r.forEach(function (id) { uniq[id] = true; });
-    return Object.keys(uniq).length >= n;
-  }
-  function relicsNeeded(room) {
-    var n = room && room.relicsToWin != null ? room.relicsToWin : 5;
-    return Math.max(1, Math.min(5, n));
-  }
-  function pickRelicForPlayer(p) {
-    var owned = playerRelics(p);
-    var missing = RELIC_TYPES.filter(function (t) { return owned.indexOf(t.id) === -1; });
-    if (!missing.length) missing = RELIC_TYPES.slice();
-    return missing[Math.floor(Math.random() * missing.length)].id;
-  }
-
-  // 시너지 묶음 카테고리
-  var AUGMENT_CATEGORIES = [
-    { id: 'luck', label: '🍀 행운 시너지' },
-    { id: 'boost', label: '🚀 가속 시너지' },
-    { id: 'defend', label: '🛡️ 방어 시너지' },
-    { id: 'duel', label: '⚔️ 대결 시너지' },
-    { id: 'chaos', label: '🌪️ 혼돈 시너지' }
-  ];
-
-  var AUGMENT_POOL = [
-    // 행운 시너지
-    { id: 'lucky', cat: 'luck', name: '행운', icon: '🍀', desc: '주사위 결과에 +1 (최대 6)', tag: '행운 코어' },
-    { id: 'swift', cat: 'luck', name: '신속', icon: '⚡', desc: '1~2가 나오면 다시 굴림', tag: '행운 코어' },
-    { id: 'highroller', cat: 'luck', name: '하이롤러', icon: '🎲', desc: '4 이상이면 이동 +1칸', tag: '행운 연계' },
-    { id: 'luckyseven', cat: 'luck', name: '세븐', icon: '7️⃣', desc: '5가 나오면 7칸 이동', tag: '행운 연계' },
-    { id: 'clover', cat: 'luck', name: '네잎클로버', icon: '☘️', desc: '4가 나오면 +2칸', tag: '행운 연계' },
-    { id: 'fortune', cat: 'luck', name: '대박', icon: '💰', desc: '6이 나오면 맵 1/8만큼 추가 이동', tag: '행운+도박' },
-    { id: 'loaded', cat: 'luck', name: '조작된 주사위', icon: '🎯', desc: '최소 눈이 2 (1이 나오면 2)', tag: '행운 코어' },
-    { id: 'hotstreak', cat: 'luck', name: '연승', icon: '🔥', desc: '이전 굴림이 5~6이면 이번 +1칸', tag: '행운 연계' },
-
-    // 가속 시너지 (부스트/선물/워프)
-    { id: 'collector', cat: 'boost', name: '수집가', icon: '⭐', desc: '부스트·선물 효과 +1칸', tag: '가속 코어' },
-    { id: 'doublegift', cat: 'boost', name: '풍요', icon: '🎀', desc: '선물 칸 효과 두 번', tag: '가속 연계' },
-    { id: 'courier', cat: 'boost', name: '특송', icon: '📦', desc: '부스트 칸에서 +5칸', tag: '가속 연계' },
-    { id: 'chainboost', cat: 'boost', name: '연쇄가속', icon: '🔗', desc: '부스트 시 추가 +2칸', tag: '가속 연계' },
-    { id: 'phantom', cat: 'boost', name: '유령', icon: '👻', desc: '워프 후 +2칸', tag: '가속+혼돈' },
-    { id: 'sprinter', cat: 'boost', name: '질주', icon: '💨', desc: '획득 시 즉시 5칸 전진', tag: '가속 코어' },
-    { id: 'turbo', cat: 'boost', name: '터보', icon: '🏎️', desc: '부스트 칸에서 한 번 더 굴릴 기회', tag: '가속 연계' },
-    { id: 'magnet', cat: 'boost', name: '자석', icon: '🧲', desc: '착지 칸 앞 2칸 안에 선물이 있으면 +1칸', tag: '가속 코어' },
-
-    // 방어 시너지
-    { id: 'shield', cat: 'defend', name: '방패', icon: '🛡️', desc: '함정·휴식 1회 무시 (중첩 가능)', tag: '방어 코어' },
-    { id: 'iron', cat: 'defend', name: '강철', icon: '🪨', desc: '뒤로 가는 거리 절반', tag: '방어 연계' },
-    { id: 'guardian', cat: 'defend', name: '수호', icon: '🧱', desc: '함정 시 1칸만 뒤로', tag: '방어 연계' },
-    { id: 'anchor', cat: 'defend', name: '닻', icon: '⚓', desc: '워프·교체 무시', tag: '방어 코어' },
-    { id: 'steady', cat: 'defend', name: '안정', icon: '🧘', desc: '휴식 칸 무시', tag: '방어 코어' },
-    { id: 'reflect', cat: 'defend', name: '반사', icon: '💠', desc: '함정 시 가까운 상대 -1칸', tag: '방어 연계' },
-    { id: 'insurance', cat: 'defend', name: '보험', icon: '📋', desc: '함정에 걸리면 다음 이동 +2칸', tag: '방어 연계' },
-    { id: 'fortress', cat: 'defend', name: '요새', icon: '🏰', desc: 'START 칸에 있으면 대결 시 주사위 +1', tag: '방어+대결' },
-
-    // 대결 시너지
-    { id: 'duelist', cat: 'duel', name: '결투사', icon: '🗡️', desc: '대결 주사위에 +1', tag: '대결 코어' },
-    { id: 'bully', cat: 'duel', name: '약탈', icon: '👊', desc: '대결 승리 시 벌칙 +1칸', tag: '대결 연계' },
-    { id: 'vampire', cat: 'duel', name: '흡혈', icon: '🧛', desc: '같은 칸 착지 시(대결 전) +2칸', tag: '대결 연계' },
-    { id: 'thief', cat: 'duel', name: '도둑', icon: '🦹', desc: '스킵 칸 발동 시 본인 +2칸', tag: '대결+가속' },
-    { id: 'intimidate', cat: 'duel', name: '위압', icon: '😤', desc: '대결 패배 시 뒤로 가는 양 1칸 감소', tag: '대결 코어' },
-    { id: 'challenger', cat: 'duel', name: '도전자', icon: '🏁', desc: '자신보다 앞선 상대와 대결 시 +1', tag: '대결 연계' },
-    { id: 'rematch', cat: 'duel', name: '재대결', icon: '🔁', desc: '대결 무승부 시 자동으로 한 번 더 (표시만)', tag: '대결 코어' },
-
-    // 혼돈 시너지
-    { id: 'gambler', cat: 'chaos', name: '도박꾼', icon: '🎰', desc: '6이 나오면 추가 턴', tag: '혼돈+행운' },
-    { id: 'chaos', cat: 'chaos', name: '혼돈', icon: '🌪️', desc: '착지 시 10% 랜덤 워프', tag: '혼돈 코어' },
-    { id: 'jester', cat: 'chaos', name: '광대', icon: '🃏', desc: '교체 칸에서 전원 위치 회전', tag: '혼돈 코어' },
-    { id: 'mirror', cat: 'chaos', name: '거울', icon: '🪞', desc: '홀수 눈이면 이동 7-n', tag: '혼돈 코어' },
-    { id: 'timebend', cat: 'chaos', name: '시공', icon: '⏳', desc: '스킵 칸 → 본인 추가 턴', tag: '혼돈 연계' },
-    { id: 'combo', cat: 'chaos', name: '콤보', icon: '✨', desc: '특수칸 효과 발동 시 +1칸', tag: '혼돈+가속' },
-    { id: 'wildcard', cat: 'chaos', name: '와일드', icon: '🎴', desc: '특수칸 착지 시 25%로 다른 특수 효과', tag: '혼돈 코어' },
-    { id: 'glitch', cat: 'chaos', name: '글리치', icon: '👾', desc: '이동 후 5% 확률로 위치 ±3칸', tag: '혼돈 연계' },
-
-    // 유물 시너지 (가속/혼돈 탭에 분산 + 전용 느낌 태그)
-    { id: 'relicsense', cat: 'boost', name: '유물 감응', icon: '💎', desc: '유물 도전 목표 숫자가 ±1 범위로 성공', tag: '유물 코어' },
-    { id: 'doublerelic', cat: 'boost', name: '이중 각인', icon: '💠', desc: '유물 성공 시 25%로 한 번 더 도전', tag: '유물 연계' },
-    { id: 'relicluck', cat: 'luck', name: '유물 행운', icon: '🧿', desc: '유물 도전 주사위 각각에 +1', tag: '유물+행운' },
-    { id: 'relicguard', cat: 'defend', name: '유물 수호', icon: '🔮', desc: '유물 실패 시 함정 1회 면역 충전', tag: '유물+방어' },
-    { id: 'relichunter', cat: 'duel', name: '유물 사냥꾼', icon: '🏹', desc: '(유물 칸에서는 증강 미적용)', tag: '유물 연계' },
-    { id: 'relicforge', cat: 'chaos', name: '유물 제련', icon: '⚒️', desc: '유물 실패해도 10% 확률로 획득', tag: '유물+혼돈' }
-  ];
-
-  function playerAugs(p) {
-    if (!p) return [];
-    if (p.augments && p.augments.length) return p.augments;
-    if (p.augment) return [p.augment];
-    return [];
-  }
-  function hasAug(p, id) {
-    return playerAugs(p).indexOf(id) !== -1;
-  }
-
-  function countAugCat(p, cat) {
-    return playerAugs(p).filter(function (id) {
-      var a = getAugmentById(id);
-      return a && a.cat === cat;
-    }).length;
-  }
-  function synergyBonus(p) {
-    // 같은 시너지 2개 이상 보유 시 소폭 보너스
-    return {
-      luckMove: countAugCat(p, 'luck') >= 2 ? 1 : 0,
-      boostExtra: countAugCat(p, 'boost') >= 2 ? 1 : 0,
-      defendCut: countAugCat(p, 'defend') >= 2 ? 1 : 0,
-      duelPlus: countAugCat(p, 'duel') >= 2 ? 1 : 0,
-      chaosChance: countAugCat(p, 'chaos') >= 2 ? 0.05 : 0
-    };
-  }
-
-
-  function buildMiniPips() {
-    for (var n = 1; n <= 6; n++) {
-      var grid = document.getElementById('mpip' + n);
-      var active = new Set(PIP_LAYOUT[n]);
-      for (var i = 0; i < 9; i++) {
-        var cell = document.createElement('div');
-        cell.className = 'pip-cell-mini';
-        if (active.has(i)) {
-          var dot = document.createElement('div');
-          dot.className = 'pip-dot-mini';
-          cell.appendChild(dot);
-        }
-        grid.appendChild(cell);
-      }
+  try {
+    if (typeof firebase !== 'undefined') {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      fbDb = firebase.database();
+      USE_FIREBASE = true;
     }
-  }
-  buildMiniPips();
-
-  function boardCellCoords(G) {
-    var cells = [];
-    for (var c = 0; c < G; c++) cells.push({ row: 0, col: c });
-    for (var r = 1; r < G; r++) cells.push({ row: r, col: G - 1 });
-    for (var c2 = G - 2; c2 >= 0; c2--) cells.push({ row: G - 1, col: c2 });
-    for (var r2 = G - 2; r2 >= 1; r2--) cells.push({ row: r2, col: 0 });
-    return cells;
-  }
-  var BOARD_CELLS = boardCellCoords(BOARD_G);
-  var STACK_OFFSETS = [[0, 0], [8, -8], [-8, 8], [8, 8]];
-
-  function seededRandom(seed) {
-    var x = Math.sin(seed) * 10000;
-    return x - Math.floor(x);
+  } catch (e) {
+    console.error('Firebase init failed', e);
+    USE_FIREBASE = false;
   }
 
-  function generateSpecials(seed) {
-    var map = {};
-    var count = Math.floor(BOARD_SIZE * 0.42);
-    var placed = 0, i = 0;
-    // 유물 3칸 + 강탈 1칸 고정
-    var FIXED_RELICS = [5, 15, 25];
-    var FIXED_STEAL = 10;
-    FIXED_RELICS.forEach(function (idx) {
-      if (idx > 0 && idx < BOARD_SIZE) {
-        map[idx] = 'relic';
-        placed++;
-      }
-    });
-    if (FIXED_STEAL > 0 && FIXED_STEAL < BOARD_SIZE) {
-      map[FIXED_STEAL] = 'steal';
-      placed++;
-    }
-    var nonRelicKeys = CELL_TYPE_KEYS.filter(function (k) { return k !== 'relic' && k !== 'steal'; });
-    while (placed < count && i < 400) {
-      var idx = 1 + Math.floor(seededRandom(seed + i * 17) * (BOARD_SIZE - 1));
-      if (!map[idx]) {
-        map[idx] = nonRelicKeys[Math.floor(seededRandom(seed + i * 31 + 3) * nonRelicKeys.length)];
-        placed++;
-      }
-      i++;
-    }
-    return map;
-  }
-
-  function getAugmentById(id) {
-    return AUGMENT_POOL.find(function (a) { return a.id === id; }) || null;
-  }
+  function roomPath(code) { return 'luckydice/rooms/' + code; }
+  function lobbyPath() { return 'luckydice/lobby'; }
 
   async function getRoom(code) {
+    if (!fbDb) return null;
     try {
-      var res = await fetch(KV_BASE + encodeURIComponent(code) + '?t=' + Date.now(), {
-        cache: 'no-store'
-      });
-      if (!res.ok) return null;
-      var text = await res.text();
-      return text ? JSON.parse(text) : null;
-    } catch (e) { return null; }
+      var snap = await fbDb.ref(roomPath(code)).once('value');
+      return snap.exists() ? snap.val() : null;
+    } catch (e) { console.warn(e); return null; }
   }
+
   async function saveRoom(room) {
-    var res = await fetch(KV_BASE + encodeURIComponent(room.code), {
-      method: 'PUT',
-      body: JSON.stringify(room),
-      headers: { 'Content-Type': 'application/json' }
-    });
-    if (!res.ok) throw new Error('SAVE_FAILED');
+    if (!fbDb) throw new Error('NO_FIREBASE');
+    await fbDb.ref(roomPath(room.code)).set(room);
     if (room.status === 'waiting' || room.status === 'closed' || room.status === 'finished') {
       syncRoomToLobby(room).catch(function () {});
     }
   }
 
-  var LOBBY_KEY = '__lobby';
   async function getLobby() {
+    if (!fbDb) return { rooms: [] };
     try {
-      var res = await fetch(KV_BASE + encodeURIComponent(LOBBY_KEY));
-      if (!res.ok) return { rooms: [] };
-      var text = await res.text();
-      var data = text ? JSON.parse(text) : { rooms: [] };
+      var snap = await fbDb.ref(lobbyPath()).once('value');
+      var data = snap.val() || { rooms: [] };
       if (!data.rooms) data.rooms = [];
+      // Firebase may store rooms as object
+      if (!Array.isArray(data.rooms)) {
+        data.rooms = Object.keys(data.rooms).map(function (k) { return data.rooms[k]; });
+      }
       return data;
     } catch (e) { return { rooms: [] }; }
   }
+
   async function saveLobby(lobby) {
-    var res = await fetch(KV_BASE + encodeURIComponent(LOBBY_KEY), {
-      method: 'PUT',
-      body: JSON.stringify(lobby),
-      headers: { 'Content-Type': 'application/json' }
-    });
-    if (!res.ok) throw new Error('LOBBY_SAVE_FAILED');
+    if (!fbDb) return;
+    await fbDb.ref(lobbyPath()).set(lobby);
   }
+
   async function syncRoomToLobby(room) {
     var lobby = await getLobby();
     var list = lobby.rooms || [];
     var host = room.players && room.players[0] ? room.players[0].name : '호스트';
-    var entry = {
-      code: room.code,
-      host: host,
-      players: room.players ? room.players.length : 0,
-      status: room.status,
-      updatedAt: Date.now()
-    };
-    // waiting only in list; remove if started/finished/empty
-    list = list.filter(function (r) { return r.code !== room.code; });
+    list = list.filter(function (r) { return r && r.code !== room.code; });
     if (room.status === 'waiting' && room.players && room.players.length > 0) {
-      list.unshift(entry);
+      list.unshift({
+        code: room.code,
+        host: host,
+        players: room.players.length,
+        status: room.status,
+        updatedAt: Date.now()
+      });
     }
-    // prune old
     var now = Date.now();
-    list = list.filter(function (r) { return now - (r.updatedAt || 0) < 1000 * 60 * 60 * 6; }).slice(0, 30);
+    list = list.filter(function (r) { return r && now - (r.updatedAt || 0) < 1000 * 60 * 60 * 6; }).slice(0, 30);
     lobby.rooms = list;
     await saveLobby(lobby);
   }
+
   async function removeRoomFromLobby(code) {
     var lobby = await getLobby();
-    lobby.rooms = (lobby.rooms || []).filter(function (r) { return r.code !== code; });
+    lobby.rooms = (lobby.rooms || []).filter(function (r) { return r && r.code !== code; });
     await saveLobby(lobby);
   }
 
@@ -1063,11 +878,7 @@
     }
   }
   if (els.btnRefreshRooms) els.btnRefreshRooms.onclick = function () { refreshRoomList(); };
-  // 홈 화면일 때 주기적으로 목록 갱신
-  setInterval(function () {
-    if (els.screenHome && els.screenHome.classList.contains('active')) refreshRoomList();
-  }, 4000);
-  refreshRoomList();
+refreshRoomList();
 
   els.btnConfirmCreate.onclick = async function () {
     var nickname = (els.homeNickname.value || '').trim();
@@ -2881,8 +2692,10 @@
 
   async function pollTick() {
     if (!myRoomCode) return;
+    if (pollBusy && !window.__forceRoom) return;
+    pollBusy = true;
     try {
-      var room = await getRoom(myRoomCode);
+      var room = window.__forceRoom || await getRoom(myRoomCode);
       if (!room) return;
       if (myPlayerId && room.players && !room.players.some(function (p) { return p.id === myPlayerId; })) {
         alert('방에서 강퇴되었습니다.');
@@ -3007,16 +2820,38 @@
       }
     } catch (e) {
       remoteAnimating = false;
+    } finally {
+      pollBusy = false;
     }
+  }
+
+  var pollBusy = false;
+  function handleRoomSnapshot(room) {
+    if (!room || !myRoomCode) return;
+    window.__forceRoom = room;
+    pollTick().then(function () {
+      window.__forceRoom = null;
+    }).catch(function () {
+      window.__forceRoom = null;
+    });
   }
 
   function startPolling() {
     stopPolling();
-    pollTick(); // 즉시 1회
-    pollTimer = setInterval(pollTick, POLL_MS);
+    if (!fbDb || !myRoomCode) return;
+    roomListener = fbDb.ref(roomPath(myRoomCode));
+    roomListener.on('value', function (snap) {
+      var room = snap.val();
+      if (!room) return;
+      handleRoomSnapshot(room);
+    });
   }
   function stopPolling() {
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (roomListener) {
+      try { roomListener.off('value'); } catch (e) {}
+      roomListener = null;
+    }
   }
 
 
