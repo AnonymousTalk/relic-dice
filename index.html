@@ -583,10 +583,11 @@
   var BOARD_G = 9;
   var BOARD_SIZE = 4 * (BOARD_G - 1);
   var KV_BASE = 'https://kvs.ix.workers.dev/lucky-dice/';
-  var POLL_MS = 1400;
-  var STEP_MS = 200;
-  var POST_ROLL_DELAY = 700;
-  var EFFECT_READ_MS = 1900;
+  var POLL_MS = 400;
+  var STEP_MS = 150;
+  var REMOTE_STEP_MS = 100;
+  var POST_ROLL_DELAY = 400;
+  var EFFECT_READ_MS = 1100;
 
   var FACE_ROTATION = {
     1: { x: 0, y: 0 }, 2: { x: 0, y: -90 }, 3: { x: -90, y: 0 },
@@ -810,7 +811,9 @@
 
   async function getRoom(code) {
     try {
-      var res = await fetch(KV_BASE + encodeURIComponent(code));
+      var res = await fetch(KV_BASE + encodeURIComponent(code) + '?t=' + Date.now(), {
+        cache: 'no-store'
+      });
       if (!res.ok) return null;
       var text = await res.text();
       return text ? JSON.parse(text) : null;
@@ -823,7 +826,9 @@
       headers: { 'Content-Type': 'application/json' }
     });
     if (!res.ok) throw new Error('SAVE_FAILED');
-    try { await syncRoomToLobby(room); } catch (e) {}
+    if (room.status === 'waiting' || room.status === 'closed' || room.status === 'finished') {
+      syncRoomToLobby(room).catch(function () {});
+    }
   }
 
   var LOBBY_KEY = '__lobby';
@@ -1011,9 +1016,9 @@
       var lobby = await getLobby();
       var rooms = (lobby.rooms || []).filter(function (r) { return r.status === 'waiting'; });
       // verify live
+      var checks = await Promise.all(rooms.map(function (info) { return getRoom(info.code); }));
       var live = [];
-      for (var i = 0; i < rooms.length; i++) {
-        var r = await getRoom(rooms[i].code);
+      checks.forEach(function (r) {
         if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 4) {
           live.push({
             code: r.code,
@@ -1023,7 +1028,7 @@
             updatedAt: Date.now()
           });
         }
-      }
+      });
       // write back cleaned list occasionally
       if (live.length !== rooms.length) {
         var full = await getLobby();
@@ -1478,7 +1483,8 @@
     });
   }
 
-  function moveTokenSteps(playerId, fromPos, steps) {
+  function moveTokenSteps(playerId, fromPos, steps, stepMs) {
+    var ms = stepMs != null ? stepMs : STEP_MS;
     return new Promise(function (resolve) {
       var el = document.getElementById('token-' + playerId);
       var current = fromPos;
@@ -1497,7 +1503,7 @@
           el.style.left = pos.left + '%';
           el.style.top = pos.top + '%';
         }
-        setTimeout(step, STEP_MS);
+        setTimeout(step, ms);
       }
       if (remaining === 0) { resolve(); return; }
       step();
@@ -2624,7 +2630,7 @@
 
       // 1) spin dice
       spinCube(finalFace);
-      await new Promise(function (r) { setTimeout(r, 1100); });
+      await new Promise(function (r) { setTimeout(r, 750); });
       // 2) show result briefly, then move
       els.turnBanner.className = 'ld-turn-banner rb-' + (RESULT_KIND[Math.min(6, finalFace)] || 'mid');
       els.turnBanner.textContent = finalFace + '이(가) 나왔습니다!';
@@ -2641,6 +2647,8 @@
       var lapsGained = Math.floor((oldPos + moveSteps) / BOARD_SIZE);
       me.position = landPos;
       me.laps = (me.laps || 0) + lapsGained;
+      // 착지 위치를 먼저 동기화해서 상대 지연을 줄임
+      try { await saveRoom(fresh); } catch (e) {}
 
       var effect = resolveCellEffect(fresh, me, landPos);
 
@@ -2850,7 +2858,7 @@
   }
 
   async function pollTick() {
-    if (!myRoomCode || remoteAnimating) return;
+    if (!myRoomCode) return;
     try {
       var room = await getRoom(myRoomCode);
       if (!room) return;
@@ -2903,6 +2911,13 @@
       }
 
       if (room.status === 'playing' && els.screenGame.classList.contains('active')) {
+        if (remoteAnimating) {
+          // 애니 중에도 공지/상태 텍스트만 갱신
+          if (!roomsEqual(room, lastRoomSnapshot)) {
+            maybeShowAnnounce(room);
+          }
+          return;
+        }
         var pending = room.pendingRoll;
         if (pending && pending.playerId !== myPlayerId && pending.ts !== lastPendingTs && !rolling) {
           lastPendingTs = pending.ts;
@@ -2915,7 +2930,7 @@
           els.btnRoll.textContent = '상대가 굴리는 중...';
 
           spinCube(pending.face);
-          await new Promise(function (r) { setTimeout(r, 1100); });
+          await new Promise(function (r) { setTimeout(r, 750); });
           els.turnBanner.className = 'ld-turn-banner rb-' + (RESULT_KIND[Math.min(6, pending.face)] || 'mid');
           els.turnBanner.textContent = pending.name + ' · ' + pending.face;
           await new Promise(function (r) { setTimeout(r, POST_ROLL_DELAY); });
@@ -2930,7 +2945,7 @@
             if (mover) tokenRenderedPos[pending.playerId] = mover.position;
             placeTokensInstant(updated);
           } else if (steps > 0) {
-            await moveTokenSteps(pending.playerId, fromPos, steps);
+            await moveTokenSteps(pending.playerId, fromPos, steps, REMOTE_STEP_MS);
           }
 
           lastRoomSnapshot = updated;
