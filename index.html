@@ -471,7 +471,7 @@
         </div>
       </div>
       <h1 class="ld-title">유물 주사위</h1>
-      <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 실시간 멀티플레이 · 유물 수집</p>
+      <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
 
       <div class="ld-screen active" id="screen-home">
         <div class="ld-field-label" style="margin-top:0;">닉네임</div>
@@ -506,7 +506,7 @@
 
       <div class="ld-screen" id="screen-lobby">
         <div class="ld-code-display" id="lobbyCode">----</div>
-        <div class="ld-code-hint">이 코드를 친구에게 공유하세요 (최대 4명)</div>
+        <div class="ld-code-hint">이 코드를 친구에게 공유하세요 (최대 8명 · 개인전/팀전)</div>
         <div class="ld-panel">
           <div class="ld-field-label" style="margin-top:0;">참가자</div>
           <div id="lobbyPlayers" style="margin-top:8px;"></div>
@@ -599,7 +599,10 @@
 
 <script>
 (function () {
-  var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171'];
+  var MAX_PLAYERS = 8;
+  var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
+  var TEAM_COLORS = ['#3b82f6', '#ef4444'];
+  var TEAM_NAMES = ['블루', '레드'];
   var AVATARS = ['🦊', '🐱', '🐼', '🐯', '🐸', '🐧', '🦄', '🐲', '🐶', '🐰', '🦁', '🐨'];
   var BOARD_G = 9;
   var BOARD_SIZE = 4 * (BOARD_G - 1);
@@ -609,13 +612,14 @@
     var cells = [];
     var g = BOARD_G;
     // 시계방향: 상단 → 우측 → 하단 → 좌측
-    for (var x = 0; x < g; x++) cells.push({ r: 0, c: x });
-    for (var y = 1; y < g; y++) cells.push({ r: y, c: g - 1 });
-    for (var x = g - 2; x >= 0; x--) cells.push({ r: g - 1, c: x });
-    for (var y = g - 2; y >= 1; y--) cells.push({ r: y, c: 0 });
+    for (var x = 0; x < g; x++) cells.push({ row: 0, col: x });
+    for (var y = 1; y < g; y++) cells.push({ row: y, col: g - 1 });
+    for (var x = g - 2; x >= 0; x--) cells.push({ row: g - 1, col: x });
+    for (var y = g - 2; y >= 1; y--) cells.push({ row: y, col: 0 });
     return cells;
   }
   var BOARD_CELLS = buildBoardCells();
+  var STACK_OFFSETS = [[0,0],[8,-6],[-8,-6],[0,8],[-10,6],[10,6],[12,0],[-12,0]];
 
   var CELL_TYPES = {
     boost:  { icon: '🚀', label: '부스트', color: '#34d399', desc: '앞으로 3칸 추가 이동' },
@@ -775,6 +779,77 @@
     return Object.keys(list).map(function (k) { return list[k]; }).filter(Boolean);
   }
 
+  function playerAugs(player) { return playerAugList(player); }
+
+  function getAugmentById(id) {
+    return AUGMENT_POOL.find(function (x) { return x.id === id; }) || null;
+  }
+
+  function teamRelics(room, teamId) {
+    var uniq = {};
+    (room.players || []).forEach(function (p) {
+      if ((p.team | 0) !== (teamId | 0)) return;
+      playerRelics(p).forEach(function (id) { uniq[id] = true; });
+    });
+    return Object.keys(uniq);
+  }
+
+  function teamHasWin(room, teamId) {
+    return teamRelics(room, teamId).length >= relicsNeeded(room);
+  }
+
+  function checkWinner(room) {
+    if (room.winnerId || room.winnerTeam != null) return true;
+    var need = relicsNeeded(room);
+    if (room.gameMode === 'team') {
+      for (var t = 0; t < 2; t++) {
+        if (teamHasWin(room, t)) {
+          room.winnerTeam = t;
+          room.status = 'finished';
+          var names = (room.players || []).filter(function (p) { return (p.team | 0) === t; })
+            .map(function (p) { return p.name; }).join(', ');
+          room.announce = {
+            icon: '🏆',
+            title: '팀 ' + TEAM_NAMES[t] + ' 승리!',
+            text: '유물 ' + need + '종 수집 · ' + names,
+            sub: '팀전 종료',
+            ts: Date.now()
+          };
+          return true;
+        }
+      }
+    } else {
+      for (var i = 0; i < (room.players || []).length; i++) {
+        var p = room.players[i];
+        if (hasAllRelics(p, need)) {
+          room.winnerId = p.id;
+          room.status = 'finished';
+          room.announce = {
+            icon: '🏆',
+            title: p.name + ' 승리!',
+            text: '유물 ' + need + '개 달성!',
+            sub: '게임 종료',
+            ts: Date.now()
+          };
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function sameTeam(a, b) {
+    if (!a || !b) return false;
+    return (a.team | 0) === (b.team | 0);
+  }
+
+  function isTeammate(room, idA, idB) {
+    if (!room || room.gameMode !== 'team') return false;
+    var a = room.players.find(function (p) { return p.id === idA; });
+    var b = room.players.find(function (p) { return p.id === idB; });
+    return sameTeam(a, b);
+  }
+
   function synergyBonus(player) {
     var out = { luckMove: 0, boostExtra: 0, defendCut: 0, chaosChance: 0 };
     var list = playerAugList(player);
@@ -822,6 +897,15 @@
     }
     if (room.log && !Array.isArray(room.log)) {
       room.log = Object.keys(room.log).map(function (k) { return room.log[k]; });
+    }
+    if (room.specials && typeof room.specials === 'object') {
+      var sp = {};
+      Object.keys(room.specials).forEach(function (k) {
+        sp[String(k)] = room.specials[k];
+        var n = parseInt(k, 10);
+        if (!isNaN(n)) sp[n] = room.specials[k];
+      });
+      room.specials = sp;
     }
     return room;
   }
@@ -910,6 +994,7 @@
         host: host,
         players: room.players.length,
         status: room.status,
+        mode: room.gameMode || 'solo',
         updatedAt: Date.now()
       });
     }
@@ -1026,12 +1111,13 @@
   }
 
   var selectedHomeAvatar = AVATARS[0];
-  function makePlayer(id, name, colorIdx, avatar) {
+  function makePlayer(id, name, colorIdx, avatar, team) {
     return {
       id: id,
       name: name,
       color: COLORS[colorIdx % COLORS.length],
       avatar: avatar || AVATARS[colorIdx % AVATARS.length],
+      team: team != null ? team : (colorIdx % 2),
       position: 0,
       laps: 0,
       augment: null,
@@ -1068,12 +1154,13 @@
       var checks = await Promise.all(rooms.map(function (info) { return getRoom(info.code); }));
       var live = [];
       checks.forEach(function (r) {
-        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 4) {
+        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8) {
           live.push({
             code: r.code,
             host: r.players[0].name,
             players: r.players.length,
             status: r.status,
+            mode: r.gameMode || 'solo',
             updatedAt: Date.now()
           });
         }
@@ -1126,6 +1213,7 @@ refreshRoomList();
         code: code,
         createdAt: Date.now(),
         status: 'waiting',
+        gameMode: 'solo',
         boardSize: BOARD_SIZE,
         boardSeed: seed,
         specials: generateSpecials(seed),
@@ -1137,7 +1225,8 @@ refreshRoomList();
         chat: [],
         muted: {},
         relicsToWin: 5,
-        players: [makePlayer(myPlayerId, nickname, 0, selectedHomeAvatar)],
+        winnerTeam: null,
+        players: [makePlayer(myPlayerId, nickname, 0, selectedHomeAvatar, 0)],
         log: []
       };
       await saveRoom(room);
@@ -1163,10 +1252,16 @@ refreshRoomList();
       var room = await getRoom(code);
       if (!room) { els.homeError.textContent = '방을 찾을 수 없어요'; refreshRoomList(); return; }
       if (room.status !== 'waiting') { els.homeError.textContent = '이미 시작된 게임이에요'; refreshRoomList(); return; }
-      if (room.players.length >= 4) { els.homeError.textContent = '방이 가득 찼어요 (최대 4명)'; refreshRoomList(); return; }
+      if (room.players.length >= 8) { els.homeError.textContent = '방이 가득 찼어요 (최대 8명)'; refreshRoomList(); return; }
 
       myPlayerId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
-      room.players.push(makePlayer(myPlayerId, nickname, room.players.length, selectedHomeAvatar));
+      var joinTeam = 0;
+      if ((room.gameMode || 'solo') === 'team') {
+        var c0 = room.players.filter(function (p) { return (p.team | 0) === 0; }).length;
+        var c1 = room.players.filter(function (p) { return (p.team | 0) === 1; }).length;
+        joinTeam = c0 <= c1 ? 0 : 1;
+      }
+      room.players.push(makePlayer(myPlayerId, nickname, room.players.length, selectedHomeAvatar, joinTeam));
       await saveRoom(room);
       myRoomCode = code;
       enterLobby(room);
@@ -1201,30 +1296,149 @@ refreshRoomList();
   function renderLobby(room) {
     els.lobbyCode.textContent = room.code;
     els.lobbyPlayers.innerHTML = '';
+    var hostMe = isHost(room);
+    var mode = room.gameMode || 'solo';
     room.players.forEach(function (p, idx) {
       var row = document.createElement('div');
       row.className = 'ld-player-row';
+      var kickBtn = '';
+      if (hostMe && idx !== 0) {
+        kickBtn = '<button type="button" class="ld-btn ld-btn-ghost" data-kick="' + p.id + '" style="width:auto;padding:4px 8px;font-size:11px;color:var(--red);">강퇴</button>';
+      }
+      var teamBtn = '';
+      if (hostMe && mode === 'team') {
+        var t = (p.team | 0);
+        teamBtn = '<button type="button" class="ld-btn ld-btn-ghost" data-team="' + p.id + '" style="width:auto;padding:4px 8px;font-size:11px;border-color:' + TEAM_COLORS[t] + ';color:' + TEAM_COLORS[t] + ';">팀 ' + TEAM_NAMES[t] + '</button>';
+      } else if (mode === 'team') {
+        var t2 = (p.team | 0);
+        teamBtn = '<span class="ld-player-tag" style="border-color:' + TEAM_COLORS[t2] + ';color:' + TEAM_COLORS[t2] + ';">팀 ' + TEAM_NAMES[t2] + '</span>';
+      }
       row.innerHTML =
         '<div class="ld-player-dot" style="background:' + p.color + '; color:' + p.color + '; display:flex;align-items:center;justify-content:center;font-size:12px;">' + (p.avatar || '') + '</div>' +
-        '<span class="ld-player-name">' + escapeHtml(p.name) + '</span>' +
-        (idx === 0 ? '<span class="ld-player-tag">호스트</span>' : '');
+        '<span class="ld-player-name">' + escapeHtml(p.name) + (p.id === myPlayerId ? ' (나)' : '') + '</span>' +
+        (idx === 0 ? '<span class="ld-player-tag">호스트</span>' : '') +
+        teamBtn +
+        kickBtn;
       els.lobbyPlayers.appendChild(row);
+    });
+    els.lobbyPlayers.querySelectorAll('[data-kick]').forEach(function (btn) {
+      btn.onclick = function () { hostKickPlayer(btn.getAttribute('data-kick')); };
+    });
+    els.lobbyPlayers.querySelectorAll('[data-team]').forEach(function (btn) {
+      btn.onclick = function () { hostToggleTeam(btn.getAttribute('data-team')); };
     });
 
     els.lobbyHostControls.innerHTML = '';
-    if (isHost(room)) {
+    if (hostMe) {
+      var modeRow = document.createElement('div');
+      modeRow.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
+      var soloBtn = document.createElement('button');
+      soloBtn.type = 'button';
+      soloBtn.className = 'ld-btn ' + (mode === 'solo' ? 'ld-btn-primary' : 'ld-btn-outline');
+      soloBtn.style.flex = '1';
+      soloBtn.textContent = '개인전';
+      soloBtn.onclick = function () { hostSetMode('solo'); };
+      var teamBtn2 = document.createElement('button');
+      teamBtn2.type = 'button';
+      teamBtn2.className = 'ld-btn ' + (mode === 'team' ? 'ld-btn-primary' : 'ld-btn-outline');
+      teamBtn2.style.flex = '1';
+      teamBtn2.textContent = '팀전 (2팀)';
+      teamBtn2.onclick = function () { hostSetMode('team'); };
+      modeRow.appendChild(soloBtn);
+      modeRow.appendChild(teamBtn2);
+      els.lobbyHostControls.appendChild(modeRow);
+
+      if (mode === 'team') {
+        var hint = document.createElement('div');
+        hint.className = 'ld-code-hint';
+        hint.style.margin = '0 0 8px';
+        var c0 = room.players.filter(function (p) { return (p.team | 0) === 0; }).length;
+        var c1 = room.players.filter(function (p) { return (p.team | 0) === 1; }).length;
+        hint.textContent = '팀 블루 ' + c0 + '명 · 팀 레드 ' + c1 + '명 (이름 옆 버튼으로 팀 변경)';
+        els.lobbyHostControls.appendChild(hint);
+      }
+
       var startBtn = document.createElement('button');
       startBtn.className = 'ld-btn ld-btn-primary';
-      startBtn.textContent = room.players.length >= 2 ? '게임 시작' : '2명 이상 모이면 시작할 수 있어요';
-      startBtn.disabled = room.players.length < 2;
+      var canStart = room.players.length >= 2;
+      var teamOk = true;
+      if (mode === 'team') {
+        var t0 = room.players.filter(function (p) { return (p.team | 0) === 0; }).length;
+        var t1 = room.players.filter(function (p) { return (p.team | 0) === 1; }).length;
+        teamOk = t0 >= 1 && t1 >= 1;
+        if (!teamOk) startBtn.textContent = '양 팀에 최소 1명씩 필요합니다';
+        else startBtn.textContent = '팀전 시작 (' + room.players.length + '명)';
+      } else {
+        startBtn.textContent = canStart ? '개인전 시작 (' + room.players.length + '명)' : '2명 이상 모이면 시작할 수 있어요';
+      }
+      startBtn.disabled = !canStart || !teamOk;
       startBtn.onclick = startGameDirect;
       els.lobbyHostControls.appendChild(startBtn);
     } else {
       var waitMsg = document.createElement('div');
       waitMsg.className = 'ld-code-hint';
       waitMsg.style.marginTop = '4px';
-      waitMsg.textContent = '호스트가 게임을 시작하기를 기다리는 중...';
+      waitMsg.textContent = (mode === 'team' ? '팀전 · ' : '개인전 · ') + '호스트가 게임을 시작하기를 기다리는 중...';
       els.lobbyHostControls.appendChild(waitMsg);
+    }
+  }
+
+  async function hostSetMode(mode) {
+    if (!myRoomCode) return;
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room || !isHost(room)) return;
+      room.gameMode = mode;
+      if (mode === 'team') {
+        room.players.forEach(function (p, i) {
+          if (p.team == null) p.team = i % 2;
+        });
+      }
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      renderLobby(room);
+    } catch (e) {
+      if (els.lobbyError) els.lobbyError.textContent = '모드 변경 실패';
+    }
+  }
+
+  async function hostToggleTeam(targetId) {
+    if (!myRoomCode || !targetId) return;
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room || !isHost(room) || room.gameMode !== 'team') return;
+      var p = room.players.find(function (x) { return x.id === targetId; });
+      if (!p) return;
+      p.team = ((p.team | 0) === 0) ? 1 : 0;
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      renderLobby(room);
+    } catch (e) {}
+  }
+
+  async function hostKickPlayer(targetId) {
+    if (!myRoomCode || !targetId) return;
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room || !isHost(room)) return;
+      var target = room.players.find(function (p) { return p.id === targetId; });
+      if (!target) return;
+      if (!confirm(target.name + ' 님을 강퇴할까요?')) return;
+      room.players = room.players.filter(function (p) { return p.id !== targetId; });
+      if (room.turnIndex >= room.players.length) room.turnIndex = 0;
+      room.announce = {
+        icon: '⛔',
+        title: '강퇴',
+        text: target.name + ' 님이 강퇴되었습니다',
+        sub: '호스트',
+        ts: Date.now()
+      };
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      renderLobby(room);
+    } catch (e) {
+      console.error(e);
+      if (els.lobbyError) els.lobbyError.textContent = '강퇴에 실패했습니다';
     }
   }
 
@@ -1233,15 +1447,19 @@ refreshRoomList();
       var room = await getRoom(myRoomCode);
       if (!room) { els.lobbyError.textContent = '방을 찾을 수 없어요'; return; }
       room.status = 'playing';
-      room.players.forEach(function (p) {
+      if (!room.gameMode) room.gameMode = 'solo';
+      room.players.forEach(function (p, i) {
         p.augment = null;
         p.augments = [];
+        p.relics = [];
         p.position = 0;
         p.laps = 0;
         p.skipTurns = 0;
         p.shieldCharges = 0;
         p.lastFace = 0;
         p.nextMoveBonus = 0;
+        if (room.gameMode === 'team' && (p.team == null)) p.team = i % 2;
+        if (room.gameMode !== 'team') p.team = 0;
       });
       room.turnIndex = 0;
       room.skipNext = false;
@@ -1249,14 +1467,18 @@ refreshRoomList();
       room.duel = null;
       room.relicChallenge = null;
       room.winnerId = null;
+      room.winnerTeam = null;
       if (room.relicsToWin == null) room.relicsToWin = 5;
       room.augmentPick = null;
       room.pendingPickExtraTurn = false;
+      var modeLabel = room.gameMode === 'team' ? '팀전' : '개인전';
       room.announce = {
         icon: '🎮',
-        title: '게임 시작!',
-        text: '한 바퀴를 돌 때마다 증강을 고를 수 있어요',
-        sub: '행운을 빕니다',
+        title: modeLabel + ' 시작!',
+        text: room.gameMode === 'team'
+          ? '팀 유물을 모아 승리하세요 · 아군과는 대결/강탈 없음'
+          : '한 바퀴를 돌 때마다 증강을 고를 수 있어요',
+        sub: '최대 ' + MAX_PLAYERS + '명 · 행운을 빕니다',
         ts: Date.now()
       };
       await saveRoom(room);
@@ -1314,7 +1536,7 @@ refreshRoomList();
       btn.type = 'button';
       var count = (myAugOffers && myAugOffers[cat.id]) ? myAugOffers[cat.id].length : 0;
       btn.className = 'ld-tab' + (currentAugTab === cat.id ? ' active' : '');
-      btn.textContent = cat.label + (count ? ' (' + count + ')' : '');
+      btn.textContent = cat.name + cat.icon +  (count ? ' (' + count + ')' : '');
       btn.onclick = function () {
         currentAugTab = cat.id;
         renderAugmentUI(room);
@@ -1477,10 +1699,11 @@ refreshRoomList();
     for (var i = 0; i < BOARD_SIZE; i++) {
       var coord = BOARD_CELLS[i];
       var cell = document.createElement('div');
-      var type = specials[i];
+      if (!coord) continue;
+      var type = specials[i] != null ? specials[i] : specials[String(i)];
       cell.className = 'ld-cell' + (i === 0 ? ' ld-cell-start' : '');
-      cell.style.gridRowStart = coord.row + 1;
-      cell.style.gridColumnStart = coord.col + 1;
+      cell.style.gridRowStart = (coord.row + 1);
+      cell.style.gridColumnStart = (coord.col + 1);
       if (type && CELL_TYPES[type]) {
         cell.style.borderColor = CELL_TYPES[type].color;
         cell.style.background = CELL_TYPES[type].color + '22';
@@ -1580,8 +1803,9 @@ refreshRoomList();
 
   function enterGame(room) {
     showScreen('game');
-    els.gameRoomCode.textContent = room.code;
+    els.gameRoomCode.textContent = room.code + (room.gameMode === 'team' ? ' · 팀전' : ' · 개인전');
     els.centerCode.textContent = room.code;
+    boardBuilt = false;
     buildBoard(room.specials || {});
     placeTokensInstant(room);
     lastRoomSnapshot = room;
@@ -1616,7 +1840,8 @@ refreshRoomList();
       card.innerHTML =
         '<div class="ld-roster-dot" style="background:' + p.color + '; display:flex;align-items:center;justify-content:center;font-size:14px;">' + (p.avatar || '') + '</div>' +
         '<div class="ld-roster-name">' + escapeHtml(p.name) + (p.id === myPlayerId ? ' (나)' : '') + '</div>' +
-        '<div class="ld-roster-pos">칸 ' + p.position + ' · 💎' + playerRelics(p).length + '</div>' +
+        '<div class="ld-roster-pos">칸 ' + p.position + ' · 💎' + playerRelics(p).length +
+          (room.gameMode === 'team' ? ' · <span style="color:' + TEAM_COLORS[p.team|0] + '">' + TEAM_NAMES[p.team|0] + '</span>' : '') + '</div>' +
         '<div class="ld-roster-aug-icon">' + (playerAugs(p).map(function (id) {
           var a = getAugmentById(id);
           return a ? a.icon : '';
@@ -1715,8 +1940,21 @@ refreshRoomList();
   function renderRelicBar(room) {
     if (!els.relicBar) return;
     var me = room.players.find(function (p) { return p.id === myPlayerId; });
-    var owned = playerRelics(me);
+    var need = relicsNeeded(room);
+    var owned;
+    if (room.gameMode === 'team' && me) {
+      owned = teamRelics(room, me.team | 0);
+    } else {
+      owned = playerRelics(me);
+    }
     els.relicBar.innerHTML = '';
+    if (room.gameMode === 'team' && me) {
+      var teamLabel = document.createElement('span');
+      teamLabel.className = 'ld-relic-chip owned';
+      teamLabel.style.borderColor = TEAM_COLORS[me.team | 0];
+      teamLabel.textContent = '팀 ' + TEAM_NAMES[me.team | 0];
+      els.relicBar.appendChild(teamLabel);
+    }
     RELIC_TYPES.forEach(function (r) {
       var chip = document.createElement('span');
       chip.className = 'ld-relic-chip' + (owned.indexOf(r.id) !== -1 ? ' owned' : '');
@@ -1726,7 +1964,6 @@ refreshRoomList();
     });
     var count = document.createElement('span');
     count.className = 'ld-relic-chip owned';
-    var need = relicsNeeded(room);
     count.textContent = owned.length + '/' + need;
     els.relicBar.appendChild(count);
   }
@@ -1754,8 +1991,10 @@ refreshRoomList();
       if (stealSel) {
         stealSel.style.display = iAm ? 'block' : 'none';
         stealSel.innerHTML = '';
+        var meSel = room.players.find(function (x) { return x.id === myPlayerId; });
         room.players.forEach(function (p) {
           if (p.id === myPlayerId) return;
+          if (room.gameMode === 'team' && meSel && sameTeam(meSel, p)) return;
           if (!playerRelics(p).length) return;
           var opt = document.createElement('option');
           opt.value = p.id;
@@ -1869,17 +2108,13 @@ refreshRoomList();
         sub: me.relics.length + '/' + need,
         ts: Date.now()
       };
-      if (hasAllRelics(me, need)) {
-        room.winnerId = me.id;
-        room.status = 'finished';
-        room.announce = { icon: '🏆', title: me.name + ' 승리!', text: '유물 ' + need + '개 달성!', sub: '게임 종료', ts: Date.now() };
-      }
+      checkWinner(room);
       var ch = room.relicChallenge;
       var extraTurn = !!ch.pendingExtraTurn;
       var needPick = !!ch.pendingAugmentPick;
       var pendingDuel = ch.pendingDuelWith;
       room.relicChallenge = null;
-      if (!room.winnerId) {
+      if (!room.winnerId && room.winnerTeam == null) {
         if (pendingDuel) {
           room.duel = {
             attackerId: myPlayerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
@@ -1916,10 +2151,14 @@ refreshRoomList();
     var inRelic = !!room.relicChallenge;
 
     if (!rolling && !remoteAnimating) {
-      if (room.winnerId) {
-        var wp = room.players.find(function (p) { return p.id === room.winnerId; });
+      if (room.winnerId || room.winnerTeam != null) {
         els.turnBanner.className = 'ld-turn-banner rb-great';
-        els.turnBanner.textContent = '🏆 ' + (wp ? wp.name : '?') + ' 님이 유물 ' + relicsNeeded(room) + '개로 승리!';
+        if (room.winnerTeam != null) {
+          els.turnBanner.textContent = '🏆 팀 ' + TEAM_NAMES[room.winnerTeam] + ' 승리! (유물 ' + relicsNeeded(room) + '종)';
+        } else {
+          var wp = room.players.find(function (p) { return p.id === room.winnerId; });
+          els.turnBanner.textContent = '🏆 ' + (wp ? wp.name : '?') + ' 님이 유물 ' + relicsNeeded(room) + '개로 승리!';
+        }
         els.btnRoll.disabled = true;
         els.btnRoll.textContent = '게임 종료';
       } else if (inDuel) {
@@ -2069,7 +2308,7 @@ refreshRoomList();
 
   function resolveCellEffect(room, player, landPos) {
     var specials = room.specials || {};
-    var type = specials[landPos];
+    var type = specials[landPos] != null ? specials[landPos] : specials[String(landPos)];
     var result = {
       pos: landPos,
       effectText: '',
@@ -2345,16 +2584,13 @@ refreshRoomList();
                 text: attacker.name + ' ← ' + (srt ? srt.icon + srt.name : stolen) + ' ← ' + defender.name,
                 sub: aR + ' vs ' + bR, ts: Date.now()
               };
-              if (hasAllRelics(attacker, relicsNeeded(room))) {
-                room.winnerId = attacker.id;
-                room.status = 'finished';
-              }
+              checkWinner(room);
             }
             var extraTurn = !!ch.pendingExtraTurn;
             var needPick = !!ch.pendingAugmentPick;
             var pendingDuel = ch.pendingDuelWith;
             room.relicChallenge = null;
-            if (!room.winnerId) {
+            if (!room.winnerId && room.winnerTeam == null) {
               if (pendingDuel) {
                 room.duel = { attackerId: ch.playerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
                   winnerId: null, loserId: null, punishRoll: null, pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, ts: Date.now() };
@@ -2631,7 +2867,7 @@ refreshRoomList();
         els.gameError.textContent = '유물 도전이 끝날 때까지 기다려주세요';
         return;
       }
-      if (fresh.winnerId) {
+      if (fresh.winnerId || fresh.winnerTeam != null) {
         els.gameError.textContent = '이미 게임이 종료되었습니다';
         return;
       }
@@ -2760,7 +2996,9 @@ refreshRoomList();
       var startedRelic = false;
       if (effect.startSteal) {
         var victims = fresh.players.filter(function (p) {
-          return p.id !== myPlayerId && playerRelics(p).length > 0;
+          if (p.id === myPlayerId) return false;
+          if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+          return playerRelics(p).length > 0;
         });
         if (!victims.length) {
           effect.effectText = '🏴‍☠️ 강탈할 유물이 있는 상대 없음';
@@ -2780,7 +3018,9 @@ refreshRoomList();
             ts: Date.now()
           };
           var occ2 = fresh.players.find(function (p) {
-            return p.id !== myPlayerId && p.position === me.position;
+            if (p.id === myPlayerId || p.position !== me.position) return false;
+            if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+            return true;
           });
           if (occ2 && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ2.id;
           startedRelic = true;
@@ -2802,7 +3042,9 @@ refreshRoomList();
         };
         // 같은 칸 대결은 유물 도전 후로 미룸
         var occ = fresh.players.find(function (p) {
-          return p.id !== myPlayerId && p.position === me.position;
+          if (p.id === myPlayerId || p.position !== me.position) return false;
+          if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+          return true;
         });
         if (occ && me.position !== 0) {
           fresh.relicChallenge.pendingDuelWith = occ.id;
@@ -2820,7 +3062,9 @@ refreshRoomList();
 
       // 같은 칸에 다른 플레이어가 있으면 대결 시작 (턴 진행 보류)
       var occupant = fresh.players.find(function (p) {
-        return p.id !== myPlayerId && p.position === me.position;
+        if (p.id === myPlayerId || p.position !== me.position) return false;
+        if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+        return true;
       });
       var startedDuel = false;
       if (!startedRelic && occupant && me.position !== 0) {
@@ -3186,13 +3430,7 @@ refreshRoomList();
         };
         document.getElementById('adminMsg').textContent = '유물 목표: ' + rw + '개';
         // 이미 달성한 사람 즉시 승리 처리
-        room.players.forEach(function (p) {
-          if (!room.winnerId && hasAllRelics(p, rw)) {
-            room.winnerId = p.id;
-            room.status = 'finished';
-            room.announce = { icon: '🏆', title: p.name + ' 승리!', text: '유물 ' + rw + '개 달성!', sub: '게임 종료', ts: Date.now() };
-          }
-        });
+        checkWinner(room);
       }
       await saveRoom(room);
       lastRoomSnapshot = room;
