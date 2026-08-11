@@ -540,6 +540,12 @@
     background: rgba(52,211,153,0.12); color: var(--green); border-color: rgba(52,211,153,0.3);
   }
 
+  .ld-synergy-hint {
+    font-size: 12px; color: var(--text-dim); line-height: 1.45; margin: 8px 0 0;
+    padding: 10px 12px; border-radius: 12px;
+    background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25);
+  }
+  .ld-synergy-hint b { color: var(--gold); }
 </style>
 </head>
 <body>
@@ -588,7 +594,7 @@
       </div>
       <h1 class="ld-title">유물 주사위</h1>
       <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.1</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.2</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -619,7 +625,10 @@
       <!-- AUGMENT (after game start) -->
       <div class="ld-screen" id="screen-augment">
         <div class="ld-field-label" style="margin-top:0; text-align:center;">🏁 한 바퀴 보너스 — 증강 선택</div>
-        <p class="ld-code-hint" style="margin-bottom:0;">시너지 탭에서 증강 하나를 고르세요. 이미 가진 증강은 제외됩니다.</p>
+        <p class="ld-code-hint" style="margin-bottom:0;">계열 탭에서 증강 하나를 고르세요. 이미 가진 증강은 제외됩니다.</p>
+        <div class="ld-synergy-hint"><b>시너지란?</b> 같은 계열(행운/신속/방어 등) 증강을 <b>2개 이상</b> 켜 두면 자동 보너스.<br/>
+        예: 행운 2개 → 모든 이동 +1 · 신속 2개 → 부스트 +1 · 방어 2개 → 함정 -1<br/>
+        3개면 더 강한 III 단계. OFF한 증강은 시너지에 포함되지 않습니다.</div>
         <div class="ld-tabs" id="augmentTabs"></div>
         <div class="ld-aug-grid" id="augmentChoices"></div>
         <div class="ld-aug-status" id="augmentStatus"></div>
@@ -743,7 +752,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.1';
+  var GAME_VERSION = '1.0.0.2';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -773,7 +782,7 @@
     skip:   { icon: '⏭️', label: '스킵', color: '#a78bfa', desc: '다음 상대 턴 스킵' },
     warp:   { icon: '🌀', label: '워프', color: '#22d3ee', desc: '랜덤 칸으로 이동' },
     rest:   { icon: '🔒', label: '휴식', color: '#94a3b8', desc: '다음 턴 쉬기' },
-    gift:   { icon: '🎁', label: '선물', color: '#f0abfc', desc: '1~3칸 보너스 이동' },
+    gift:   { icon: '🎁', label: '선물', color: '#f0abfc', desc: '랜덤 선물 (이동·유물칸·강탈칸·아이템 등)' },
     swap:   { icon: '🔄', label: '교체', color: '#fb923c', desc: '랜덤 상대와 위치 교체' },
     relic:  { icon: '💎', label: '유물', color: '#e879f9', desc: '유물 도전 (주사위 1~6)' },
     steal:  { icon: '🏴‍☠️', label: '강탈', color: '#ef4444', desc: '유물 강탈 배틀' },
@@ -901,12 +910,12 @@
     { id: 'swift', cat: 'speed', icon: '⚡', name: '신속', desc: '1이 나오면 재굴림 1회 (약 17%)', tag: '필드', chance: '17%' },
     { id: 'courier', cat: 'speed', icon: '📦', name: '특송', desc: '부스트 칸 착지 시 +5칸 (기본 3 대신)', tag: '필드', chance: '칸 의존' },
     { id: 'chainboost', cat: 'speed', icon: '🔗', name: '연쇄 부스트', desc: '부스트 +2 추가', tag: '필드', chance: '칸 의존' },
-    { id: 'turbo', cat: 'speed', icon: '🏎️', name: '터보', desc: '부스트 착지 시 추가 턴', tag: '필드', chance: '칸 의존' },
+    { id: 'turbo', cat: 'speed', icon: '🏎️', name: '터보', desc: '부스트 착지 시 30% 추가 턴', tag: '필드', chance: '30%' },
     { id: 'magnet', cat: 'speed', icon: '🧲', name: '자석', desc: '착지 후 앞 2칸에 선물이 있으면 +1칸', tag: '필드', chance: '상황' },
     // defend
     { id: 'guardian', cat: 'defend', icon: '🛡️', name: '수호', desc: '함정 피해 1로 감소', tag: '필드', chance: '칸 의존' },
     { id: 'iron', cat: 'defend', icon: '🪨', name: '철벽', desc: '함정 피해 절반 (3→1)', tag: '필드', chance: '칸 의존' },
-    { id: 'insurance', cat: 'defend', icon: '📋', name: '보험', desc: '함정 후 다음 이동 +2', tag: '필드', chance: '칸 의존' },
+    { id: 'insurance', cat: 'defend', icon: '📋', name: '보험', desc: '함정 피해 추가 -1 (패시브)', tag: '필드', chance: '항상' },
     { id: 'reflect', cat: 'defend', icon: '🪞', name: '반사', desc: '함정 시 가장 가까운 상대 -1칸', tag: '필드', chance: '칸 의존' },
     { id: 'steady', cat: 'defend', icon: '🧘', name: '안정', desc: '휴식 칸 무시', tag: '필드', chance: '칸 의존' },
     { id: 'anchor', cat: 'defend', icon: '⚓', name: '닻', desc: '워프·교체 칸 효과 무시', tag: '필드', chance: '칸 의존' },
@@ -916,11 +925,11 @@
     { id: 'glitch', cat: 'chaos', icon: '👾', name: '글리치', desc: '일반 칸 5% 확률 ±1~3칸', tag: '필드', chance: '5%' },
     { id: 'wildcard', cat: 'chaos', icon: '🎴', name: '와일드', desc: '특수칸 착지 시 25% 다른 특수 효과로 변경', tag: '필드', chance: '25%' },
     { id: 'jester', cat: 'chaos', icon: '🤡', name: '광대', desc: '교체 칸에서 전원 위치를 한 칸씩 회전', tag: '필드', chance: '칸 의존' },
-    { id: 'vampire', cat: 'chaos', icon: '🧛', name: '흡혈', desc: '착지 칸에 상대가 있으면 +2칸', tag: '필드', chance: '상황' },
+    { id: 'vampire', cat: 'chaos', icon: '🧛', name: '흡혈', desc: '착지 칸에 상대가 있으면 +2칸 · 도착 특수칸 발동', tag: '필드', chance: '상황' },
     // relic
     { id: 'collector', cat: 'relic', icon: '🧰', name: '수집가', desc: '선물·부스트 보너스 +1', tag: '필드', chance: '칸 의존' },
-    { id: 'doublerelic', cat: 'relic', icon: '💎', name: '이중 유물', desc: '유물 획득 시 25% 추가 1개', tag: '필드', chance: '25%' },
-    { id: 'doublegift', cat: 'relic', icon: '🎀', name: '더블 선물', desc: '선물 효과 2배', tag: '필드', chance: '칸 의존' },
+    { id: 'doublerelic', cat: 'relic', icon: '💎', name: '이중 유물', desc: '유물 획득 시 15% 추가 1개', tag: '필드', chance: '15%' },
+    { id: 'doublegift', cat: 'relic', icon: '🎀', name: '더블 선물', desc: '선물 이동량 +2 (패시브)', tag: '필드', chance: '칸 의존' },
     // util
     { id: 'loaded', cat: 'util', icon: '🎯', name: '조작 주사위', desc: '1이 나오면 2로 변경 (약 17%)', tag: '필드', chance: '17%' },
     { id: 'thief', cat: 'util', icon: '🦝', name: '도둑', desc: '스킵 칸에서 +2칸', tag: '필드', chance: '칸 의존' },
@@ -1034,20 +1043,63 @@
     return sameTeam(a, b);
   }
 
-  function synergyBonus(player) {
-    var out = { luckMove: 0, boostExtra: 0, defendCut: 0, chaosChance: 0 };
-    var list = playerAugList(player);
+  // 시너지: 같은 카테고리 증강을 2개 이상 켜 두면 발동 (OFF 증강 제외)
+  var SYNERGY_RULES = [
+    { cat: 'luck', need: 2, key: 'luckMove', value: 1, icon: '🍀', name: '행운 시너지 II', desc: '모든 이동 +1칸' },
+    { cat: 'luck', need: 3, key: 'luckMove', value: 2, icon: '🍀', name: '행운 시너지 III', desc: '모든 이동 +2칸' },
+    { cat: 'speed', need: 2, key: 'boostExtra', value: 1, icon: '⚡', name: '신속 시너지 II', desc: '부스트 칸 +1칸' },
+    { cat: 'speed', need: 3, key: 'boostExtra', value: 2, icon: '⚡', name: '신속 시너지 III', desc: '부스트 칸 +2칸' },
+    { cat: 'defend', need: 2, key: 'defendCut', value: 1, icon: '🛡️', name: '방어 시너지 II', desc: '함정 피해 -1' },
+    { cat: 'defend', need: 3, key: 'defendCut', value: 2, icon: '🛡️', name: '방어 시너지 III', desc: '함정 피해 -2' },
+    { cat: 'chaos', need: 2, key: 'chaosChance', value: 0.10, icon: '🌪️', name: '혼돈 시너지 II', desc: '혼돈 워프 확률 +10%' },
+    { cat: 'chaos', need: 3, key: 'chaosChance', value: 0.18, icon: '🌪️', name: '혼돈 시너지 III', desc: '혼돈 워프 확률 +18%' },
+    { cat: 'relic', need: 2, key: 'giftBonus', value: 1, icon: '💎', name: '유물 시너지 II', desc: '선물/부스트 보너스 +1' },
+    { cat: 'relic', need: 3, key: 'relicLuck', value: 0.15, icon: '💎', name: '유물 시너지 III', desc: '유물 도전 성공 시 15% 추가 유물' },
+    { cat: 'util', need: 2, key: 'comboExtra', value: 1, icon: '🔧', name: '유틸 시너지 II', desc: '콤보/특수 후 추가 +1칸' },
+    { cat: 'util', need: 3, key: 'utilTrapCut', value: 1, icon: '🔧', name: '유틸 시너지 III', desc: '함정 피해 추가 -1' }
+  ];
+  function activeAugList(player) {
+    return playerAugList(player).filter(function (id) { return !isAugDisabled(player, id); });
+  }
+  function categoryCounts(player) {
     var counts = {};
-    list.forEach(function (id) {
-      var a = AUGMENT_POOL.find(function (x) { return x.id === id; });
+    activeAugList(player).forEach(function (id) {
+      var a = getAugmentById(id);
       if (a) counts[a.cat] = (counts[a.cat] || 0) + 1;
     });
-    if ((counts.luck || 0) >= 2) out.luckMove = 1;
-    if ((counts.luck || 0) >= 3) out.luckMove = 2;
-    if ((counts.speed || 0) >= 2) out.boostExtra = 1;
-    if ((counts.defend || 0) >= 2) out.defendCut = 1;
-    if ((counts.chaos || 0) >= 2) out.chaosChance = 0.08;
+    return counts;
+  }
+  function synergyBonus(player) {
+    var out = {
+      luckMove: 0, boostExtra: 0, defendCut: 0, chaosChance: 0,
+      giftBonus: 0, relicLuck: 0, comboExtra: 0, utilTrapCut: 0,
+      active: []
+    };
+    var counts = categoryCounts(player);
+    // 높은 티어가 낮은 티어를 덮어쓰도록 need 오름차순 적용
+    SYNERGY_RULES.forEach(function (rule) {
+      if ((counts[rule.cat] || 0) >= rule.need) {
+        out[rule.key] = rule.value;
+      }
+    });
+    // 표시용: 카테고리별 최고 티어만
+    var best = {};
+    SYNERGY_RULES.forEach(function (rule) {
+      if ((counts[rule.cat] || 0) >= rule.need) {
+        best[rule.cat] = rule;
+      }
+    });
+    Object.keys(best).forEach(function (c) {
+      out.active.push(best[c]);
+    });
     return out;
+  }
+  function synergySummaryText(player) {
+    var syn = synergyBonus(player);
+    if (!syn.active.length) return '시너지 없음 (같은 계열 증강 2개 이상 필요)';
+    return syn.active.map(function (r) {
+      return r.icon + ' ' + r.name + ': ' + r.desc;
+    }).join(' · ');
   }
 
   var FACE_ROTATION = {
@@ -1950,10 +2002,11 @@ refreshRoomList();
         }).join(' · ')
       : '없음';
 
+    var synTxt = synergySummaryText(me);
     if (isPicker) {
-      els.augmentStatus.textContent = '🏁 한 바퀴 완주! 시너지 증강을 하나 고르세요  ·  보유: ' + ownedTxt;
+      els.augmentStatus.innerHTML = '🏁 한 바퀴 완주! 증강 1개 선택<br/><span style="font-size:12px;opacity:0.9;">같은 계열 2개↑ = 시너지 · 보유: ' + escapeHtml(ownedTxt) + '</span><br/><span style="font-size:11px;color:var(--gold);">' + escapeHtml(synTxt) + '</span>';
     } else {
-      els.augmentStatus.textContent = '다른 플레이어가 증강을 선택하는 중...  ·  내 보유: ' + ownedTxt;
+      els.augmentStatus.innerHTML = '다른 플레이어가 증강 선택 중...<br/><span style="font-size:12px;">내 보유: ' + escapeHtml(ownedTxt) + '</span><br/><span style="font-size:11px;color:var(--gold);">' + escapeHtml(synTxt) + '</span>';
     }
     els.augmentError.textContent = '';
   }
@@ -1972,13 +2025,6 @@ refreshRoomList();
       me.augments = playerAugs(me);
       if (me.augments.indexOf(augId) === -1) me.augments.push(augId);
       me.augment = augId;
-      if (augId === 'shield') me.shieldCharges = (me.shieldCharges || 0) + 1;
-      if (augId === 'sprinter') {
-        var from = me.position;
-        me.position = (me.position + 5) % BOARD_SIZE;
-        tokenRenderedPos[me.id] = me.position;
-      }
-
       var extra = !!room.pendingPickExtraTurn;
       room.pendingPickExtraTurn = false;
       room.augmentPick = null;
@@ -2347,6 +2393,27 @@ refreshRoomList();
         html += '</div>';
       });
     }
+    // 시너지 현황
+    var syn = synergyBonus(player);
+    html += '<div class="ld-player-panel-section">시너지</div>';
+    if (!syn.active.length) {
+      var counts = categoryCounts(player);
+      var tips = [];
+      AUGMENT_CATEGORIES.forEach(function (c) {
+        var n = counts[c.id] || 0;
+        if (n === 1) tips.push(c.icon + c.name + ' 1/2');
+      });
+      html += '<div style="font-size:11px;color:var(--text-dim);padding:4px 0;line-height:1.4;">같은 계열 증강 <b>2개</b> 이상이면 시너지 발동<br/>' +
+        (tips.length ? ('진행: ' + tips.join(', ')) : '아직 시너지 없음') + '</div>';
+    } else {
+      syn.active.forEach(function (r) {
+        html += '<div class="ld-aug-item" style="border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.08);">';
+        html += '<div class="ld-aug-item-icon">' + r.icon + '</div>';
+        html += '<div class="ld-aug-item-body"><div class="ld-aug-item-name" style="color:var(--gold);">' + escapeHtml(r.name) + '</div>';
+        html += '<div class="ld-aug-item-desc">' + escapeHtml(r.desc) + '</div></div></div>';
+      });
+    }
+
     html += '<div class="ld-player-panel-section">유물 ' + relics.length + '개</div>';
     if (!relics.length) {
       html += '<div style="font-size:12px;color:var(--text-dim);padding:4px 0;">보유 유물 없음</div>';
@@ -2558,7 +2625,9 @@ refreshRoomList();
       me.relics = playerRelics(me);
       if (me.relics.indexOf(relicId) === -1) me.relics.push(relicId);
       var need = relicsNeeded(room);
-      if (hasAug(me, 'doublerelic') && Math.random() < 0.25 && me.relics.length < need) {
+      var synR = synergyBonus(me);
+      var bonusChance = (hasAug(me, 'doublerelic') ? 0.15 : 0) + (synR.relicLuck || 0);
+      if (bonusChance > 0 && Math.random() < bonusChance && me.relics.length < need) {
         var extraId = pickRelicForPlayer(me);
         if (me.relics.indexOf(extraId) === -1) me.relics.push(extraId);
       }
@@ -2804,7 +2873,9 @@ refreshRoomList();
     return { face: face, move: Math.max(1, move), notes: notes, extraTurn: extraTurn };
   }
 
-  function resolveCellEffect(room, player, landPos) {
+  function resolveCellEffect(room, player, landPos, opts) {
+    opts = opts || {};
+    var chain = !!opts.chain; // 연쇄 착지: 이동계 패시브(흡혈 등) 재발동 제한
     var specials = room.specials || {};
     var type = specials[landPos] != null ? specials[landPos] : specials[String(landPos)];
     var result = {
@@ -2819,8 +2890,8 @@ refreshRoomList();
       announce: false
     };
 
-    // 자석: 앞 2칸에 선물
-    if (hasAug(player, 'magnet')) {
+    // 자석: 앞 2칸에 선물 (연쇄 착지에서는 생략)
+    if (!chain && hasAug(player, 'magnet')) {
       for (var mi = 1; mi <= 2; mi++) {
         if (specials[(landPos + mi) % BOARD_SIZE] === 'gift') {
           result.pos = (landPos + 1) % BOARD_SIZE;
@@ -2836,14 +2907,15 @@ refreshRoomList();
     }
 
     if (!type || !CELL_TYPES[type]) {
-      if (hasAug(player, 'chaos') && Math.random() < (0.1 + synergyBonus(player).chaosChance)) {
+      if (!chain && hasAug(player, 'chaos') && Math.random() < (0.1 + synergyBonus(player).chaosChance)) {
         result.pos = 1 + Math.floor(Math.random() * (BOARD_SIZE - 1));
         result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🌪️ 혼돈 워프 → ' + result.pos;
         result.effectIcon = '🌪️';
         result.effectTitle = '혼돈';
         result.announce = true;
       }
-      if (hasAug(player, 'vampire')) {
+      // 흡혈: 첫 착지 + 연쇄 1회까지 허용 (opts.allowVampire)
+      if ((!chain || opts.allowVampire) && hasAug(player, 'vampire')) {
         var same = room.players.some(function (p) {
           return p.id !== player.id && p.position === landPos;
         });
@@ -2856,7 +2928,7 @@ refreshRoomList();
           result.announce = true;
         }
       }
-      if (hasAug(player, 'glitch') && Math.random() < 0.05) {
+      if (!chain && hasAug(player, 'glitch') && Math.random() < 0.05) {
         var g = (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * 3));
         result.pos = (result.pos + g + BOARD_SIZE) % BOARD_SIZE;
         result.extraSteps = (result.extraSteps || 0) + g;
@@ -2895,13 +2967,13 @@ refreshRoomList();
 
     if (type === 'boost') {
       var synB = synergyBonus(player);
-      var b = hasAug(player, 'courier') ? 5 : (3 + bonus);
+      var b = hasAug(player, 'courier') ? 5 : (3 + bonus + (synB.giftBonus || 0));
       if (hasAug(player, 'chainboost')) b += 2;
       b += synB.boostExtra;
       result.pos = (landPos + b) % BOARD_SIZE;
       result.extraSteps = b;
       result.effectText = '🚀 부스트 +' + b;
-      if (hasAug(player, 'turbo')) {
+      if (hasAug(player, 'turbo') && Math.random() < 0.30) {
         result.extraTurn = true;
         result.effectText += ' · 터보 추가 턴';
       }
@@ -2909,16 +2981,13 @@ refreshRoomList();
       var synD = synergyBonus(player);
       var back = 3;
       if (hasAug(player, 'guardian')) back = 1;
-      else if (hasAug(player, 'iron')) back = Math.floor(back / 2);
+      else if (hasAug(player, 'iron')) back = Math.max(1, Math.floor(back / 2));
       if (hasRelic(player, 'moon')) back = Math.max(0, back - 1);
-      back = Math.max(0, back - synD.defendCut);
+      if (hasAug(player, 'insurance')) back = Math.max(0, back - 1);
+      back = Math.max(0, back - (synD.defendCut || 0) - (synD.utilTrapCut || 0));
       result.pos = (landPos - back + BOARD_SIZE) % BOARD_SIZE;
       result.extraSteps = -back;
       result.effectText = '💀 함정 -' + back;
-      if (hasAug(player, 'insurance')) {
-        player.nextMoveBonus = (player.nextMoveBonus || 0) + 2;
-        result.effectText += ' · 보험 다음 +2';
-      }
       if (hasAug(player, 'reflect')) {
         var nearest = null, best = 999;
         room.players.forEach(function (p) {
@@ -2963,12 +3032,85 @@ refreshRoomList();
         result.effectText = '🔒 다음 턴 휴식';
       }
     } else if (type === 'gift') {
-      var g = 1 + Math.floor(Math.random() * 3) + bonus;
-      var times = hasAug(player, 'doublegift') ? 2 : 1;
-      var total = g * times;
-      result.pos = (landPos + total) % BOARD_SIZE;
-      result.extraSteps = total;
-      result.effectText = '🎁 선물 +' + total;
+      var synG = synergyBonus(player);
+      var bonus = (hasAug(player, 'collector') ? 1 : 0) + (synG.giftBonus || 0);
+      // 다양한 선물 풀
+      var giftRoll = Math.random();
+      if (giftRoll < 0.22) {
+        // 기본 이동 1~3 (+보너스)
+        var g = 1 + Math.floor(Math.random() * 3) + bonus;
+        if (hasAug(player, 'doublegift')) g += 2;
+        result.pos = (landPos + g) % BOARD_SIZE;
+        result.extraSteps = g;
+        result.effectText = '🎁 선물 이동 +' + g;
+      } else if (giftRoll < 0.36) {
+        var g2 = 4 + Math.floor(Math.random() * 2) + bonus; // 4~5
+        if (hasAug(player, 'doublegift')) g2 += 2; // 패시브 +2
+        result.pos = (landPos + g2) % BOARD_SIZE;
+        result.extraSteps = g2;
+        result.effectText = '🎁 큰 선물 이동 +' + g2;
+      } else if (giftRoll < 0.50) {
+        // 가장 가까운 앞쪽 유물 칸으로
+        var relicPos = null;
+        for (var di = 1; di <= BOARD_SIZE; di++) {
+          var p = (landPos + di) % BOARD_SIZE;
+          if (specials[p] === 'relic' || specials[String(p)] === 'relic') { relicPos = p; break; }
+        }
+        if (relicPos != null) {
+          result.pos = relicPos;
+          result.effectText = '🎁 선물: 유물 칸(' + relicPos + ')으로 이동!';
+          result.startRelic = true;
+        } else {
+          result.pos = (landPos + 3 + bonus) % BOARD_SIZE;
+          result.extraSteps = 3 + bonus;
+          result.effectText = '🎁 유물 칸 없음 · +' + (3 + bonus);
+        }
+      } else if (giftRoll < 0.64) {
+        // 강탈 칸으로
+        var stealPos = null;
+        for (var di2 = 1; di2 <= BOARD_SIZE; di2++) {
+          var p2 = (landPos + di2) % BOARD_SIZE;
+          if (specials[p2] === 'steal' || specials[String(p2)] === 'steal') { stealPos = p2; break; }
+        }
+        if (stealPos != null) {
+          result.pos = stealPos;
+          result.effectText = '🎁 선물: 강탈 칸(' + stealPos + ')으로 이동!';
+          result.startSteal = true;
+        } else {
+          result.pos = (landPos + 3 + bonus) % BOARD_SIZE;
+          result.extraSteps = 3 + bonus;
+          result.effectText = '🎁 강탈 칸 없음 · +' + (3 + bonus);
+        }
+      } else if (giftRoll < 0.76) {
+        // 아이템 1개
+        if (typeof ITEM_TYPES !== 'undefined' && ITEM_TYPES.length) {
+          var it = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+          player.items = playerItems(player);
+          if (player.items.length < 3) {
+            player.items.push(it.id);
+            result.effectText = '🎁 선물 아이템: ' + it.icon + ' ' + it.name;
+          } else {
+            result.pos = (landPos + 2 + bonus) % BOARD_SIZE;
+            result.extraSteps = 2 + bonus;
+            result.effectText = '🎁 아이템 한도 · 이동 +' + (2 + bonus);
+          }
+        } else {
+          result.pos = (landPos + 2) % BOARD_SIZE;
+          result.extraSteps = 2;
+          result.effectText = '🎁 선물 +2';
+        }
+      } else if (giftRoll < 0.86) {
+        player.shieldCharges = (player.shieldCharges || 0) + 1;
+        result.effectText = '🎁 선물: 보호막 +1';
+      } else if (giftRoll < 0.93) {
+        result.extraTurn = true;
+        result.effectText = '🎁 선물: 추가 턴!';
+      } else {
+        // 랜덤 워프 (스타트 제외)
+        var dest = 1 + Math.floor(Math.random() * (BOARD_SIZE - 1));
+        result.pos = dest;
+        result.effectText = '🎁 선물 워프 → ' + dest;
+      }
     } else if (type === 'swap') {
       if (hasAug(player, 'jester')) {
         var positions = room.players.map(function (p) { return p.position; });
@@ -3015,10 +3157,16 @@ refreshRoomList();
       result.announce = true;
     }
 
-    if (hasAug(player, 'combo') && result.announce && result.effectText && result.effectText.indexOf('무시') === -1 && type !== 'relic') {
-      result.pos = (result.pos + 1) % BOARD_SIZE;
-      result.extraSteps = (result.extraSteps || 0) + 1;
-      result.effectText += ' · ✨콤보 +1';
+    var synC = synergyBonus(player);
+    if (hasAug(player, 'combo') && result.announce && result.effectText && result.effectText.indexOf('무시') === -1 && type !== 'relic' && type !== 'steal') {
+      var cAdd = 1 + (synC.comboExtra || 0);
+      result.pos = (result.pos + cAdd) % BOARD_SIZE;
+      result.extraSteps = (result.extraSteps || 0) + cAdd;
+      result.effectText += ' · ✨콤보 +' + cAdd;
+    } else if (!hasAug(player, 'combo') && synC.comboExtra && result.announce && result.effectText && result.effectText.indexOf('무시') === -1 && type && type !== 'relic' && type !== 'steal') {
+      result.pos = (result.pos + synC.comboExtra) % BOARD_SIZE;
+      result.extraSteps = (result.extraSteps || 0) + synC.comboExtra;
+      result.effectText += ' · 🔧시너지 +' + synC.comboExtra;
     }
     return result;
   }
@@ -3520,59 +3668,86 @@ refreshRoomList();
       // 착지 위치를 먼저 동기화해서 상대 지연을 줄임
       try { await saveRoom(fresh); } catch (e) {}
 
-      var effect = resolveCellEffect(fresh, me, landPos);
+      var effect = resolveCellEffect(fresh, me, landPos, { chain: false, allowVampire: true });
+      var extraTurn = !!mod.extraTurn;
+      var chainDepth = 0;
+      var fromForAnim = landPos;
+      var totalExtraForward = 0;
 
-      if (effect.swapWith) {
-        var other = fresh.players.find(function (p) { return p.id === effect.swapWith; });
-        if (other) {
-          var tmp = other.position;
-          other.position = me.position;
-          me.position = tmp;
-          effect.pos = me.position;
-        }
-      } else {
-        me.position = effect.pos;
-      }
-
-      // 특수 효과 공지를 먼저 보여 준 뒤 이동/발동
-      if (effect.announce && effect.effectText) {
-        try { SFX.special(); } catch (e) {}
-        showAnnounce(
-          effect.effectIcon || '✨',
-          (effect.effectTitle || '특수 효과') + '!',
-          me.name + ' — ' + effect.effectText,
-          '칸 ' + landPos
-        );
-        await new Promise(function (r) { setTimeout(r, EFFECT_READ_MS); });
-      }
-
-      if (effect.extraSteps && effect.extraSteps !== 0) {
-        if (Math.abs(effect.extraSteps) <= 8 && effect.effectText.indexOf('워프') === -1) {
-          await moveTokenSteps(myPlayerId, landPos, effect.extraSteps);
+      // 흡혈/부스트/선물 등으로 이동한 뒤 도착 특수칸도 발동 (최대 3회 연쇄)
+      while (chainDepth < 3) {
+        if (effect.swapWith) {
+          var other = fresh.players.find(function (p) { return p.id === effect.swapWith; });
+          if (other) {
+            var tmp = other.position;
+            other.position = me.position;
+            me.position = tmp;
+            effect.pos = me.position;
+          }
         } else {
-          placeTokensInstant(fresh);
+          me.position = effect.pos;
         }
-      } else if (effect.swapWith || (effect.effectText && effect.effectText.indexOf('광대') !== -1)) {
-        placeTokensInstant(fresh);
+
+        if (effect.extraTurn) extraTurn = true;
+        if (effect.skipNext) fresh.skipNext = true;
+
+        if (effect.announce && effect.effectText) {
+          try { SFX.special(); } catch (e) {}
+          showAnnounce(
+            effect.effectIcon || '✨',
+            (effect.effectTitle || '특수 효과') + '!',
+            me.name + ' — ' + effect.effectText,
+            '칸 ' + fromForAnim
+          );
+          await new Promise(function (r) { setTimeout(r, Math.min(EFFECT_READ_MS, 1200)); });
+        }
+
+        var moved = false;
+        if (effect.extraSteps && effect.extraSteps !== 0) {
+          if (effect.extraSteps > 0) totalExtraForward += effect.extraSteps;
+          if (Math.abs(effect.extraSteps) <= 10 && (effect.effectText || '').indexOf('워프') === -1) {
+            await moveTokenSteps(myPlayerId, fromForAnim, effect.extraSteps);
+            moved = true;
+          } else {
+            placeTokensInstant(fresh);
+            moved = true;
+          }
+          me.position = effect.pos;
+        } else if (effect.swapWith || (effect.effectText && effect.effectText.indexOf('광대') !== -1)) {
+          placeTokensInstant(fresh);
+        } else if (effect.pos !== fromForAnim && (effect.effectText || '').indexOf('워프') !== -1) {
+          placeTokensInstant(fresh);
+          moved = true;
+        }
+
+        // 선물로 유물/강탈 칸에 즉시 도착한 경우 연쇄 없이 해당 도전만
+        if (effect.startRelic || effect.startSteal) break;
+
+        // 이동이 있었으면 도착 칸 효과 재해석
+        if (moved && me.position !== fromForAnim) {
+          fromForAnim = me.position;
+          var nextEff = resolveCellEffect(fresh, me, me.position, {
+            chain: true,
+            allowVampire: chainDepth === 0
+          });
+          var hasCell = nextEff.announce || nextEff.extraSteps || nextEff.startRelic || nextEff.startSteal || nextEff.swapWith || nextEff.extraTurn || nextEff.skipNext;
+          if (hasCell) {
+            effect = nextEff;
+            chainDepth++;
+            continue;
+          }
+        }
+        break;
       }
 
-      var extraTurn = mod.extraTurn || effect.extraTurn;
-      if (effect.skipNext) fresh.skipNext = true;
-
-      // 특수칸(부스트/선물 등)으로 추가 이동해 스타트를 지나도 증강 획득
-      // effect.pos 기준 최종 위치가 주사위 이동보다 앞으로 넘어간 경우 바퀴 수 재계산
-      var finalPos = me.position;
-      // 주사위 이동으로 얻은 바퀴 + 특수 효과로 스타트를 추가로 지난 경우
-      var totalForward = moveSteps + (effect.extraSteps > 0 ? effect.extraSteps : 0);
-      // 워프/교체는 방향이 불확실하므로 주사위 바퀴만 인정하되, 부스트·선물·콤보 등 전진은 포함
-      if (effect.extraSteps > 0 && effect.effectText && effect.effectText.indexOf('워프') === -1) {
-        var crossed = Math.floor((oldPos + moveSteps + effect.extraSteps) / BOARD_SIZE);
+      // 특수칸 추가 이동으로 스타트 통과 시 증강
+      if (totalExtraForward > 0) {
+        var crossed = Math.floor((oldPos + moveSteps + totalExtraForward) / BOARD_SIZE);
         if (crossed > lapsGained) {
           lapsGained = crossed;
           me.laps = (me.laps || 0) - Math.floor((oldPos + moveSteps) / BOARD_SIZE) + crossed;
         }
       }
-      // 한 바퀴 완주 → 증강 선택 예약
       var needAugPick = lapsGained > 0;
       if (needAugPick) {
         fresh.augmentPick = { playerId: myPlayerId, ts: Date.now() };
