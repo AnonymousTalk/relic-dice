@@ -1,0 +1,3077 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>유물 주사위 - Multiplayer</title>
+<style>
+  :root {
+    --bg-deep: #0a0a1f;
+    --bg-card: rgba(24, 22, 56, 0.72);
+    --purple: #8b5cf6;
+    --purple2: #a78bfa;
+    --blue: #3b82f6;
+    --cyan: #22d3ee;
+    --gold: #fbbf24;
+    --red: #f87171;
+    --green: #34d399;
+    --text-main: #f3f0ff;
+    --text-dim: #a5a0c9;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    font-family: 'Segoe UI', 'Pretendard', system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(139,92,246,0.35), transparent 45%),
+      radial-gradient(circle at 85% 25%, rgba(34,211,238,0.25), transparent 40%),
+      radial-gradient(circle at 50% 90%, rgba(59,130,246,0.25), transparent 45%),
+      var(--bg-deep);
+    color: var(--text-main);
+  }
+  .ld-root { min-height: 100vh; width: 100%; padding: 20px 14px 40px; position: relative; overflow-x: hidden; }
+  .ld-shell { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+  .ld-glow-blob { position: fixed; border-radius: 50%; filter: blur(60px); opacity: 0.5; pointer-events: none; z-index: 0; }
+  .blob1 { width: 240px; height: 240px; background: var(--purple); top: -80px; left: -60px; }
+  .blob2 { width: 200px; height: 200px; background: var(--cyan); bottom: -60px; right: -60px; }
+
+  .ld-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid rgba(139,92,246,0.4);
+    border-radius: 24px;
+    padding: 28px 24px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 0 40px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .ld-title {
+    font-size: 26px; font-weight: 800; text-align: center; margin: 0 0 4px;
+    background: linear-gradient(90deg, var(--purple2), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 0.5px;
+  }
+  .ld-subtitle { text-align: center; font-size: 13px; color: var(--text-dim); margin: 0 0 22px; }
+
+  .ld-btn {
+    width: 100%; padding: 13px 16px; border-radius: 16px; border: none;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: transform .1s, filter .15s, opacity .15s; letter-spacing: 0.3px;
+  }
+  .ld-btn:active { transform: scale(0.97); }
+  .ld-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .ld-btn-primary { background: linear-gradient(135deg, var(--purple), var(--blue)); color: white; box-shadow: 0 4px 20px rgba(139,92,246,0.45); }
+  .ld-btn-primary:not(:disabled):hover { filter: brightness(1.1); }
+  .ld-btn-outline { background: rgba(255,255,255,0.04); color: var(--text-main); border: 1px solid rgba(165,160,201,0.3); }
+  .ld-btn-outline:not(:disabled):hover { background: rgba(255,255,255,0.08); }
+  .ld-btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid rgba(165,160,201,0.2); font-size: 13px; padding: 10px 14px; }
+
+  .ld-input {
+    width: 100%; padding: 12px 14px; border-radius: 12px; margin-top: 8px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(165,160,201,0.25);
+    color: var(--text-main); font-size: 14px; outline: none;
+  }
+  .ld-input:focus { border-color: var(--purple2); }
+  .ld-input::placeholder { color: var(--text-dim); }
+  .ld-field-label { font-size: 12px; color: var(--text-dim); font-weight: 700; margin: 14px 0 0; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .ld-menu-stack { display: flex; flex-direction: column; gap: 12px; }
+  .ld-panel { margin-top: 14px; padding: 16px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(139,92,246,0.25); }
+  .ld-panel-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .ld-panel-actions .ld-btn { flex: 1; }
+
+  .ld-error { color: var(--red); font-size: 12.5px; margin-top: 10px; text-align: center; min-height: 16px; }
+
+  .ld-code-display {
+    text-align: center; font-size: 34px; font-weight: 800; letter-spacing: 6px;
+    color: var(--gold); margin: 4px 0 2px;
+    text-shadow: 0 0 18px rgba(251,191,36,0.4);
+  }
+  .ld-code-hint { text-align: center; font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
+
+  .ld-player-row { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,0.02); margin-bottom: 6px; flex-wrap: wrap; }
+  .ld-player-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+  .ld-player-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 40px; }
+  .ld-player-tag { font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; border: 1px solid rgba(165,160,201,0.3); border-radius: 6px; padding: 2px 6px; }
+  .ld-player-turn { font-size: 10px; color: var(--gold); font-weight: 700; text-transform: uppercase; }
+  .ld-player-aug { font-size: 11px; color: var(--cyan); font-weight: 600; }
+
+  .ld-top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .ld-room-chip { font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--purple2); background: rgba(139,92,246,0.15); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(139,92,246,0.35); }
+
+  .ld-turn-banner {
+    text-align: center; font-size: 14px; font-weight: 700; padding: 11px;
+    border-radius: 14px; margin: 4px 0 14px; min-height: 40px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .rb-great { background: rgba(251,191,36,0.15); color: var(--gold); border: 1px solid rgba(251,191,36,0.35); }
+  .rb-good { background: rgba(52,211,153,0.15); color: var(--green); border: 1px solid rgba(52,211,153,0.35); }
+  .rb-mid { background: rgba(165,160,201,0.12); color: var(--text-dim); border: 1px solid rgba(165,160,201,0.25); }
+  .rb-low { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.35); }
+  .rb-wait { background: transparent; border: 1px dashed rgba(165,160,201,0.2); color: var(--text-dim); font-weight: 500; }
+  .rb-effect { background: rgba(139,92,246,0.18); color: var(--purple2); border: 1px solid rgba(139,92,246,0.4); }
+
+  .ld-dice-mini-stage { display: flex; justify-content: center; align-items: center; padding: 6px 0 14px; perspective: 500px; }
+  .ld-cube-mini { width: 62px; height: 62px; position: relative; transform-style: preserve-3d; transition: transform 1.1s cubic-bezier(.22,1.6,.36,1); }
+  .ld-face-mini {
+    position: absolute; width: 62px; height: 62px;
+    background: linear-gradient(145deg, #2a2560, #1a1740);
+    border: 1.5px solid var(--purple2); border-radius: 12px;
+    box-shadow: 0 0 12px rgba(139,92,246,0.4), inset 0 0 8px rgba(139,92,246,0.15);
+  }
+  .mf1 { transform: rotateY(0deg) translateZ(31px); }
+  .mf6 { transform: rotateY(180deg) translateZ(31px); }
+  .mf2 { transform: rotateY(90deg) translateZ(31px); }
+  .mf5 { transform: rotateY(-90deg) translateZ(31px); }
+  .mf3 { transform: rotateX(90deg) translateZ(31px); }
+  .mf4 { transform: rotateX(-90deg) translateZ(31px); }
+  .pip-grid-mini { width: 100%; height: 100%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 9px; }
+  .pip-cell-mini { display: flex; align-items: center; justify-content: center; }
+  .pip-dot-mini { width: 9px; height: 9px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+
+  .ld-board-wrap { position: relative; width: 100%; aspect-ratio: 1 / 1; margin: 0; min-height: 280px; }
+  .ld-board-grid {
+    position: relative; width: 100%; height: 100%;
+    display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr);
+    gap: 3px;
+  }
+  .ld-cell {
+    background: rgba(255,255,255,0.04); border: 1.5px solid rgba(139,92,246,0.28); border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--text-dim); font-weight: 700; gap: 2px; line-height: 1.1;
+  }
+  .ld-cell-start { background: rgba(251,191,36,0.14); border-color: rgba(251,191,36,0.5); color: var(--gold); font-size: 9px; }
+  .ld-cell-icon { font-size: 14px; line-height: 1; }
+  .ld-center {
+    grid-row: 2 / 9; grid-column: 2 / 9;
+    border-radius: 16px; background: rgba(139,92,246,0.08); border: 1px dashed rgba(139,92,246,0.3);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    text-align: center; padding: 10px;
+  }
+  .ld-center-code { font-size: 18px; font-weight: 800; letter-spacing: 3px; color: var(--purple2); }
+  .ld-center-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .ld-token {
+    position: absolute; width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #14102b;
+    box-shadow: 0 0 10px currentColor, 0 2px 4px rgba(0,0,0,0.4);
+    transition: left 0.12s linear, top 0.12s linear;
+    transform: translate(-50%, -50%);
+    z-index: 2; border: 2px solid rgba(255,255,255,0.5);
+  }
+
+  .ld-log { margin-top: 4px; }
+  .ld-log-title { font-size: 12px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .ld-log-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; font-size: 12.5px; background: rgba(255,255,255,0.02); margin-bottom: 5px; }
+  .ld-log-face { width: 22px; height: 22px; border-radius: 6px; background: rgba(139,92,246,0.2); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; color: var(--purple2); flex-shrink: 0; }
+  .ld-log-text { color: var(--text-dim); }
+  .ld-log-empty { text-align: center; color: var(--text-dim); font-size: 13px; padding: 10px 0; }
+
+  .ld-screen { display: none; }
+  .ld-screen.active { display: block; }
+
+  /* Augment tabs */
+  .ld-tabs { display: flex; gap: 8px; margin: 14px 0 12px; flex-wrap: wrap; }
+  .ld-tab {
+    flex: 1; min-width: 76px; padding: 11px 12px; border-radius: 12px; border: 1px solid rgba(165,160,201,0.3);
+    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: 13px; font-weight: 800; cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  .ld-tab.active {
+    background: linear-gradient(135deg, rgba(139,92,246,0.45), rgba(59,130,246,0.35));
+    border-color: var(--purple2); color: #fff;
+    box-shadow: 0 4px 16px rgba(139,92,246,0.3);
+  }
+  .ld-aug-grid { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; padding-right: 2px; }
+  .ld-aug-card {
+    text-align: left; padding: 16px 16px; border-radius: 16px; cursor: pointer;
+    background: rgba(255,255,255,0.06); border: 2px solid rgba(139,92,246,0.35);
+    transition: border-color .15s, background .15s, transform .1s, box-shadow .15s;
+  }
+  .ld-aug-card:hover {
+    background: rgba(139,92,246,0.18); border-color: var(--cyan);
+    box-shadow: 0 0 20px rgba(34,211,238,0.15);
+  }
+  .ld-aug-card:active { transform: scale(0.98); }
+  .ld-aug-card.selected {
+    border-color: var(--gold); background: rgba(251,191,36,0.16);
+    box-shadow: 0 0 22px rgba(251,191,36,0.25);
+  }
+  .ld-aug-card-title { font-size: 16px; font-weight: 800; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
+  .ld-aug-card-title span:first-child { font-size: 22px; }
+  .ld-aug-card-desc { font-size: 13px; color: #cfc8ef; line-height: 1.45; }
+  .ld-aug-card-tag {
+    display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 6px; background: rgba(34,211,238,0.12);
+    color: var(--cyan); border: 1px solid rgba(34,211,238,0.3);
+  }
+  .ld-aug-status {
+    text-align: center; font-size: 13px; color: var(--text-main); margin-top: 12px;
+    padding: 10px; border-radius: 12px; background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.3); font-weight: 600;
+  }
+
+  .ld-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+  .ld-legend-item {
+    font-size: 10px; padding: 3px 7px; border-radius: 6px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(165,160,201,0.2); color: var(--text-dim);
+  }
+
+  /* Game layout: left roster | center controls | right board */
+  .ld-game-body {
+    display: grid;
+    grid-template-columns: 110px 92px minmax(150px, 1fr) minmax(220px, 1.25fr);
+    gap: 10px;
+    align-items: start;
+  }
+  .ld-roster {
+    width: 92px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .ld-roster-title { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
+  .ld-roster-card {
+    padding: 10px 8px; border-radius: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(139,92,246,0.25);
+    text-align: center; transition: border-color .15s, background .15s;
+  }
+  .ld-roster-card:hover, .ld-roster-card.active { border-color: var(--purple2); background: rgba(139,92,246,0.12); }
+  .ld-roster-card.is-turn { border-color: var(--gold); box-shadow: 0 0 12px rgba(251,191,36,0.2); }
+  .ld-roster-dot { width: 22px; height: 22px; border-radius: 50%; margin: 0 auto 6px; box-shadow: 0 0 8px currentColor; }
+  .ld-roster-name { font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ld-roster-pos { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  .ld-roster-aug-icon { font-size: 14px; margin-top: 4px; }
+  .ld-main-col { min-width: 0; }
+  .ld-board-col { min-width: 0; }
+  .ld-board-col .ld-legend { margin-bottom: 8px; }
+
+  .ld-aug-detail {
+    margin-top: 8px; padding: 12px; border-radius: 12px;
+    background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);
+    font-size: 12.5px; line-height: 1.45; display: none;
+  }
+  .ld-aug-detail.show { display: block; }
+  .ld-aug-detail-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+
+
+  .ld-avatar-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .ld-avatar-opt {
+    width: 42px; height: 42px; border-radius: 12px; border: 2px solid rgba(165,160,201,0.25);
+    background: rgba(255,255,255,0.04); font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ld-avatar-opt.selected { border-color: var(--gold); background: rgba(251,191,36,0.15); box-shadow: 0 0 12px rgba(251,191,36,0.25); }
+
+  .ld-turn-order {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    margin: 0 0 12px; padding: 8px; border-radius: 12px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(139,92,246,0.2);
+  }
+  .ld-turn-chip {
+    font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(165,160,201,0.2); color: var(--text-dim);
+  }
+  .ld-turn-chip.now { border-color: var(--gold); color: var(--gold); background: rgba(251,191,36,0.12); }
+  .ld-turn-chip .ord { color: var(--purple2); margin-right: 4px; }
+
+  .ld-duel {
+    display: none; margin: 0 0 12px; padding: 14px; border-radius: 16px;
+    background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.4);
+  }
+  .ld-duel.show { display: block; }
+  .ld-duel-title { font-size: 15px; font-weight: 800; color: var(--red); text-align: center; margin-bottom: 8px; }
+  .ld-duel-vs { text-align: center; font-size: 13px; margin-bottom: 10px; color: var(--text-main); }
+  .ld-duel-rolls { display: flex; justify-content: center; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
+  .ld-duel-roll-box { text-align: center; min-width: 90px; }
+  .ld-duel-roll-box .nm { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  .ld-duel-roll-box .vl { font-size: 28px; font-weight: 800; color: var(--gold); }
+  .ld-duel-hint { text-align: center; font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+
+  .ld-relic-bar {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    margin: 0 0 10px; padding: 8px; border-radius: 12px;
+    background: rgba(240,171,252,0.08); border: 1px solid rgba(240,171,252,0.3);
+  }
+  .ld-relic-chip {
+    font-size: 12px; padding: 4px 8px; border-radius: 8px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(165,160,201,0.2);
+    opacity: 0.35;
+  }
+  .ld-relic-chip.owned { opacity: 1; border-color: #f0abfc; background: rgba(240,171,252,0.15); }
+
+  .ld-relic-challenge {
+    display: none; margin: 0 0 12px; padding: 14px; border-radius: 16px;
+    background: rgba(240,171,252,0.12); border: 1px solid rgba(240,171,252,0.45);
+  }
+  .ld-relic-challenge.show { display: block; }
+  .ld-relic-challenge-title { font-size: 15px; font-weight: 800; color: #f0abfc; text-align: center; margin-bottom: 6px; }
+  .ld-relic-target { text-align: center; font-size: 28px; font-weight: 800; color: var(--gold); margin: 6px 0; }
+  .ld-relic-rolls { text-align: center; font-size: 14px; color: var(--text-main); margin-bottom: 8px; }
+  .ld-relic-hint { text-align: center; font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+
+
+  .ld-admin-btn {
+    position: absolute; top: 12px; right: 12px; z-index: 20;
+    width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(165,160,201,0.3);
+    background: rgba(255,255,255,0.06); color: var(--text-dim); font-size: 14px; cursor: pointer;
+  }
+  .ld-admin-panel {
+    display: none; position: absolute; top: 50px; right: 12px; z-index: 25; width: 240px;
+    padding: 12px; border-radius: 14px; background: rgba(20,16,48,0.96);
+    border: 1px solid rgba(139,92,246,0.45); box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+    font-size: 12px;
+  }
+  .ld-admin-panel.show { display: block; }
+  .ld-admin-panel input, .ld-admin-panel select {
+    width: 100%; margin: 6px 0; padding: 8px; border-radius: 8px;
+    border: 1px solid rgba(165,160,201,0.3); background: rgba(255,255,255,0.06); color: var(--text-main);
+  }
+  .ld-admin-panel .ld-btn { margin-top: 6px; padding: 8px; font-size: 12px; }
+
+  .ld-chat {
+    width: 110px; display: flex; flex-direction: column; gap: 6px; max-height: 420px;
+  }
+  .ld-chat-title { font-size: 10px; font-weight: 700; color: var(--text-dim); text-align: center; text-transform: uppercase; }
+  .ld-chat-log {
+    flex: 1; min-height: 160px; max-height: 280px; overflow-y: auto; padding: 6px;
+    border-radius: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(139,92,246,0.2);
+    font-size: 10px; line-height: 1.35;
+  }
+  .ld-chat-line { margin-bottom: 5px; word-break: break-word; }
+  .ld-chat-line .who { color: var(--cyan); font-weight: 700; }
+  .ld-chat-input {
+    width: 100%; padding: 6px; border-radius: 8px; border: 1px solid rgba(165,160,201,0.25);
+    background: rgba(255,255,255,0.05); color: var(--text-main); font-size: 11px;
+  }
+
+  .ld-announce {
+    position: fixed; left: 50%; top: 16%; transform: translate(-50%, -10px);
+    z-index: 50; width: min(420px, 90vw);
+    padding: 16px 22px; border-radius: 18px; text-align: center;
+    background: linear-gradient(180deg, rgba(40,30,80,0.98), rgba(20,16,48,0.98));
+    border: 2px solid rgba(167, 139, 250, 0.65);
+    box-shadow: 0 16px 50px rgba(139,92,246,0.4), inset 0 0 24px rgba(139,92,246,0.15);
+    opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  .ld-announce.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .ld-announce-icon { font-size: 32px; line-height: 1; }
+  .ld-announce-title {
+    font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px;
+  }
+  .ld-announce-text {
+    font-size: 14px; color: var(--text-main); line-height: 1.45; max-width: 100%;
+  }
+  .ld-announce-sub { font-size: 12px; color: var(--text-dim); }
+
+  .ld-cell-tip {
+    display: none; position: fixed; z-index: 60; left: 50%; top: 50%;
+    transform: translate(-50%, -50%); width: min(300px, 88vw);
+    padding: 16px 18px; border-radius: 16px; text-align: center;
+    background: rgba(18,14,42,0.98); border: 1px solid rgba(139,92,246,0.5);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  }
+  .ld-cell-tip.show { display: block; }
+  .ld-cell-tip-icon { font-size: 28px; margin-bottom: 6px; }
+  .ld-cell-tip-title { font-size: 16px; font-weight: 800; color: var(--gold); margin-bottom: 6px; }
+  .ld-cell-tip-desc { font-size: 13px; color: var(--text-main); line-height: 1.4; margin-bottom: 12px; }
+  .ld-cell { cursor: pointer; }
+
+  .ld-relic-pick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0; }
+  .ld-relic-pick-btn {
+    padding: 10px 12px; border-radius: 12px; border: 2px solid rgba(240,171,252,0.4);
+    background: rgba(240,171,252,0.1); color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .ld-relic-pick-btn:hover { border-color: #f0abfc; background: rgba(240,171,252,0.2); }
+
+  @media (max-width: 640px) {
+    .ld-game-body {
+      grid-template-columns: 78px 1fr;
+      grid-template-areas:
+        "chat roster main"
+        "board board board";
+    }
+    .ld-chat { grid-area: chat; width: 90px; }
+    .ld-roster { grid-area: roster; width: 78px; }
+    .ld-main-col { grid-area: main; }
+    .ld-board-col { grid-area: board; }
+    .ld-card { padding: 20px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="ld-root">
+  <div class="ld-glow-blob blob1"></div>
+  <div class="ld-glow-blob blob2"></div>
+
+  <div class="ld-announce" id="announceBox">
+    <div class="ld-announce-icon" id="announceIcon">🎲</div>
+    <div class="ld-announce-title" id="announceTitle">특수 효과</div>
+    <div class="ld-announce-text" id="announceText"></div>
+    <div class="ld-announce-sub" id="announceSub"></div>
+  </div>
+  <div class="ld-cell-tip" id="cellTip">
+    <div class="ld-cell-tip-icon" id="cellTipIcon">🎲</div>
+    <div class="ld-cell-tip-title" id="cellTipTitle">칸 정보</div>
+    <div class="ld-cell-tip-desc" id="cellTipDesc"></div>
+    <button class="ld-btn ld-btn-primary" id="cellTipClose" style="padding:8px 14px;font-size:12px;">닫기</button>
+  </div>
+
+  <div class="ld-shell">
+    <div class="ld-card">
+      <button type="button" class="ld-admin-btn" id="btnAdmin" title="관리">⚙</button>
+      <div class="ld-admin-panel" id="adminPanel">
+        <div id="adminLoginWrap">
+          <div class="ld-field-label" style="margin-top:0;">관리자 비밀번호</div>
+          <input type="password" id="adminPass" placeholder="비밀번호" maxlength="8" />
+          <button class="ld-btn ld-btn-primary" id="btnAdminLogin">확인</button>
+        </div>
+        <div id="adminTools" style="display:none;">
+          <div class="ld-field-label" style="margin-top:0;">대상 플레이어</div>
+          <select id="adminTarget"></select>
+          <button class="ld-btn ld-btn-outline" id="btnAdminKick">강퇴</button>
+          <button class="ld-btn ld-btn-outline" id="btnAdminMute">채금 토글</button>
+          <button class="ld-btn ld-btn-outline" id="btnAdminSkip">턴 강제 스킵</button>
+          <div class="ld-field-label">칸 번호로 이동</div>
+          <input type="number" id="adminCell" min="0" max="31" placeholder="0~31" />
+          <button class="ld-btn ld-btn-primary" id="btnAdminMove">해당 칸으로 이동</button>
+          <div class="ld-field-label">승리 유물 개수 (1~5)</div>
+          <input type="number" id="adminRelicWin" min="1" max="5" value="5" />
+          <button class="ld-btn ld-btn-primary" id="btnAdminRelicWin">유물 목표 적용</button>
+          <div class="ld-error" id="adminMsg" style="min-height:14px;"></div>
+        </div>
+      </div>
+      <h1 class="ld-title">유물 주사위</h1>
+      <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 5종 유물을 모으면 승리!</p>
+
+      <div class="ld-screen active" id="screen-home">
+        <div class="ld-menu-stack">
+          <button class="ld-btn ld-btn-primary" id="btnShowCreate">방 만들기</button>
+          <button class="ld-btn ld-btn-outline" id="btnShowJoin">방 참여하기</button>
+        </div>
+        <div class="ld-panel" id="panelCreate" style="display:none;">
+          <div class="ld-field-label">닉네임</div>
+          <input class="ld-input" id="createNickname" placeholder="예: 행운의주사위" maxlength="10" />
+          <div class="ld-field-label">프로필</div>
+          <div class="ld-avatar-grid" id="createAvatarGrid"></div>
+          <div class="ld-panel-actions">
+            <button class="ld-btn ld-btn-ghost" id="btnCancelCreate">취소</button>
+            <button class="ld-btn ld-btn-primary" id="btnConfirmCreate">만들기</button>
+          </div>
+        </div>
+        <div class="ld-panel" id="panelJoin" style="display:none;">
+          <div class="ld-field-label">닉네임</div>
+          <input class="ld-input" id="joinNickname" placeholder="예: 주사위왕" maxlength="10" />
+          <div class="ld-field-label">프로필</div>
+          <div class="ld-avatar-grid" id="joinAvatarGrid"></div>
+          <div class="ld-field-label">방 코드</div>
+          <input class="ld-input" id="joinCode" placeholder="예: A1B2" maxlength="4" style="text-transform:uppercase; letter-spacing:3px;" />
+          <div class="ld-panel-actions">
+            <button class="ld-btn ld-btn-ghost" id="btnCancelJoin">취소</button>
+            <button class="ld-btn ld-btn-primary" id="btnConfirmJoin">참여하기</button>
+          </div>
+        </div>
+        <div class="ld-error" id="homeError"></div>
+      </div>
+
+      <!-- AUGMENT (after game start) -->
+      <div class="ld-screen" id="screen-augment">
+        <div class="ld-field-label" style="margin-top:0; text-align:center;">🏁 한 바퀴 보너스 — 증강 선택</div>
+        <p class="ld-code-hint" style="margin-bottom:0;">시너지 탭에서 증강 하나를 고르세요. 이미 가진 증강은 제외됩니다.</p>
+        <div class="ld-tabs" id="augmentTabs"></div>
+        <div class="ld-aug-grid" id="augmentChoices"></div>
+        <div class="ld-aug-status" id="augmentStatus"></div>
+        <div class="ld-error" id="augmentError"></div>
+      </div>
+
+      <div class="ld-screen" id="screen-lobby">
+        <div class="ld-code-display" id="lobbyCode">----</div>
+        <div class="ld-code-hint">이 코드를 친구에게 공유하세요 (최대 4명)</div>
+        <div class="ld-panel">
+          <div class="ld-field-label" style="margin-top:0;">참가자</div>
+          <div id="lobbyPlayers" style="margin-top:8px;"></div>
+        </div>
+        <div id="lobbyHostControls" style="margin-top:14px;"></div>
+        <button class="ld-btn ld-btn-ghost" id="btnLeaveLobby" style="width:100%; margin-top:10px;">나가기</button>
+        <div class="ld-error" id="lobbyError"></div>
+      </div>
+
+      <div class="ld-screen" id="screen-game">
+        <div class="ld-top-bar">
+          <span class="ld-room-chip" id="gameRoomCode">----</span>
+          <button class="ld-btn ld-btn-ghost" id="btnLeaveGame" style="width:auto; padding:8px 12px;">나가기</button>
+        </div>
+
+        <div class="ld-game-body">
+          <div class="ld-chat">
+            <div class="ld-chat-title">채팅</div>
+            <div class="ld-chat-log" id="chatLog"></div>
+            <input class="ld-chat-input" id="chatInput" maxlength="60" placeholder="메시지..." />
+          </div>
+          <div class="ld-roster">
+            <div class="ld-roster-title">플레이어</div>
+            <div id="gameRoster"></div>
+          </div>
+          <div class="ld-main-col">
+            <div class="ld-dice-mini-stage">
+              <div class="ld-cube-mini" id="cubeMini">
+                <div class="ld-face-mini mf1"><div class="pip-grid-mini" id="mpip1"></div></div>
+                <div class="ld-face-mini mf2"><div class="pip-grid-mini" id="mpip2"></div></div>
+                <div class="ld-face-mini mf3"><div class="pip-grid-mini" id="mpip3"></div></div>
+                <div class="ld-face-mini mf4"><div class="pip-grid-mini" id="mpip4"></div></div>
+                <div class="ld-face-mini mf5"><div class="pip-grid-mini" id="mpip5"></div></div>
+                <div class="ld-face-mini mf6"><div class="pip-grid-mini" id="mpip6"></div></div>
+              </div>
+            </div>
+
+            <div class="ld-turn-order" id="turnOrder"></div>
+            <div class="ld-turn-banner rb-wait" id="turnBanner">대기 중</div>
+
+            <div class="ld-duel" id="duelBox">
+              <div class="ld-duel-title">⚔️ 같은 칸 대결!</div>
+              <div class="ld-duel-vs" id="duelVs"></div>
+              <div class="ld-duel-rolls" id="duelRolls"></div>
+              <div class="ld-duel-hint" id="duelHint"></div>
+              <button class="ld-btn ld-btn-primary" id="btnDuelRoll">대결 주사위 굴리기</button>
+            </div>
+
+            <div class="ld-relic-challenge" id="relicBox">
+              <div class="ld-relic-challenge-title" id="relicChallengeTitle">💎 유물 도전!</div>
+              <div class="ld-relic-target" id="relicTarget">?</div>
+              <div class="ld-relic-rolls" id="relicRolls">주사위: —</div>
+              <div class="ld-relic-hint" id="relicHint">목표(1~6)와 같은 눈이 나오면 유물 획득 · 증강 미적용</div>
+              <div class="ld-relic-pick" id="relicPick" style="display:none;"></div>
+              <select id="stealTarget" style="display:none;width:100%;margin:6px 0;padding:8px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(165,160,201,0.3);"></select>
+              <button class="ld-btn ld-btn-primary" id="btnRelicRoll">유물 주사위 굴리기</button>
+            </div>
+
+            <div class="ld-relic-bar" id="relicBar"></div>
+
+            <button class="ld-btn ld-btn-primary" id="btnRoll" style="margin-bottom:10px;">주사위 굴리기</button>
+
+            <div class="ld-aug-detail" id="augDetail">
+              <div class="ld-aug-detail-title" id="augDetailTitle"></div>
+              <div id="augDetailDesc"></div>
+            </div>
+
+            <div class="ld-log">
+              <div class="ld-log-title">최근 기록</div>
+              <div id="gameLog"><div class="ld-log-empty">아직 굴린 기록이 없습니다</div></div>
+            </div>
+            <div class="ld-error" id="gameError"></div>
+          </div>
+          <div class="ld-board-col">
+            <div class="ld-legend" id="boardLegend"></div>
+            <div class="ld-board-wrap">
+              <div class="ld-board-grid" id="boardGrid">
+                <div class="ld-center" id="boardCenter">
+                  <div class="ld-center-code" id="centerCode">----</div>
+                  <div class="ld-center-label">방 코드</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171'];
+  var AVATARS = ['🦊', '🐱', '🐼', '🐯', '🐸', '🐧', '🦄', '🐲', '🐶', '🐰', '🦁', '🐨'];
+  var BOARD_G = 9;
+  var BOARD_SIZE = 4 * (BOARD_G - 1);
+  var KV_BASE = 'https://kvs.ix.workers.dev/lucky-dice/';
+  var POLL_MS = 1400;
+  var STEP_MS = 200;
+  var POST_ROLL_DELAY = 700;
+  var EFFECT_READ_MS = 1900;
+
+  var FACE_ROTATION = {
+    1: { x: 0, y: 0 }, 2: { x: 0, y: -90 }, 3: { x: -90, y: 0 },
+    4: { x: 90, y: 0 }, 5: { x: 0, y: 90 }, 6: { x: 0, y: 180 }
+  };
+  var PIP_LAYOUT = {
+    1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
+    5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
+  };
+  var RESULT_KIND = { 1: 'low', 2: 'mid', 3: 'mid', 4: 'good', 5: 'good', 6: 'great' };
+
+  var CELL_TYPES = {
+    boost:  { icon: '🚀', label: '부스트', desc: '+3칸 추가 이동', color: '#22d3ee' },
+    trap:   { icon: '💀', label: '함정', desc: '3칸 뒤로', color: '#f87171' },
+    again:  { icon: '🎲', label: '한 번 더', desc: '한 번 더 굴림', color: '#a78bfa' },
+    skip:   { icon: '⏭️', label: '스킵', desc: '다음 상대 턴 스킵', color: '#fbbf24' },
+    warp:   { icon: '🌀', label: '워프', desc: '랜덤 칸으로 이동', color: '#8b5cf6' },
+    rest:   { icon: '🔒', label: '휴식', desc: '다음 턴 쉬기', color: '#94a3b8' },
+    gift:   { icon: '🎁', label: '선물', desc: '1~3칸 앞으로', color: '#34d399' },
+    swap:   { icon: '🔄', label: '교체', desc: '랜덤 상대와 위치 교환', color: '#fb7185' },
+    relic:  { icon: '💎', label: '유물', desc: '목표 수(1~6)를 주사위 한 번으로 맞추면 유물 획득 (증강 미적용)', color: '#f0abfc' },
+    steal:  { icon: '🏴‍☠️', label: '강탈', desc: '원하는 상대와 주사위 배틀 후 유물 1개 강탈', color: '#fb7185' }
+  };
+  var CELL_TYPE_KEYS = Object.keys(CELL_TYPES);
+
+  var RELIC_TYPES = [
+    { id: 'flame', name: '불꽃 유물', icon: '🔥' },
+    { id: 'tide', name: '파도 유물', icon: '🌊' },
+    { id: 'herb', name: '허브 유물', icon: '🌿' },
+    { id: 'storm', name: '번개 유물', icon: '⚡' },
+    { id: 'moon', name: '달 유물', icon: '🌙' }
+  ];
+  function getRelicById(id) {
+    return RELIC_TYPES.find(function (r) { return r.id === id; }) || null;
+  }
+  function playerRelics(p) {
+    return (p && p.relics) ? p.relics : [];
+  }
+  function hasAllRelics(p, needed) {
+    var r = playerRelics(p);
+    var n = (needed != null) ? needed : 5;
+    n = Math.max(1, Math.min(5, n));
+    // 고유 유물 개수로 판정
+    var uniq = {};
+    r.forEach(function (id) { uniq[id] = true; });
+    return Object.keys(uniq).length >= n;
+  }
+  function relicsNeeded(room) {
+    var n = room && room.relicsToWin != null ? room.relicsToWin : 5;
+    return Math.max(1, Math.min(5, n));
+  }
+  function pickRelicForPlayer(p) {
+    var owned = playerRelics(p);
+    var missing = RELIC_TYPES.filter(function (t) { return owned.indexOf(t.id) === -1; });
+    if (!missing.length) missing = RELIC_TYPES.slice();
+    return missing[Math.floor(Math.random() * missing.length)].id;
+  }
+
+  // 시너지 묶음 카테고리
+  var AUGMENT_CATEGORIES = [
+    { id: 'luck', label: '🍀 행운 시너지' },
+    { id: 'boost', label: '🚀 가속 시너지' },
+    { id: 'defend', label: '🛡️ 방어 시너지' },
+    { id: 'duel', label: '⚔️ 대결 시너지' },
+    { id: 'chaos', label: '🌪️ 혼돈 시너지' }
+  ];
+
+  var AUGMENT_POOL = [
+    // 행운 시너지
+    { id: 'lucky', cat: 'luck', name: '행운', icon: '🍀', desc: '주사위 결과에 +1 (최대 6)', tag: '행운 코어' },
+    { id: 'swift', cat: 'luck', name: '신속', icon: '⚡', desc: '1~2가 나오면 다시 굴림', tag: '행운 코어' },
+    { id: 'highroller', cat: 'luck', name: '하이롤러', icon: '🎲', desc: '4 이상이면 이동 +1칸', tag: '행운 연계' },
+    { id: 'luckyseven', cat: 'luck', name: '세븐', icon: '7️⃣', desc: '5가 나오면 7칸 이동', tag: '행운 연계' },
+    { id: 'clover', cat: 'luck', name: '네잎클로버', icon: '☘️', desc: '4가 나오면 +2칸', tag: '행운 연계' },
+    { id: 'fortune', cat: 'luck', name: '대박', icon: '💰', desc: '6이 나오면 맵 1/8만큼 추가 이동', tag: '행운+도박' },
+    { id: 'loaded', cat: 'luck', name: '조작된 주사위', icon: '🎯', desc: '최소 눈이 2 (1이 나오면 2)', tag: '행운 코어' },
+    { id: 'hotstreak', cat: 'luck', name: '연승', icon: '🔥', desc: '이전 굴림이 5~6이면 이번 +1칸', tag: '행운 연계' },
+
+    // 가속 시너지 (부스트/선물/워프)
+    { id: 'collector', cat: 'boost', name: '수집가', icon: '⭐', desc: '부스트·선물 효과 +1칸', tag: '가속 코어' },
+    { id: 'doublegift', cat: 'boost', name: '풍요', icon: '🎀', desc: '선물 칸 효과 두 번', tag: '가속 연계' },
+    { id: 'courier', cat: 'boost', name: '특송', icon: '📦', desc: '부스트 칸에서 +5칸', tag: '가속 연계' },
+    { id: 'chainboost', cat: 'boost', name: '연쇄가속', icon: '🔗', desc: '부스트 시 추가 +2칸', tag: '가속 연계' },
+    { id: 'phantom', cat: 'boost', name: '유령', icon: '👻', desc: '워프 후 +2칸', tag: '가속+혼돈' },
+    { id: 'sprinter', cat: 'boost', name: '질주', icon: '💨', desc: '획득 시 즉시 5칸 전진', tag: '가속 코어' },
+    { id: 'turbo', cat: 'boost', name: '터보', icon: '🏎️', desc: '부스트 칸에서 한 번 더 굴릴 기회', tag: '가속 연계' },
+    { id: 'magnet', cat: 'boost', name: '자석', icon: '🧲', desc: '착지 칸 앞 2칸 안에 선물이 있으면 +1칸', tag: '가속 코어' },
+
+    // 방어 시너지
+    { id: 'shield', cat: 'defend', name: '방패', icon: '🛡️', desc: '함정·휴식 1회 무시 (중첩 가능)', tag: '방어 코어' },
+    { id: 'iron', cat: 'defend', name: '강철', icon: '🪨', desc: '뒤로 가는 거리 절반', tag: '방어 연계' },
+    { id: 'guardian', cat: 'defend', name: '수호', icon: '🧱', desc: '함정 시 1칸만 뒤로', tag: '방어 연계' },
+    { id: 'anchor', cat: 'defend', name: '닻', icon: '⚓', desc: '워프·교체 무시', tag: '방어 코어' },
+    { id: 'steady', cat: 'defend', name: '안정', icon: '🧘', desc: '휴식 칸 무시', tag: '방어 코어' },
+    { id: 'reflect', cat: 'defend', name: '반사', icon: '💠', desc: '함정 시 가까운 상대 -1칸', tag: '방어 연계' },
+    { id: 'insurance', cat: 'defend', name: '보험', icon: '📋', desc: '함정에 걸리면 다음 이동 +2칸', tag: '방어 연계' },
+    { id: 'fortress', cat: 'defend', name: '요새', icon: '🏰', desc: 'START 칸에 있으면 대결 시 주사위 +1', tag: '방어+대결' },
+
+    // 대결 시너지
+    { id: 'duelist', cat: 'duel', name: '결투사', icon: '🗡️', desc: '대결 주사위에 +1', tag: '대결 코어' },
+    { id: 'bully', cat: 'duel', name: '약탈', icon: '👊', desc: '대결 승리 시 벌칙 +1칸', tag: '대결 연계' },
+    { id: 'vampire', cat: 'duel', name: '흡혈', icon: '🧛', desc: '같은 칸 착지 시(대결 전) +2칸', tag: '대결 연계' },
+    { id: 'thief', cat: 'duel', name: '도둑', icon: '🦹', desc: '스킵 칸 발동 시 본인 +2칸', tag: '대결+가속' },
+    { id: 'intimidate', cat: 'duel', name: '위압', icon: '😤', desc: '대결 패배 시 뒤로 가는 양 1칸 감소', tag: '대결 코어' },
+    { id: 'challenger', cat: 'duel', name: '도전자', icon: '🏁', desc: '자신보다 앞선 상대와 대결 시 +1', tag: '대결 연계' },
+    { id: 'rematch', cat: 'duel', name: '재대결', icon: '🔁', desc: '대결 무승부 시 자동으로 한 번 더 (표시만)', tag: '대결 코어' },
+
+    // 혼돈 시너지
+    { id: 'gambler', cat: 'chaos', name: '도박꾼', icon: '🎰', desc: '6이 나오면 추가 턴', tag: '혼돈+행운' },
+    { id: 'chaos', cat: 'chaos', name: '혼돈', icon: '🌪️', desc: '착지 시 10% 랜덤 워프', tag: '혼돈 코어' },
+    { id: 'jester', cat: 'chaos', name: '광대', icon: '🃏', desc: '교체 칸에서 전원 위치 회전', tag: '혼돈 코어' },
+    { id: 'mirror', cat: 'chaos', name: '거울', icon: '🪞', desc: '홀수 눈이면 이동 7-n', tag: '혼돈 코어' },
+    { id: 'timebend', cat: 'chaos', name: '시공', icon: '⏳', desc: '스킵 칸 → 본인 추가 턴', tag: '혼돈 연계' },
+    { id: 'combo', cat: 'chaos', name: '콤보', icon: '✨', desc: '특수칸 효과 발동 시 +1칸', tag: '혼돈+가속' },
+    { id: 'wildcard', cat: 'chaos', name: '와일드', icon: '🎴', desc: '특수칸 착지 시 25%로 다른 특수 효과', tag: '혼돈 코어' },
+    { id: 'glitch', cat: 'chaos', name: '글리치', icon: '👾', desc: '이동 후 5% 확률로 위치 ±3칸', tag: '혼돈 연계' },
+
+    // 유물 시너지 (가속/혼돈 탭에 분산 + 전용 느낌 태그)
+    { id: 'relicsense', cat: 'boost', name: '유물 감응', icon: '💎', desc: '유물 도전 목표 숫자가 ±1 범위로 성공', tag: '유물 코어' },
+    { id: 'doublerelic', cat: 'boost', name: '이중 각인', icon: '💠', desc: '유물 성공 시 25%로 한 번 더 도전', tag: '유물 연계' },
+    { id: 'relicluck', cat: 'luck', name: '유물 행운', icon: '🧿', desc: '유물 도전 주사위 각각에 +1', tag: '유물+행운' },
+    { id: 'relicguard', cat: 'defend', name: '유물 수호', icon: '🔮', desc: '유물 실패 시 함정 1회 면역 충전', tag: '유물+방어' },
+    { id: 'relichunter', cat: 'duel', name: '유물 사냥꾼', icon: '🏹', desc: '(유물 칸에서는 증강 미적용)', tag: '유물 연계' },
+    { id: 'relicforge', cat: 'chaos', name: '유물 제련', icon: '⚒️', desc: '유물 실패해도 10% 확률로 획득', tag: '유물+혼돈' }
+  ];
+
+  function playerAugs(p) {
+    if (!p) return [];
+    if (p.augments && p.augments.length) return p.augments;
+    if (p.augment) return [p.augment];
+    return [];
+  }
+  function hasAug(p, id) {
+    return playerAugs(p).indexOf(id) !== -1;
+  }
+
+  function countAugCat(p, cat) {
+    return playerAugs(p).filter(function (id) {
+      var a = getAugmentById(id);
+      return a && a.cat === cat;
+    }).length;
+  }
+  function synergyBonus(p) {
+    // 같은 시너지 2개 이상 보유 시 소폭 보너스
+    return {
+      luckMove: countAugCat(p, 'luck') >= 2 ? 1 : 0,
+      boostExtra: countAugCat(p, 'boost') >= 2 ? 1 : 0,
+      defendCut: countAugCat(p, 'defend') >= 2 ? 1 : 0,
+      duelPlus: countAugCat(p, 'duel') >= 2 ? 1 : 0,
+      chaosChance: countAugCat(p, 'chaos') >= 2 ? 0.05 : 0
+    };
+  }
+
+
+  function buildMiniPips() {
+    for (var n = 1; n <= 6; n++) {
+      var grid = document.getElementById('mpip' + n);
+      var active = new Set(PIP_LAYOUT[n]);
+      for (var i = 0; i < 9; i++) {
+        var cell = document.createElement('div');
+        cell.className = 'pip-cell-mini';
+        if (active.has(i)) {
+          var dot = document.createElement('div');
+          dot.className = 'pip-dot-mini';
+          cell.appendChild(dot);
+        }
+        grid.appendChild(cell);
+      }
+    }
+  }
+  buildMiniPips();
+
+  function boardCellCoords(G) {
+    var cells = [];
+    for (var c = 0; c < G; c++) cells.push({ row: 0, col: c });
+    for (var r = 1; r < G; r++) cells.push({ row: r, col: G - 1 });
+    for (var c2 = G - 2; c2 >= 0; c2--) cells.push({ row: G - 1, col: c2 });
+    for (var r2 = G - 2; r2 >= 1; r2--) cells.push({ row: r2, col: 0 });
+    return cells;
+  }
+  var BOARD_CELLS = boardCellCoords(BOARD_G);
+  var STACK_OFFSETS = [[0, 0], [8, -8], [-8, 8], [8, 8]];
+
+  function seededRandom(seed) {
+    var x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+
+  function generateSpecials(seed) {
+    var map = {};
+    var count = Math.floor(BOARD_SIZE * 0.42);
+    var placed = 0, i = 0;
+    // 유물 3칸 + 강탈 1칸 고정
+    var FIXED_RELICS = [5, 15, 25];
+    var FIXED_STEAL = 10;
+    FIXED_RELICS.forEach(function (idx) {
+      if (idx > 0 && idx < BOARD_SIZE) {
+        map[idx] = 'relic';
+        placed++;
+      }
+    });
+    if (FIXED_STEAL > 0 && FIXED_STEAL < BOARD_SIZE) {
+      map[FIXED_STEAL] = 'steal';
+      placed++;
+    }
+    var nonRelicKeys = CELL_TYPE_KEYS.filter(function (k) { return k !== 'relic' && k !== 'steal'; });
+    while (placed < count && i < 400) {
+      var idx = 1 + Math.floor(seededRandom(seed + i * 17) * (BOARD_SIZE - 1));
+      if (!map[idx]) {
+        map[idx] = nonRelicKeys[Math.floor(seededRandom(seed + i * 31 + 3) * nonRelicKeys.length)];
+        placed++;
+      }
+      i++;
+    }
+    return map;
+  }
+
+  function getAugmentById(id) {
+    return AUGMENT_POOL.find(function (a) { return a.id === id; }) || null;
+  }
+
+  async function getRoom(code) {
+    try {
+      var res = await fetch(KV_BASE + encodeURIComponent(code));
+      if (!res.ok) return null;
+      var text = await res.text();
+      return text ? JSON.parse(text) : null;
+    } catch (e) { return null; }
+  }
+  async function saveRoom(room) {
+    var res = await fetch(KV_BASE + encodeURIComponent(room.code), {
+      method: 'PUT',
+      body: JSON.stringify(room),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) throw new Error('SAVE_FAILED');
+  }
+
+  function genCode() {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var out = '';
+    for (var i = 0; i < 4; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+  }
+
+  var myPlayerId = null;
+  var myRoomCode = null;
+  var pollTimer = null;
+  var tokenRenderedPos = {};
+  var lastRoomSnapshot = null;
+  var rolling = false;
+  var boardBuilt = false;
+  var lastPendingTs = 0;
+  var remoteAnimating = false;
+  var lastAnnounceTs = 0;
+  var selectedRosterId = null;
+  var currentAugTab = 'luck';
+  var myAugOffers = null;
+  var selectedCreateAvatar = AVATARS[0];
+  var selectedJoinAvatar = AVATARS[1];
+  var duelBusy = false;
+
+  var els = {
+    screenHome: document.getElementById('screen-home'),
+    screenAugment: document.getElementById('screen-augment'),
+    screenLobby: document.getElementById('screen-lobby'),
+    screenGame: document.getElementById('screen-game'),
+    btnShowCreate: document.getElementById('btnShowCreate'),
+    btnShowJoin: document.getElementById('btnShowJoin'),
+    panelCreate: document.getElementById('panelCreate'),
+    panelJoin: document.getElementById('panelJoin'),
+    createNickname: document.getElementById('createNickname'),
+    joinNickname: document.getElementById('joinNickname'),
+    joinCode: document.getElementById('joinCode'),
+    createAvatarGrid: document.getElementById('createAvatarGrid'),
+    joinAvatarGrid: document.getElementById('joinAvatarGrid'),
+    btnCancelCreate: document.getElementById('btnCancelCreate'),
+    btnCancelJoin: document.getElementById('btnCancelJoin'),
+    btnConfirmCreate: document.getElementById('btnConfirmCreate'),
+    btnConfirmJoin: document.getElementById('btnConfirmJoin'),
+    homeError: document.getElementById('homeError'),
+    turnOrder: document.getElementById('turnOrder'),
+    duelBox: document.getElementById('duelBox'),
+    duelVs: document.getElementById('duelVs'),
+    duelRolls: document.getElementById('duelRolls'),
+    duelHint: document.getElementById('duelHint'),
+    btnDuelRoll: document.getElementById('btnDuelRoll'),
+    relicBox: document.getElementById('relicBox'),
+    relicTarget: document.getElementById('relicTarget'),
+    relicRolls: document.getElementById('relicRolls'),
+    relicHint: document.getElementById('relicHint'),
+    btnRelicRoll: document.getElementById('btnRelicRoll'),
+    relicBar: document.getElementById('relicBar'),
+    augmentTabs: document.getElementById('augmentTabs'),
+    augmentChoices: document.getElementById('augmentChoices'),
+    augmentStatus: document.getElementById('augmentStatus'),
+    augmentError: document.getElementById('augmentError'),
+    lobbyCode: document.getElementById('lobbyCode'),
+    lobbyPlayers: document.getElementById('lobbyPlayers'),
+    lobbyHostControls: document.getElementById('lobbyHostControls'),
+    btnLeaveLobby: document.getElementById('btnLeaveLobby'),
+    lobbyError: document.getElementById('lobbyError'),
+    gameRoomCode: document.getElementById('gameRoomCode'),
+    centerCode: document.getElementById('centerCode'),
+    btnLeaveGame: document.getElementById('btnLeaveGame'),
+    cubeMini: document.getElementById('cubeMini'),
+    turnBanner: document.getElementById('turnBanner'),
+    btnRoll: document.getElementById('btnRoll'),
+    boardGrid: document.getElementById('boardGrid'),
+    boardCenter: document.getElementById('boardCenter'),
+    boardLegend: document.getElementById('boardLegend'),
+    gameRoster: document.getElementById('gameRoster'),
+    augDetail: document.getElementById('augDetail'),
+    augDetailTitle: document.getElementById('augDetailTitle'),
+    augDetailDesc: document.getElementById('augDetailDesc'),
+    gameLog: document.getElementById('gameLog'),
+    gameError: document.getElementById('gameError'),
+    announceBox: document.getElementById('announceBox'),
+    announceIcon: document.getElementById('announceIcon'),
+    announceTitle: document.getElementById('announceTitle'),
+    announceText: document.getElementById('announceText'),
+    announceSub: document.getElementById('announceSub')
+  };
+
+  function showScreen(name) {
+    [els.screenHome, els.screenAugment, els.screenLobby, els.screenGame].forEach(function (s) {
+      s.classList.remove('active');
+    });
+    if (name === 'home') els.screenHome.classList.add('active');
+    if (name === 'augment') els.screenAugment.classList.add('active');
+    if (name === 'lobby') els.screenLobby.classList.add('active');
+    if (name === 'game') els.screenGame.classList.add('active');
+  }
+
+  function showAnnounce(icon, title, text, sub) {
+    els.announceIcon.textContent = icon || '🎲';
+    els.announceTitle.textContent = title || '알림';
+    els.announceText.textContent = text || '';
+    els.announceSub.textContent = sub || '';
+    els.announceBox.classList.add('show');
+    clearTimeout(showAnnounce._t);
+    showAnnounce._t = setTimeout(function () {
+      els.announceBox.classList.remove('show');
+    }, 4500);
+  }
+
+  els.btnShowCreate.onclick = function () {
+    els.panelCreate.style.display = 'block';
+    els.panelJoin.style.display = 'none';
+    els.homeError.textContent = '';
+  };
+  els.btnShowJoin.onclick = function () {
+    els.panelJoin.style.display = 'block';
+    els.panelCreate.style.display = 'none';
+    els.homeError.textContent = '';
+  };
+  els.btnCancelCreate.onclick = function () { els.panelCreate.style.display = 'none'; };
+  els.btnCancelJoin.onclick = function () { els.panelJoin.style.display = 'none'; };
+
+  function makePlayer(id, name, colorIdx, avatar) {
+    return {
+      id: id,
+      name: name,
+      color: COLORS[colorIdx % COLORS.length],
+      avatar: avatar || AVATARS[colorIdx % AVATARS.length],
+      position: 0,
+      laps: 0,
+      augment: null,
+      augments: [],
+      relics: [],
+      skipTurns: 0,
+      shieldCharges: 0,
+      lastFace: 0,
+      nextMoveBonus: 0
+    };
+  }
+
+  function renderAvatarPicker(container, selected, onSelect) {
+    if (!container) return;
+    container.innerHTML = '';
+    AVATARS.forEach(function (av) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ld-avatar-opt' + (av === selected ? ' selected' : '');
+      btn.textContent = av;
+      btn.onclick = function () { onSelect(av); renderAvatarPicker(container, av, onSelect); };
+      container.appendChild(btn);
+    });
+  }
+  renderAvatarPicker(els.createAvatarGrid, selectedCreateAvatar, function (av) { selectedCreateAvatar = av; });
+  renderAvatarPicker(els.joinAvatarGrid, selectedJoinAvatar, function (av) { selectedJoinAvatar = av; });
+
+  els.btnConfirmCreate.onclick = async function () {
+    var nickname = els.createNickname.value.trim();
+    if (!nickname) { els.homeError.textContent = '닉네임을 입력해주세요'; return; }
+    els.btnConfirmCreate.disabled = true;
+    els.homeError.textContent = '';
+    try {
+      var code, existing, tries = 0;
+      do {
+        code = genCode();
+        existing = await getRoom(code);
+        tries++;
+      } while (existing && tries < 6);
+
+      myPlayerId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+      var seed = Date.now() % 100000;
+      var room = {
+        code: code,
+        createdAt: Date.now(),
+        status: 'waiting',
+        boardSize: BOARD_SIZE,
+        boardSeed: seed,
+        specials: generateSpecials(seed),
+        turnIndex: 0,
+        skipNext: false,
+        pendingRoll: null,
+        announce: null,
+        duel: null,
+        chat: [],
+        muted: {},
+        relicsToWin: 5,
+        players: [makePlayer(myPlayerId, nickname, 0, selectedCreateAvatar)],
+        log: []
+      };
+      await saveRoom(room);
+      myRoomCode = code;
+      enterLobby(room);
+      startPolling();
+    } catch (e) {
+      els.homeError.textContent = '방을 만들지 못했어요. 다시 시도해주세요.';
+    } finally {
+      els.btnConfirmCreate.disabled = false;
+    }
+  };
+
+  els.btnConfirmJoin.onclick = async function () {
+    var nickname = els.joinNickname.value.trim();
+    var code = els.joinCode.value.trim().toUpperCase();
+    if (!nickname) { els.homeError.textContent = '닉네임을 입력해주세요'; return; }
+    if (!code || code.length !== 4) { els.homeError.textContent = '4자리 방 코드를 입력해주세요'; return; }
+    els.btnConfirmJoin.disabled = true;
+    els.homeError.textContent = '';
+    try {
+      var room = await getRoom(code);
+      if (!room) { els.homeError.textContent = '해당 코드의 방을 찾을 수 없어요'; return; }
+      if (room.status !== 'waiting') { els.homeError.textContent = '이미 시작된 게임이에요'; return; }
+      if (room.players.length >= 4) { els.homeError.textContent = '방이 가득 찼어요 (최대 4명)'; return; }
+
+      myPlayerId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+      room.players.push(makePlayer(myPlayerId, nickname, room.players.length, selectedJoinAvatar));
+      await saveRoom(room);
+      myRoomCode = code;
+      enterLobby(room);
+      startPolling();
+    } catch (e) {
+      els.homeError.textContent = '참여하지 못했어요. 다시 시도해주세요.';
+    } finally {
+      els.btnConfirmJoin.disabled = false;
+    }
+  };
+
+  function isHost(room) {
+    return room.players.length > 0 && room.players[0].id === myPlayerId;
+  }
+
+  function enterLobby(room) {
+    lastRoomSnapshot = room;
+    showScreen('lobby');
+    renderLobby(room);
+  }
+
+  function renderLobby(room) {
+    els.lobbyCode.textContent = room.code;
+    els.lobbyPlayers.innerHTML = '';
+    room.players.forEach(function (p, idx) {
+      var row = document.createElement('div');
+      row.className = 'ld-player-row';
+      row.innerHTML =
+        '<div class="ld-player-dot" style="background:' + p.color + '; color:' + p.color + '; display:flex;align-items:center;justify-content:center;font-size:12px;">' + (p.avatar || '') + '</div>' +
+        '<span class="ld-player-name">' + escapeHtml(p.name) + '</span>' +
+        (idx === 0 ? '<span class="ld-player-tag">호스트</span>' : '');
+      els.lobbyPlayers.appendChild(row);
+    });
+
+    els.lobbyHostControls.innerHTML = '';
+    if (isHost(room)) {
+      var startBtn = document.createElement('button');
+      startBtn.className = 'ld-btn ld-btn-primary';
+      startBtn.textContent = room.players.length >= 2 ? '게임 시작' : '2명 이상 모이면 시작할 수 있어요';
+      startBtn.disabled = room.players.length < 2;
+      startBtn.onclick = startGameDirect;
+      els.lobbyHostControls.appendChild(startBtn);
+    } else {
+      var waitMsg = document.createElement('div');
+      waitMsg.className = 'ld-code-hint';
+      waitMsg.style.marginTop = '4px';
+      waitMsg.textContent = '호스트가 게임을 시작하기를 기다리는 중...';
+      els.lobbyHostControls.appendChild(waitMsg);
+    }
+  }
+
+  async function startGameDirect() {
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room) { els.lobbyError.textContent = '방을 찾을 수 없어요'; return; }
+      room.status = 'playing';
+      room.players.forEach(function (p) {
+        p.augment = null;
+        p.augments = [];
+        p.position = 0;
+        p.laps = 0;
+        p.skipTurns = 0;
+        p.shieldCharges = 0;
+        p.lastFace = 0;
+        p.nextMoveBonus = 0;
+      });
+      room.turnIndex = 0;
+      room.skipNext = false;
+      room.pendingRoll = null;
+      room.duel = null;
+      room.relicChallenge = null;
+      room.winnerId = null;
+      if (room.relicsToWin == null) room.relicsToWin = 5;
+      room.augmentPick = null;
+      room.pendingPickExtraTurn = false;
+      room.announce = {
+        icon: '🎮',
+        title: '게임 시작!',
+        text: '한 바퀴를 돌 때마다 증강을 고를 수 있어요',
+        sub: '행운을 빕니다',
+        ts: Date.now()
+      };
+      await saveRoom(room);
+      enterGame(room);
+      maybeShowAnnounce(room);
+    } catch (e) {
+      els.lobbyError.textContent = '시작하지 못했어요';
+    }
+  }
+
+  function buildAugOffers(ownedIds) {
+    ownedIds = ownedIds || [];
+    var byCat = {};
+    AUGMENT_CATEGORIES.forEach(function (c) { byCat[c.id] = []; });
+    AUGMENT_POOL.forEach(function (a) {
+      if (ownedIds.indexOf(a.id) !== -1) return; // 이미 보유한 증강 제외
+      if (byCat[a.cat]) byCat[a.cat].push(a);
+    });
+    Object.keys(byCat).forEach(function (k) {
+      var arr = byCat[k];
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+      }
+      byCat[k] = arr.slice(0, 6); // 탭당 최대 6개 노출
+    });
+    return byCat;
+  }
+
+  function enterAugmentPick(room) {
+    lastRoomSnapshot = room;
+    var me = room.players.find(function (p) { return p.id === myPlayerId; });
+    myAugOffers = buildAugOffers(playerAugs(me));
+    currentAugTab = AUGMENT_CATEGORIES[0].id;
+    // 비어 있지 않은 첫 탭
+    for (var i = 0; i < AUGMENT_CATEGORIES.length; i++) {
+      var id = AUGMENT_CATEGORIES[i].id;
+      if (myAugOffers[id] && myAugOffers[id].length) {
+        currentAugTab = id;
+        break;
+      }
+    }
+    renderAugmentUI(room);
+    showScreen('augment');
+  }
+
+  function renderAugmentUI(room) {
+    var me = room.players.find(function (p) { return p.id === myPlayerId; });
+    var isPicker = room.augmentPick && room.augmentPick.playerId === myPlayerId;
+    var owned = playerAugs(me);
+
+    els.augmentTabs.innerHTML = '';
+    AUGMENT_CATEGORIES.forEach(function (cat) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      var count = (myAugOffers && myAugOffers[cat.id]) ? myAugOffers[cat.id].length : 0;
+      btn.className = 'ld-tab' + (currentAugTab === cat.id ? ' active' : '');
+      btn.textContent = cat.label + (count ? ' (' + count + ')' : '');
+      btn.onclick = function () {
+        currentAugTab = cat.id;
+        renderAugmentUI(room);
+      };
+      els.augmentTabs.appendChild(btn);
+    });
+
+    els.augmentChoices.innerHTML = '';
+    var list = (myAugOffers && myAugOffers[currentAugTab]) ? myAugOffers[currentAugTab] : [];
+    if (!list.length) {
+      els.augmentChoices.innerHTML = '<div class="ld-code-hint">이 시너지 묶음에 고를 수 있는 증강이 없습니다</div>';
+    }
+    list.forEach(function (aug) {
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'ld-aug-card';
+      card.disabled = !isPicker;
+      card.innerHTML =
+        '<div class="ld-aug-card-title"><span>' + aug.icon + '</span><span>' + escapeHtml(aug.name) + '</span></div>' +
+        '<div class="ld-aug-card-desc">' + escapeHtml(aug.desc) + '</div>' +
+        (aug.tag ? '<span class="ld-aug-card-tag">' + escapeHtml(aug.tag) + '</span>' : '');
+      if (isPicker) {
+        card.onclick = function () { confirmAugment(aug.id); };
+      }
+      els.augmentChoices.appendChild(card);
+    });
+
+    var ownedTxt = owned.length
+      ? owned.map(function (id) {
+          var a = getAugmentById(id);
+          return a ? a.icon + a.name : id;
+        }).join(' · ')
+      : '없음';
+
+    if (isPicker) {
+      els.augmentStatus.textContent = '🏁 한 바퀴 완주! 시너지 증강을 하나 고르세요  ·  보유: ' + ownedTxt;
+    } else {
+      els.augmentStatus.textContent = '다른 플레이어가 증강을 선택하는 중...  ·  내 보유: ' + ownedTxt;
+    }
+    els.augmentError.textContent = '';
+  }
+
+  async function confirmAugment(augId) {
+    els.augmentError.textContent = '';
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room || !room.augmentPick || room.augmentPick.playerId !== myPlayerId) {
+        els.augmentError.textContent = '지금은 선택할 수 없어요';
+        return;
+      }
+      var me = room.players.find(function (p) { return p.id === myPlayerId; });
+      if (!me) return;
+
+      me.augments = playerAugs(me);
+      if (me.augments.indexOf(augId) === -1) me.augments.push(augId);
+      me.augment = augId;
+      if (augId === 'shield') me.shieldCharges = (me.shieldCharges || 0) + 1;
+      if (augId === 'sprinter') {
+        var from = me.position;
+        me.position = (me.position + 5) % BOARD_SIZE;
+        tokenRenderedPos[me.id] = me.position;
+      }
+
+      var extra = !!room.pendingPickExtraTurn;
+      room.pendingPickExtraTurn = false;
+      room.augmentPick = null;
+
+      var a = getAugmentById(augId);
+      room.announce = {
+        icon: a ? a.icon : '✨',
+        title: me.name + ' 증강 획득!',
+        text: a ? (a.icon + ' ' + a.name + ' — ' + a.desc) : augId,
+        sub: '보유 ' + me.augments.length + '개',
+        ts: Date.now()
+      };
+
+      advanceTurn(room, extra);
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      myAugOffers = null;
+      enterGame(room);
+      maybeShowAnnounce(room);
+    } catch (e) {
+      els.augmentError.textContent = '선택에 실패했어요. 다시 시도해주세요.';
+    }
+  }
+
+  els.btnLeaveLobby.onclick = function () { leaveRoom(); };
+  els.btnLeaveGame.onclick = function () { leaveRoom(); };
+
+  function leaveRoom() {
+    stopPolling();
+    myPlayerId = null;
+    myRoomCode = null;
+    tokenRenderedPos = {};
+    lastRoomSnapshot = null;
+    boardBuilt = false;
+    lastPendingTs = 0;
+    remoteAnimating = false;
+    rolling = false;
+    lastAnnounceTs = 0;
+    selectedRosterId = null;
+    myAugOffers = null;
+    els.homeError.textContent = '';
+    els.panelCreate.style.display = 'none';
+    els.panelJoin.style.display = 'none';
+    els.createNickname.value = '';
+    els.joinNickname.value = '';
+    els.joinCode.value = '';
+    els.announceBox.classList.remove('show');
+    showScreen('home');
+  }
+
+  function showCellTip(type, idx) {
+    var tip = document.getElementById('cellTip');
+    if (!tip) return;
+    if (idx === 0) {
+      document.getElementById('cellTipIcon').textContent = '🏁';
+      document.getElementById('cellTipTitle').textContent = 'START';
+      document.getElementById('cellTipDesc').textContent = '시작 칸입니다. 한 바퀴를 돌면 증강을 선택할 수 있어요.';
+    } else if (type && CELL_TYPES[type]) {
+      var ct = CELL_TYPES[type];
+      document.getElementById('cellTipIcon').textContent = ct.icon;
+      document.getElementById('cellTipTitle').textContent = ct.label + ' (칸 ' + idx + ')';
+      document.getElementById('cellTipDesc').textContent = ct.desc;
+    } else {
+      document.getElementById('cellTipIcon').textContent = '⬜';
+      document.getElementById('cellTipTitle').textContent = '일반 칸 ' + idx;
+      document.getElementById('cellTipDesc').textContent = '특별한 효과가 없는 칸입니다.';
+    }
+    tip.classList.add('show');
+  }
+  (function () {
+    var cellTipClose = document.getElementById('cellTipClose');
+    if (cellTipClose) {
+      cellTipClose.onclick = function () {
+        var tip = document.getElementById('cellTip');
+        if (tip) tip.classList.remove('show');
+      };
+    }
+  })();
+
+  function buildBoard(specials) {
+    var oldTokens = els.boardGrid.querySelectorAll('.ld-token');
+    var tokenNodes = [];
+    oldTokens.forEach(function (t) { tokenNodes.push(t); t.remove(); });
+    els.boardGrid.querySelectorAll('.ld-cell').forEach(function (c) { c.remove(); });
+
+    specials = specials || {};
+    for (var i = 0; i < BOARD_SIZE; i++) {
+      var coord = BOARD_CELLS[i];
+      var cell = document.createElement('div');
+      var type = specials[i];
+      cell.className = 'ld-cell' + (i === 0 ? ' ld-cell-start' : '');
+      cell.style.gridRowStart = coord.row + 1;
+      cell.style.gridColumnStart = coord.col + 1;
+      if (type && CELL_TYPES[type]) {
+        cell.style.borderColor = CELL_TYPES[type].color;
+        cell.style.background = CELL_TYPES[type].color + '22';
+        cell.innerHTML = '<span class="ld-cell-icon">' + CELL_TYPES[type].icon + '</span><span>' + i + '</span>';
+        cell.title = CELL_TYPES[type].label + ' — ' + CELL_TYPES[type].desc;
+      } else if (i === 0) {
+        cell.textContent = 'START';
+      } else {
+        cell.textContent = String(i);
+      }
+      (function (idx, t) {
+        cell.onclick = function (e) {
+          e.stopPropagation();
+          showCellTip(t, idx);
+        };
+      })(i, type);
+      els.boardGrid.insertBefore(cell, els.boardCenter);
+    }
+    tokenNodes.forEach(function (t) { els.boardGrid.appendChild(t); });
+    boardBuilt = true;
+
+    els.boardLegend.innerHTML = '';
+    CELL_TYPE_KEYS.forEach(function (k) {
+      var t = CELL_TYPES[k];
+      var item = document.createElement('span');
+      item.className = 'ld-legend-item';
+      item.textContent = t.icon + ' ' + t.label;
+      item.title = t.desc;
+      els.boardLegend.appendChild(item);
+    });
+  }
+
+  function tokenCellPercent(index) {
+    var coord = BOARD_CELLS[index % BOARD_SIZE];
+    return {
+      left: ((coord.col + 0.5) / BOARD_G) * 100,
+      top: ((coord.row + 0.5) / BOARD_G) * 100
+    };
+  }
+
+  function placeTokensInstant(room) {
+    room.players.forEach(function (p) {
+      var el = document.getElementById('token-' + p.id);
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'ld-token';
+        el.id = 'token-' + p.id;
+        els.boardGrid.appendChild(el);
+      }
+      el.style.background = p.color;
+      el.style.color = '#14102b';
+      el.style.fontSize = p.avatar ? '14px' : '11px';
+      el.textContent = p.avatar || p.name.charAt(0).toUpperCase();
+      var samePlayers = room.players.filter(function (pp) { return pp.position === p.position; });
+      var stackIdx = samePlayers.findIndex(function (pp) { return pp.id === p.id; });
+      var offset = STACK_OFFSETS[stackIdx % STACK_OFFSETS.length];
+      var pos = tokenCellPercent(p.position);
+      el.style.left = 'calc(' + pos.left + '% + ' + offset[0] + 'px)';
+      el.style.top = 'calc(' + pos.top + '% + ' + offset[1] + 'px)';
+      tokenRenderedPos[p.id] = p.position;
+    });
+  }
+
+  function moveTokenSteps(playerId, fromPos, steps) {
+    return new Promise(function (resolve) {
+      var el = document.getElementById('token-' + playerId);
+      var current = fromPos;
+      var remaining = Math.abs(steps);
+      var dir = steps >= 0 ? 1 : -1;
+      function step() {
+        if (remaining <= 0) {
+          tokenRenderedPos[playerId] = ((current % BOARD_SIZE) + BOARD_SIZE) % BOARD_SIZE;
+          resolve();
+          return;
+        }
+        current = (current + dir + BOARD_SIZE) % BOARD_SIZE;
+        remaining--;
+        if (el) {
+          var pos = tokenCellPercent(current);
+          el.style.left = pos.left + '%';
+          el.style.top = pos.top + '%';
+        }
+        setTimeout(step, STEP_MS);
+      }
+      if (remaining === 0) { resolve(); return; }
+      step();
+    });
+  }
+
+  function spinCube(finalFace) {
+    var target = FACE_ROTATION[finalFace];
+    var spinsX = 2 + Math.floor(Math.random() * 2);
+    var spinsY = 3 + Math.floor(Math.random() * 2);
+    els.cubeMini.style.transform = 'rotateX(' + (spinsX * 360 + target.x) + 'deg) rotateY(' + (spinsY * 360 + target.y) + 'deg)';
+  }
+
+  function enterGame(room) {
+    showScreen('game');
+    els.gameRoomCode.textContent = room.code;
+    els.centerCode.textContent = room.code;
+    buildBoard(room.specials || {});
+    placeTokensInstant(room);
+    lastRoomSnapshot = room;
+    selectedRosterId = myPlayerId;
+    renderGame(room);
+  }
+
+  function renderTurnOrder(room) {
+    if (!els.turnOrder) return;
+    els.turnOrder.innerHTML = '';
+    var n = room.players.length;
+    if (!n) return;
+    for (var i = 0; i < n; i++) {
+      var idx = (room.turnIndex + i) % n;
+      var p = room.players[idx];
+      var chip = document.createElement('span');
+      chip.className = 'ld-turn-chip' + (i === 0 ? ' now' : '');
+      chip.innerHTML = '<span class="ord">' + (i + 1) + '</span>' + (p.avatar || '') + ' ' + escapeHtml(p.name);
+      els.turnOrder.appendChild(chip);
+    }
+  }
+
+  function renderRoster(room) {
+    els.gameRoster.innerHTML = '';
+    room.players.forEach(function (p, idx) {
+      var isTurn = idx === (room.turnIndex % room.players.length);
+      var aug = p.augment ? getAugmentById(p.augment) : null;
+      var card = document.createElement('div');
+      card.className = 'ld-roster-card' +
+        (selectedRosterId === p.id ? ' active' : '') +
+        (isTurn ? ' is-turn' : '');
+      card.innerHTML =
+        '<div class="ld-roster-dot" style="background:' + p.color + '; display:flex;align-items:center;justify-content:center;font-size:14px;">' + (p.avatar || '') + '</div>' +
+        '<div class="ld-roster-name">' + escapeHtml(p.name) + (p.id === myPlayerId ? ' (나)' : '') + '</div>' +
+        '<div class="ld-roster-pos">칸 ' + p.position + ' · 💎' + playerRelics(p).length + '</div>' +
+        '<div class="ld-roster-aug-icon">' + (playerAugs(p).map(function (id) {
+          var a = getAugmentById(id);
+          return a ? a.icon : '';
+        }).join('') || '—') + '</div>';
+      card.onclick = function () {
+        selectedRosterId = p.id;
+        renderRoster(room);
+        showAugDetail(p);
+      };
+      els.gameRoster.appendChild(card);
+    });
+    var sel = room.players.find(function (p) { return p.id === selectedRosterId; });
+    if (sel) showAugDetail(sel);
+    else {
+      els.augDetail.classList.remove('show');
+    }
+  }
+
+  function renderDuel(room) {
+    var duel = room.duel;
+    if (!duel) {
+      els.duelBox.classList.remove('show');
+      return;
+    }
+    els.duelBox.classList.add('show');
+    var a = room.players.find(function (p) { return p.id === duel.attackerId; });
+    var b = room.players.find(function (p) { return p.id === duel.defenderId; });
+    var aName = a ? ((a.avatar || '') + ' ' + a.name) : '?';
+    var bName = b ? ((b.avatar || '') + ' ' + b.name) : '?';
+    els.duelVs.textContent = aName + '  VS  ' + bName;
+
+    var rolls = duel.rolls || {};
+    els.duelRolls.innerHTML = '';
+    [a, b].forEach(function (p) {
+      if (!p) return;
+      var box = document.createElement('div');
+      box.className = 'ld-duel-roll-box';
+      var val = rolls[p.id];
+      box.innerHTML = '<div class="nm">' + (p.avatar || '') + ' ' + escapeHtml(p.name) + '</div>' +
+        '<div class="vl">' + (val != null ? val : '—') + '</div>';
+      els.duelRolls.appendChild(box);
+    });
+
+    var iAmIn = myPlayerId === duel.attackerId || myPlayerId === duel.defenderId;
+    if (duel.phase === 'contest') {
+      var myRolled = rolls[myPlayerId] != null;
+      if (iAmIn && !myRolled) {
+        els.duelHint.textContent = '대결 주사위를 굴리세요! (높은 쪽이 승리)';
+        els.btnDuelRoll.disabled = duelBusy;
+        els.btnDuelRoll.textContent = '대결 주사위 굴리기';
+        els.btnDuelRoll.style.display = 'block';
+      } else if (iAmIn && myRolled) {
+        els.duelHint.textContent = '상대의 주사위를 기다리는 중...';
+        els.btnDuelRoll.style.display = 'none';
+      } else {
+        els.duelHint.textContent = '다른 플레이어들의 대결 중...';
+        els.btnDuelRoll.style.display = 'none';
+      }
+    } else if (duel.phase === 'punish') {
+      if (myPlayerId === duel.winnerId) {
+        els.duelHint.textContent = '승리! 벌칙 주사위를 굴려 패자를 뒤로 보냅니다';
+        els.btnDuelRoll.disabled = duelBusy;
+        els.btnDuelRoll.textContent = '벌칙 주사위 굴리기';
+        els.btnDuelRoll.style.display = 'block';
+      } else if (myPlayerId === duel.loserId) {
+        els.duelHint.textContent = '패배... 승자의 벌칙 주사위를 기다리는 중';
+        els.btnDuelRoll.style.display = 'none';
+      } else {
+        els.duelHint.textContent = '승자가 벌칙 주사위를 굴리는 중...';
+        els.btnDuelRoll.style.display = 'none';
+      }
+    }
+  }
+
+  function showAugDetail(player) {
+    var ids = playerAugs(player);
+    if (!ids.length) {
+      els.augDetail.classList.remove('show');
+      return;
+    }
+    var titleBits = ids.map(function (id) {
+      var a = getAugmentById(id);
+      return a ? a.icon + ' ' + a.name : id;
+    });
+    var descBits = ids.map(function (id) {
+      var a = getAugmentById(id);
+      return a ? a.icon + ' ' + a.desc : id;
+    });
+    els.augDetailTitle.innerHTML = escapeHtml(titleBits.join(' · ')) +
+      (player.id === myPlayerId ? ' (내 증강)' : ' · ' + escapeHtml(player.name));
+    els.augDetailDesc.textContent = descBits.join(' / ');
+    els.augDetail.classList.add('show');
+  }
+
+
+  function renderRelicBar(room) {
+    if (!els.relicBar) return;
+    var me = room.players.find(function (p) { return p.id === myPlayerId; });
+    var owned = playerRelics(me);
+    els.relicBar.innerHTML = '';
+    RELIC_TYPES.forEach(function (r) {
+      var chip = document.createElement('span');
+      chip.className = 'ld-relic-chip' + (owned.indexOf(r.id) !== -1 ? ' owned' : '');
+      chip.textContent = r.icon + ' ' + r.name;
+      chip.title = r.name;
+      els.relicBar.appendChild(chip);
+    });
+    var count = document.createElement('span');
+    count.className = 'ld-relic-chip owned';
+    var need = relicsNeeded(room);
+    count.textContent = owned.length + '/' + need;
+    els.relicBar.appendChild(count);
+  }
+
+  function renderRelicChallenge(room) {
+    var ch = room.relicChallenge;
+    var pickEl = document.getElementById('relicPick');
+    var stealSel = document.getElementById('stealTarget');
+    var titleEl = document.getElementById('relicChallengeTitle');
+    if (!ch || !els.relicBox) {
+      if (els.relicBox) els.relicBox.classList.remove('show');
+      if (pickEl) pickEl.style.display = 'none';
+      if (stealSel) stealSel.style.display = 'none';
+      return;
+    }
+    els.relicBox.classList.add('show');
+    var iAm = ch.playerId === myPlayerId;
+
+    // 강탈 대상 선택
+    if (ch.mode === 'steal' && ch.phase === 'selectTarget') {
+      if (titleEl) titleEl.textContent = '🏴‍☠️ 유물 강탈 — 대상 선택';
+      els.relicTarget.textContent = '상대 선택';
+      els.relicRolls.textContent = '';
+      if (pickEl) pickEl.style.display = 'none';
+      if (stealSel) {
+        stealSel.style.display = iAm ? 'block' : 'none';
+        stealSel.innerHTML = '';
+        room.players.forEach(function (p) {
+          if (p.id === myPlayerId) return;
+          if (!playerRelics(p).length) return;
+          var opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = (p.avatar || '') + ' ' + p.name + ' (💎' + playerRelics(p).length + ')';
+          stealSel.appendChild(opt);
+        });
+      }
+      if (iAm) {
+        els.relicHint.textContent = '유물을 빼앗을 상대를 고른 뒤 배틀을 시작하세요';
+        els.btnRelicRoll.style.display = 'block';
+        els.btnRelicRoll.textContent = '배틀 시작';
+        els.btnRelicRoll.disabled = false;
+      } else {
+        els.relicHint.textContent = '상대가 강탈 대상을 선택 중...';
+        els.btnRelicRoll.style.display = 'none';
+      }
+      return;
+    }
+
+    // 유물 선택 (획득)
+    if (ch.phase === 'pickRelic') {
+      if (titleEl) titleEl.textContent = '💎 유물 선택';
+      els.relicTarget.textContent = '성공!';
+      els.relicRolls.textContent = ch.successSum != null ? ('합 ' + ch.successSum) : '';
+      if (stealSel) stealSel.style.display = 'none';
+      if (pickEl) {
+        pickEl.style.display = iAm ? 'flex' : 'none';
+        pickEl.innerHTML = '';
+        if (iAm) {
+          var missing = RELIC_TYPES.filter(function (t) {
+            return playerRelics(room.players.find(function (p) { return p.id === myPlayerId; })).indexOf(t.id) === -1;
+          });
+          if (!missing.length) missing = RELIC_TYPES.slice();
+          missing.forEach(function (r) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'ld-relic-pick-btn';
+            b.textContent = r.icon + ' ' + r.name;
+            b.onclick = function () { finishRelicPick(r.id); };
+            pickEl.appendChild(b);
+          });
+        }
+      }
+      els.btnRelicRoll.style.display = 'none';
+      els.relicHint.textContent = iAm ? '원하는 유물을 선택하세요' : '상대가 유물을 선택 중...';
+      return;
+    }
+
+    // 일반 유물 도전 / 강탈 배틀
+    if (stealSel) stealSel.style.display = 'none';
+    if (pickEl) pickEl.style.display = 'none';
+    if (ch.mode === 'steal') {
+      if (titleEl) titleEl.textContent = '🏴‍☠️ 강탈 배틀';
+      var tp = room.players.find(function (p) { return p.id === ch.targetId; });
+      els.relicTarget.textContent = tp ? ((tp.avatar || '') + ' ' + tp.name) : '대상';
+      var rolls = ch.rolls || {};
+      var a = rolls[ch.playerId];
+      var b = rolls[ch.targetId];
+      els.relicRolls.textContent = '나 ' + (a != null ? a : '—') + '  vs  상대 ' + (b != null ? b : '—');
+      var myRollDone = rolls[myPlayerId] != null;
+      if ((myPlayerId === ch.playerId || myPlayerId === ch.targetId) && !myRollDone) {
+        els.relicHint.textContent = '주사위를 굴리세요 (높은 쪽 승리)';
+        els.btnRelicRoll.style.display = 'block';
+        els.btnRelicRoll.textContent = '배틀 주사위';
+        els.btnRelicRoll.disabled = !!window.__relicBusy;
+      } else {
+        els.relicHint.textContent = '상대 주사위 대기 중...';
+        els.btnRelicRoll.style.display = 'none';
+      }
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = '💎 유물 도전! (증강 미적용)';
+    var rollsArr = ch.rolls || [];
+    els.relicTarget.textContent = '목표 ' + ch.target;
+    els.relicRolls.textContent = rollsArr.length ? ('주사위: ' + rollsArr[0]) : '주사위: —';
+    if (rollsArr.length >= 1) {
+      els.relicHint.textContent = '결과 처리 중...';
+      els.btnRelicRoll.style.display = 'none';
+    } else if (iAm) {
+      els.relicHint.textContent = '목표 숫자와 같은 눈이 나오면 성공 (증강 적용 안 됨)';
+      els.btnRelicRoll.style.display = 'block';
+      els.btnRelicRoll.disabled = !!window.__relicBusy;
+      els.btnRelicRoll.textContent = '유물 주사위 굴리기';
+    } else {
+      var p2 = room.players.find(function (x) { return x.id === ch.playerId; });
+      els.relicHint.textContent = (p2 ? p2.name : '상대') + '님 도전 중...';
+      els.btnRelicRoll.style.display = 'none';
+    }
+  }
+
+  async function finishRelicPick(relicId) {
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room || !room.relicChallenge || room.relicChallenge.phase !== 'pickRelic') return;
+      if (room.relicChallenge.playerId !== myPlayerId) return;
+      var me = room.players.find(function (p) { return p.id === myPlayerId; });
+      if (!me) return;
+      me.relics = playerRelics(me);
+      if (me.relics.indexOf(relicId) === -1) me.relics.push(relicId);
+      var need = relicsNeeded(room);
+      if (hasAug(me, 'doublerelic') && Math.random() < 0.25 && me.relics.length < need) {
+        var extraId = pickRelicForPlayer(me);
+        if (me.relics.indexOf(extraId) === -1) me.relics.push(extraId);
+      }
+      var rt = getRelicById(relicId);
+      room.announce = {
+        icon: rt ? rt.icon : '💎',
+        title: '유물 획득!',
+        text: me.name + ' — ' + (rt ? rt.icon + ' ' + rt.name : relicId),
+        sub: me.relics.length + '/' + need,
+        ts: Date.now()
+      };
+      if (hasAllRelics(me, need)) {
+        room.winnerId = me.id;
+        room.status = 'finished';
+        room.announce = { icon: '🏆', title: me.name + ' 승리!', text: '유물 ' + need + '개 달성!', sub: '게임 종료', ts: Date.now() };
+      }
+      var ch = room.relicChallenge;
+      var extraTurn = !!ch.pendingExtraTurn;
+      var needPick = !!ch.pendingAugmentPick;
+      var pendingDuel = ch.pendingDuelWith;
+      room.relicChallenge = null;
+      if (!room.winnerId) {
+        if (pendingDuel) {
+          room.duel = {
+            attackerId: myPlayerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
+            winnerId: null, loserId: null, punishRoll: null,
+            pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, ts: Date.now()
+          };
+        } else if (needPick) {
+          room.augmentPick = { playerId: myPlayerId, ts: Date.now() };
+          room.pendingPickExtraTurn = extraTurn;
+        } else {
+          advanceTurn(room, extraTurn);
+        }
+      }
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      placeTokensInstant(room);
+      renderGame(room);
+      maybeShowAnnounce(room);
+      if (room.augmentPick && room.augmentPick.playerId === myPlayerId) enterAugmentPick(room);
+    } catch (e) {}
+  }
+
+
+  function renderGame(room) {
+    var currentPlayer = room.players[room.turnIndex % room.players.length];
+    var myTurn = currentPlayer && currentPlayer.id === myPlayerId;
+    var pending = room.pendingRoll;
+    var inDuel = !!room.duel;
+
+    renderTurnOrder(room);
+    renderDuel(room);
+    renderRelicBar(room);
+    renderRelicChallenge(room);
+    var inRelic = !!room.relicChallenge;
+
+    if (!rolling && !remoteAnimating) {
+      if (room.winnerId) {
+        var wp = room.players.find(function (p) { return p.id === room.winnerId; });
+        els.turnBanner.className = 'ld-turn-banner rb-great';
+        els.turnBanner.textContent = '🏆 ' + (wp ? wp.name : '?') + ' 님이 유물 ' + relicsNeeded(room) + '개로 승리!';
+        els.btnRoll.disabled = true;
+        els.btnRoll.textContent = '게임 종료';
+      } else if (inDuel) {
+        els.turnBanner.className = 'ld-turn-banner rb-low';
+        els.turnBanner.textContent = '⚔️ 같은 칸 대결 진행 중!';
+        els.btnRoll.disabled = true;
+        els.btnRoll.textContent = '대결 중...';
+      } else if (room.augmentPick) {
+        var ap = room.players.find(function (p) { return p.id === room.augmentPick.playerId; });
+        els.turnBanner.className = 'ld-turn-banner rb-effect';
+        els.turnBanner.textContent = '✨ ' + (ap ? ap.name : '플레이어') + ' 님이 증강 선택 중...';
+        els.btnRoll.disabled = true;
+        els.btnRoll.textContent = '증강 선택 대기';
+        // 선택자가 아닌 사람에게 중앙 공지 (같은 메시지 반복 방지)
+        if (room.augmentPick.playerId !== myPlayerId) {
+          var key = 'augpick-' + room.augmentPick.playerId + '-' + (room.augmentPick.ts || 0);
+          if (window.__lastAugPickAnnounce !== key) {
+            window.__lastAugPickAnnounce = key;
+            showAnnounce('✨', '증강 선택 중', (ap ? ap.name : '상대') + ' 님이 증강을 고르는 중입니다', '끝날 때까지 기다려 주세요');
+          }
+        }
+      } else if (inRelic) {
+        els.turnBanner.className = 'ld-turn-banner rb-effect';
+        els.turnBanner.textContent = '💎 유물 도전 진행 중!';
+        els.btnRoll.disabled = true;
+        els.btnRoll.textContent = '유물 도전 중...';
+      } else if (pending && pending.playerId !== myPlayerId) {
+        els.turnBanner.className = 'ld-turn-banner rb-wait';
+        els.turnBanner.textContent = pending.name + '님이 굴리는 중...';
+        els.btnRoll.disabled = true;
+        els.btnRoll.textContent = '상대가 굴리는 중...';
+      } else if (myTurn) {
+        var me = room.players.find(function (p) { return p.id === myPlayerId; });
+        if (me && (me.skipTurns || 0) > 0) {
+          els.turnBanner.className = 'ld-turn-banner rb-low';
+          els.turnBanner.textContent = '휴식 중 — 이번 턴을 건너뜁니다';
+          els.btnRoll.disabled = false;
+          els.btnRoll.textContent = '턴 넘기기';
+        } else {
+          els.turnBanner.className = 'ld-turn-banner rb-great';
+          els.turnBanner.textContent = '당신 차례예요! 주사위를 굴려보세요';
+          els.btnRoll.disabled = false;
+          els.btnRoll.textContent = '주사위 굴리기';
+        }
+      } else {
+        els.turnBanner.className = 'ld-turn-banner rb-wait';
+        els.turnBanner.textContent = (currentPlayer ? currentPlayer.name : '') + '님의 차례를 기다리는 중...';
+        els.btnRoll.disabled = true;
+        els.btnRoll.textContent = '내 차례가 아니에요';
+      }
+    }
+
+    renderRoster(room);
+
+    if (!room.log || !room.log.length) {
+      els.gameLog.innerHTML = '<div class="ld-log-empty">아직 굴린 기록이 없습니다</div>';
+    } else {
+      els.gameLog.innerHTML = '';
+      room.log.forEach(function (entry) {
+        var row = document.createElement('div');
+        row.className = 'ld-log-row';
+        var extra = entry.effectText ? ' · ' + entry.effectText : '';
+        row.innerHTML =
+          '<div class="ld-log-face">' + (entry.face || '?') + '</div>' +
+          '<span class="ld-log-text">' + escapeHtml(entry.name) + ' · 칸 ' + entry.newPos + escapeHtml(extra) + '</span>';
+        els.gameLog.appendChild(row);
+      });
+    }
+  }
+
+  function maybeShowAnnounce(room) {
+    if (!room.announce || !room.announce.ts) return;
+    if (room.announce.ts === lastAnnounceTs) return;
+    lastAnnounceTs = room.announce.ts;
+    showAnnounce(room.announce.icon, room.announce.title, room.announce.text, room.announce.sub);
+  }
+
+  function applyRollModifiers(face, player, room) {
+    var notes = [];
+    var move = face;
+
+    if (hasAug(player, 'loaded') && face < 2) {
+      face = 2;
+      move = 2;
+      notes.push('조작된 주사위: 2');
+    }
+    if (hasAug(player, 'swift') && face <= 2) {
+      face = 1 + Math.floor(Math.random() * 6);
+      move = face;
+      notes.push('신속: 재굴림 → ' + face);
+    }
+    if (hasAug(player, 'mirror') && face % 2 === 1) {
+      move = 7 - face;
+      notes.push('거울: ' + face + ' → ' + move + '칸');
+    }
+    if (hasAug(player, 'lucky')) {
+      var before = face;
+      face = Math.min(6, face + 1);
+      move = Math.max(move, face);
+      if (hasAug(player, 'mirror') && before % 2 === 1) {
+        /* mirror already set move */
+      } else {
+        move = face;
+      }
+      if (face !== before) notes.push('행운: +1 → ' + face);
+    }
+    if (hasAug(player, 'clover') && face === 4) {
+      move = move + 2;
+      notes.push('네잎클로버: +2칸');
+    }
+    if (hasAug(player, 'luckyseven') && face === 5) {
+      move = 7;
+      notes.push('세븐: 7칸 이동');
+    }
+    if (hasAug(player, 'fortune') && face === 6) {
+      var bonus = Math.max(2, Math.floor(BOARD_SIZE / 8));
+      move = move + bonus;
+      notes.push('대박: +' + bonus + '칸');
+    }
+    if (hasAug(player, 'highroller') && face >= 4) {
+      move = move + 1;
+      notes.push('하이롤러: +1칸');
+    }
+    if (hasAug(player, 'hotstreak') && (player.lastFace === 5 || player.lastFace === 6)) {
+      move = move + 1;
+      notes.push('연승: +1칸');
+    }
+    if (player.nextMoveBonus) {
+      move += player.nextMoveBonus;
+      notes.push('보험 보너스 +' + player.nextMoveBonus);
+      player.nextMoveBonus = 0;
+    }
+
+    var extraTurn = false;
+    if (hasAug(player, 'gambler') && face === 6) {
+      extraTurn = true;
+      notes.push('도박꾼: 추가 턴');
+    }
+    var syn = synergyBonus(player);
+    if (syn.luckMove) {
+      move += syn.luckMove;
+      notes.push('행운 시너지 +' + syn.luckMove);
+    }
+    player.lastFace = face;
+    return { face: face, move: move, notes: notes, extraTurn: extraTurn };
+  }
+
+  function resolveCellEffect(room, player, landPos) {
+    var specials = room.specials || {};
+    var type = specials[landPos];
+    var result = {
+      pos: landPos,
+      effectText: '',
+      effectIcon: '',
+      effectTitle: '',
+      extraTurn: false,
+      skipNext: false,
+      swapWith: null,
+      extraSteps: 0,
+      announce: false
+    };
+
+    // 자석: 앞 2칸에 선물
+    if (hasAug(player, 'magnet')) {
+      for (var mi = 1; mi <= 2; mi++) {
+        if (specials[(landPos + mi) % BOARD_SIZE] === 'gift') {
+          result.pos = (landPos + 1) % BOARD_SIZE;
+          result.extraSteps = 1;
+          result.effectText = '🧲 자석 +1';
+          result.effectIcon = '🧲';
+          result.effectTitle = '자석';
+          result.announce = true;
+          landPos = result.pos;
+          break;
+        }
+      }
+    }
+
+    if (!type || !CELL_TYPES[type]) {
+      if (hasAug(player, 'chaos') && Math.random() < (0.1 + synergyBonus(player).chaosChance)) {
+        result.pos = 1 + Math.floor(Math.random() * (BOARD_SIZE - 1));
+        result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🌪️ 혼돈 워프 → ' + result.pos;
+        result.effectIcon = '🌪️';
+        result.effectTitle = '혼돈';
+        result.announce = true;
+      }
+      if (hasAug(player, 'vampire')) {
+        var same = room.players.some(function (p) {
+          return p.id !== player.id && p.position === landPos;
+        });
+        if (same) {
+          result.pos = (result.pos + 2) % BOARD_SIZE;
+          result.extraSteps = (result.extraSteps || 0) + 2;
+          result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🧛 흡혈 +2';
+          result.effectIcon = result.effectIcon || '🧛';
+          result.effectTitle = result.effectTitle || '흡혈';
+          result.announce = true;
+        }
+      }
+      if (hasAug(player, 'glitch') && Math.random() < 0.05) {
+        var g = (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * 3));
+        result.pos = (result.pos + g + BOARD_SIZE) % BOARD_SIZE;
+        result.extraSteps = (result.extraSteps || 0) + g;
+        result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '👾 글리치 ' + (g > 0 ? '+' : '') + g;
+        result.announce = true;
+      }
+      return result;
+    }
+
+    // wildcard: 25% 다른 특수
+    if (hasAug(player, 'wildcard') && Math.random() < 0.25) {
+      type = CELL_TYPE_KEYS[Math.floor(Math.random() * CELL_TYPE_KEYS.length)];
+    }
+
+    var shield = (player.shieldCharges || 0) > 0;
+    var ct = CELL_TYPES[type];
+    result.effectIcon = ct.icon;
+    result.effectTitle = ct.label;
+    result.announce = true;
+
+    if (hasAug(player, 'anchor') && (type === 'warp' || type === 'swap')) {
+      result.effectText = ct.icon + ' 닻으로 무시';
+      return result;
+    }
+    if (shield && (type === 'trap' || type === 'rest')) {
+      player.shieldCharges -= 1;
+      result.effectText = ct.icon + ' 방패로 무시';
+      return result;
+    }
+    if (hasAug(player, 'steady') && type === 'rest') {
+      result.effectText = '🧘 안정: 휴식 무시';
+      return result;
+    }
+
+    var bonus = hasAug(player, 'collector') ? 1 : 0;
+
+    if (type === 'boost') {
+      var synB = synergyBonus(player);
+      var b = hasAug(player, 'courier') ? 5 : (3 + bonus);
+      if (hasAug(player, 'chainboost')) b += 2;
+      b += synB.boostExtra;
+      result.pos = (landPos + b) % BOARD_SIZE;
+      result.extraSteps = b;
+      result.effectText = '🚀 부스트 +' + b;
+      if (hasAug(player, 'turbo')) {
+        result.extraTurn = true;
+        result.effectText += ' · 터보 추가 턴';
+      }
+    } else if (type === 'trap') {
+      var synD = synergyBonus(player);
+      var back = 3;
+      if (hasAug(player, 'guardian')) back = 1;
+      else if (hasAug(player, 'iron')) back = Math.floor(back / 2);
+      back = Math.max(0, back - synD.defendCut);
+      result.pos = (landPos - back + BOARD_SIZE) % BOARD_SIZE;
+      result.extraSteps = -back;
+      result.effectText = '💀 함정 -' + back;
+      if (hasAug(player, 'insurance')) {
+        player.nextMoveBonus = (player.nextMoveBonus || 0) + 2;
+        result.effectText += ' · 보험 다음 +2';
+      }
+      if (hasAug(player, 'reflect')) {
+        var nearest = null, best = 999;
+        room.players.forEach(function (p) {
+          if (p.id === player.id) return;
+          var d = Math.min((p.position - landPos + BOARD_SIZE) % BOARD_SIZE, (landPos - p.position + BOARD_SIZE) % BOARD_SIZE);
+          if (d < best) { best = d; nearest = p; }
+        });
+        if (nearest) {
+          nearest.position = (nearest.position - 1 + BOARD_SIZE) % BOARD_SIZE;
+          result.effectText += ' · 반사 → ' + nearest.name + ' -1';
+        }
+      }
+    } else if (type === 'again') {
+      result.extraTurn = true;
+      result.effectText = '🎲 한 번 더';
+    } else if (type === 'skip') {
+      result.skipNext = true;
+      result.effectText = '⏭️ 상대 스킵';
+      if (hasAug(player, 'thief')) {
+        result.pos = (landPos + 2) % BOARD_SIZE;
+        result.extraSteps = 2;
+        result.effectText += ' · 도둑 +2';
+      }
+      if (hasAug(player, 'timebend')) {
+        result.skipNext = false;
+        result.extraTurn = true;
+        result.effectText = '⏳ 시공: 스킵 대신 추가 턴';
+      }
+    } else if (type === 'warp') {
+      var dest = 1 + Math.floor(Math.random() * (BOARD_SIZE - 1));
+      result.pos = dest;
+      result.effectText = '🌀 워프 → ' + dest;
+      if (hasAug(player, 'phantom')) {
+        result.pos = (dest + 2) % BOARD_SIZE;
+        result.effectText += ' · 유령 +2';
+      }
+    } else if (type === 'rest') {
+      player.skipTurns = (player.skipTurns || 0) + 1;
+      result.effectText = '🔒 다음 턴 휴식';
+    } else if (type === 'gift') {
+      var g = 1 + Math.floor(Math.random() * 3) + bonus;
+      var times = hasAug(player, 'doublegift') ? 2 : 1;
+      var total = g * times;
+      result.pos = (landPos + total) % BOARD_SIZE;
+      result.extraSteps = total;
+      result.effectText = '🎁 선물 +' + total;
+    } else if (type === 'swap') {
+      if (hasAug(player, 'jester')) {
+        var positions = room.players.map(function (p) { return p.position; });
+        for (var i = 0; i < room.players.length; i++) {
+          room.players[i].position = positions[(i + 1) % positions.length];
+        }
+        result.pos = player.position;
+        result.effectText = '🃏 광대: 전원 위치 회전';
+      } else {
+        var others = room.players.filter(function (p) { return p.id !== player.id; });
+        if (others.length) {
+          var target = others[Math.floor(Math.random() * others.length)];
+          result.swapWith = target.id;
+          result.effectText = '🔄 ' + target.name + '과 교체';
+        } else {
+          result.effectText = '🔄 교체 대상 없음';
+          result.announce = false;
+        }
+      }
+    } else if (type === 'relic') {
+      result.startRelic = true;
+      result.effectText = '💎 유물 도전!';
+      result.effectIcon = '💎';
+      result.effectTitle = '유물';
+      result.announce = true;
+    } else if (type === 'steal') {
+      result.startSteal = true;
+      result.effectText = '🏴‍☠️ 유물 강탈!';
+      result.effectIcon = '🏴‍☠️';
+      result.effectTitle = '강탈';
+      result.announce = true;
+    }
+
+    if (hasAug(player, 'combo') && result.announce && result.effectText && result.effectText.indexOf('무시') === -1 && type !== 'relic') {
+      result.pos = (result.pos + 1) % BOARD_SIZE;
+      result.extraSteps = (result.extraSteps || 0) + 1;
+      result.effectText += ' · ✨콤보 +1';
+    }
+    return result;
+  }
+
+  function advanceTurn(room, extraTurn) {
+    if (extraTurn) return;
+    if (room.skipNext) {
+      room.skipNext = false;
+      room.turnIndex = (room.turnIndex + 2) % room.players.length;
+    } else {
+      room.turnIndex = (room.turnIndex + 1) % room.players.length;
+    }
+  }
+
+
+  els.btnRelicRoll.onclick = async function () {
+    if (window.__relicBusy) return;
+    window.__relicBusy = true;
+    els.btnRelicRoll.disabled = true;
+    els.gameError.textContent = '';
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room || !room.relicChallenge) return;
+      var ch = room.relicChallenge;
+      var me = room.players.find(function (p) { return p.id === myPlayerId; });
+
+      // 강탈 대상 선택 → 배틀 시작
+      if (ch.mode === 'steal' && ch.phase === 'selectTarget') {
+        if (ch.playerId !== myPlayerId) return;
+        var sel = document.getElementById('stealTarget');
+        var tid = sel && sel.value;
+        if (!tid) { els.gameError.textContent = '대상을 선택하세요'; return; }
+        ch.targetId = tid;
+        ch.phase = 'contest';
+        ch.rolls = {};
+        room.relicChallenge = ch;
+        await saveRoom(room);
+        lastRoomSnapshot = room;
+        renderGame(room);
+        return;
+      }
+
+      // 강탈 배틀 주사위
+      if (ch.mode === 'steal' && ch.phase === 'contest') {
+        if (myPlayerId !== ch.playerId && myPlayerId !== ch.targetId) return;
+        ch.rolls = ch.rolls || {};
+        if (ch.rolls[myPlayerId] != null) return;
+        var faceS = 1 + Math.floor(Math.random() * 6);
+        if (me && hasAug(me, 'duelist')) faceS = Math.min(6, faceS + 1);
+        var syn = synergyBonus(me || {});
+        if (syn.duelPlus) faceS = Math.min(6, faceS + syn.duelPlus);
+        spinCube(faceS);
+        await new Promise(function (r) { setTimeout(r, 900); });
+        room = await getRoom(myRoomCode) || room;
+        ch = room.relicChallenge;
+        if (!ch || ch.phase !== 'contest') return;
+        ch.rolls = ch.rolls || {};
+        ch.rolls[myPlayerId] = faceS;
+        var aR = ch.rolls[ch.playerId];
+        var bR = ch.rolls[ch.targetId];
+        if (aR != null && bR != null) {
+          var attacker = room.players.find(function (p) { return p.id === ch.playerId; });
+          var defender = room.players.find(function (p) { return p.id === ch.targetId; });
+          if (aR === bR) {
+            ch.rolls = {};
+            room.announce = { icon: '🤝', title: '무승부', text: aR + ' vs ' + bR + ' 다시!', sub: '', ts: Date.now() };
+            room.relicChallenge = ch;
+          } else if (aR > bR) {
+            // 공격자 승리 → 유물 1개 강탈
+            var dRel = playerRelics(defender);
+            if (dRel.length && attacker) {
+              var stolen = dRel[Math.floor(Math.random() * dRel.length)];
+              defender.relics = dRel.filter(function (x) { return x !== stolen; });
+              attacker.relics = playerRelics(attacker);
+              if (attacker.relics.indexOf(stolen) === -1) attacker.relics.push(stolen);
+              var srt = getRelicById(stolen);
+              room.announce = {
+                icon: '🏴‍☠️', title: '강탈 성공!',
+                text: attacker.name + ' ← ' + (srt ? srt.icon + srt.name : stolen) + ' ← ' + defender.name,
+                sub: aR + ' vs ' + bR, ts: Date.now()
+              };
+              if (hasAllRelics(attacker, relicsNeeded(room))) {
+                room.winnerId = attacker.id;
+                room.status = 'finished';
+              }
+            }
+            var extraTurn = !!ch.pendingExtraTurn;
+            var needPick = !!ch.pendingAugmentPick;
+            var pendingDuel = ch.pendingDuelWith;
+            room.relicChallenge = null;
+            if (!room.winnerId) {
+              if (pendingDuel) {
+                room.duel = { attackerId: ch.playerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
+                  winnerId: null, loserId: null, punishRoll: null, pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, ts: Date.now() };
+              } else if (needPick) {
+                room.augmentPick = { playerId: ch.playerId, ts: Date.now() };
+                room.pendingPickExtraTurn = extraTurn;
+              } else advanceTurn(room, extraTurn);
+            }
+          } else {
+            room.announce = { icon: '🛡️', title: '강탈 방어!', text: (defender ? defender.name : '?') + ' 방어 성공', sub: aR + ' vs ' + bR, ts: Date.now() };
+            var extraTurn2 = !!ch.pendingExtraTurn;
+            var needPick2 = !!ch.pendingAugmentPick;
+            var pendingDuel2 = ch.pendingDuelWith;
+            room.relicChallenge = null;
+            if (pendingDuel2) {
+              room.duel = { attackerId: ch.playerId, defenderId: pendingDuel2, phase: 'contest', rolls: {},
+                winnerId: null, loserId: null, punishRoll: null, pendingExtraTurn: extraTurn2, pendingAugmentPick: needPick2, ts: Date.now() };
+            } else if (needPick2) {
+              room.augmentPick = { playerId: ch.playerId, ts: Date.now() };
+              room.pendingPickExtraTurn = extraTurn2;
+            } else advanceTurn(room, extraTurn2);
+          }
+        } else {
+          room.relicChallenge = ch;
+        }
+        await saveRoom(room);
+        lastRoomSnapshot = room;
+        placeTokensInstant(room);
+        renderGame(room);
+        maybeShowAnnounce(room);
+        return;
+      }
+
+      if (ch.playerId !== myPlayerId) return;
+      if (ch.phase === 'pickRelic') return;
+      ch.rolls = ch.rolls || [];
+      if (ch.rolls.length >= 1) return;
+
+      // 유물 칸: 증강 미적용, 순수 1~6
+      var face = 1 + Math.floor(Math.random() * 6);
+      spinCube(face);
+      await new Promise(function (r) { setTimeout(r, 900); });
+
+      room = await getRoom(myRoomCode) || room;
+      ch = room.relicChallenge;
+      if (!ch || ch.playerId !== myPlayerId) return;
+      ch.rolls = ch.rolls || [];
+      ch.rolls.push(face);
+      room.relicChallenge = ch;
+
+      // 단일 주사위 판정 (증강 없음)
+      var sum = face;
+      var target = ch.target;
+      var success = sum === target;
+
+      me = room.players.find(function (p) { return p.id === myPlayerId; });
+      if (success && me) {
+        ch.phase = 'pickRelic';
+        ch.successSum = sum;
+        room.relicChallenge = ch;
+        room.announce = {
+          icon: '💎',
+          title: '도전 성공!',
+          text: me.name + ' — 합 ' + sum + ' = 목표 ' + target,
+          sub: '획득할 유물을 선택하세요',
+          ts: Date.now()
+        };
+        room.log = room.log || [];
+        room.log.unshift({ name: me.name, face: sum, newPos: me.position, effectText: '💎 유물 성공 ' + sum, ts: Date.now() });
+        room.log = room.log.slice(0, 10);
+        await saveRoom(room);
+        lastRoomSnapshot = room;
+        renderGame(room);
+        maybeShowAnnounce(room);
+        return;
+      }
+
+      if (me && hasAug(me, 'relicguard')) {
+        me.shieldCharges = (me.shieldCharges || 0) + 1;
+      }
+      room.announce = {
+        icon: '💨',
+        title: '유물 실패',
+        text: me.name + ' — 합 ' + sum + ' / 목표 ' + target,
+        sub: hasAug(me, 'relicforge') ? '제련 실패' : '아쉽네요',
+        ts: Date.now()
+      };
+      room.log = room.log || [];
+      room.log.unshift({ name: me ? me.name : '?', face: sum, newPos: me ? me.position : 0, effectText: '💎 유물 실패 ' + sum + '≠' + target, ts: Date.now() });
+      room.log = room.log.slice(0, 10);
+
+      var extraTurn = !!ch.pendingExtraTurn;
+      var needPick = !!ch.pendingAugmentPick;
+      var pendingDuel = ch.pendingDuelWith;
+      room.relicChallenge = null;
+
+      if (pendingDuel) {
+        room.duel = {
+          attackerId: myPlayerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
+          winnerId: null, loserId: null, punishRoll: null,
+          pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, ts: Date.now()
+        };
+      } else if (needPick) {
+        room.augmentPick = { playerId: myPlayerId, ts: Date.now() };
+        room.pendingPickExtraTurn = extraTurn;
+      } else {
+        advanceTurn(room, extraTurn);
+      }
+
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      placeTokensInstant(room);
+      renderGame(room);
+      maybeShowAnnounce(room);
+      if (room.augmentPick && room.augmentPick.playerId === myPlayerId) {
+        enterAugmentPick(room);
+      }
+    } catch (e) {
+      els.gameError.textContent = '유물 도전에 실패했어요';
+    } finally {
+      window.__relicBusy = false;
+      if (els.btnRelicRoll) els.btnRelicRoll.disabled = false;
+    }
+  };
+
+  els.btnDuelRoll.onclick = async function () {
+    if (duelBusy) return;
+    els.gameError.textContent = '';
+    duelBusy = true;
+    els.btnDuelRoll.disabled = true;
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room || !room.duel) return;
+      var duel = room.duel;
+
+      if (duel.phase === 'contest') {
+        if (myPlayerId !== duel.attackerId && myPlayerId !== duel.defenderId) return;
+        if (duel.rolls && duel.rolls[myPlayerId] != null) return;
+
+        var face = 1 + Math.floor(Math.random() * 6);
+        var meP = room.players.find(function (p) { return p.id === myPlayerId; });
+        if (meP && hasAug(meP, 'duelist')) face = Math.min(6, face + 1);
+        if (meP && hasAug(meP, 'challenger')) {
+          var foeId = myPlayerId === duel.attackerId ? duel.defenderId : duel.attackerId;
+          var foe = room.players.find(function (p) { return p.id === foeId; });
+          if (foe && foe.position > meP.position) face = Math.min(6, face + 1);
+        }
+        if (meP && hasAug(meP, 'fortress') && meP.position === 0) face = Math.min(6, face + 1);
+        spinCube(face);
+        await new Promise(function (r) { setTimeout(r, 900); });
+
+        room = await getRoom(myRoomCode) || room;
+        duel = room.duel;
+        if (!duel || duel.phase !== 'contest') return;
+        duel.rolls = duel.rolls || {};
+        duel.rolls[myPlayerId] = face;
+
+        var aRoll = duel.rolls[duel.attackerId];
+        var bRoll = duel.rolls[duel.defenderId];
+        if (aRoll != null && bRoll != null) {
+          if (aRoll === bRoll) {
+            duel.rolls = {};
+            room.announce = {
+              icon: '🤝',
+              title: '무승부!',
+              text: aRoll + ' vs ' + bRoll + ' — 다시 굴리세요',
+              sub: '',
+              ts: Date.now()
+            };
+          } else {
+            var aWins = aRoll > bRoll;
+            duel.winnerId = aWins ? duel.attackerId : duel.defenderId;
+            duel.loserId = aWins ? duel.defenderId : duel.attackerId;
+            duel.phase = 'punish';
+            var w = room.players.find(function (p) { return p.id === duel.winnerId; });
+            var l = room.players.find(function (p) { return p.id === duel.loserId; });
+            room.announce = {
+              icon: '⚔️',
+              title: (w ? w.name : '?') + ' 승리!',
+              text: aRoll + ' vs ' + bRoll,
+              sub: (l ? l.name : '?') + '에게 벌칙 주사위',
+              ts: Date.now()
+            };
+          }
+        }
+        room.duel = duel;
+        await saveRoom(room);
+        lastRoomSnapshot = room;
+        renderGame(room);
+        maybeShowAnnounce(room);
+      } else if (duel.phase === 'punish') {
+        if (myPlayerId !== duel.winnerId) return;
+
+        var punish = 1 + Math.floor(Math.random() * 6);
+        var winnerP = room.players.find(function (p) { return p.id === myPlayerId; });
+        if (winnerP && hasAug(winnerP, 'bully')) punish = Math.min(6, punish + 1);
+        spinCube(punish);
+        await new Promise(function (r) { setTimeout(r, 900); });
+
+        room = await getRoom(myRoomCode) || room;
+        duel = room.duel;
+        if (!duel || duel.phase !== 'punish') return;
+
+        var loser = room.players.find(function (p) { return p.id === duel.loserId; });
+        if (loser) {
+          var actualPunish = punish;
+          if (hasAug(loser, 'intimidate')) actualPunish = Math.max(1, actualPunish - 1);
+          var from = loser.position;
+          loser.position = (from - actualPunish + BOARD_SIZE) % BOARD_SIZE;
+          await moveTokenSteps(loser.id, from, -actualPunish);
+          punish = actualPunish;
+        }
+
+        var extraTurn = !!duel.pendingExtraTurn;
+        var needPick = !!duel.pendingAugmentPick;
+        var pickPlayer = duel.attackerId;
+        room.duel = null;
+        if (needPick) {
+          room.augmentPick = { playerId: pickPlayer, ts: Date.now() };
+          room.pendingPickExtraTurn = extraTurn;
+        } else {
+          advanceTurn(room, extraTurn);
+        }
+
+        room.announce = {
+          icon: '💥',
+          title: '벌칙 ' + punish + '!',
+          text: (loser ? loser.name : '?') + '이(가) ' + punish + '칸 뒤로',
+          sub: '칸 ' + (loser ? loser.position : '?'),
+          ts: Date.now()
+        };
+        room.log = room.log || [];
+        room.log.unshift({
+          name: '대결',
+          face: punish,
+          newPos: loser ? loser.position : 0,
+          effectText: '⚔️ ' + (loser ? loser.name : '?') + ' -' + punish,
+          ts: Date.now()
+        });
+        room.log = room.log.slice(0, 10);
+
+        await saveRoom(room);
+        lastRoomSnapshot = room;
+        placeTokensInstant(room);
+        renderGame(room);
+        maybeShowAnnounce(room);
+        if (room.augmentPick && room.augmentPick.playerId === myPlayerId) {
+          enterAugmentPick(room);
+        }
+      }
+    } catch (e) {
+      els.gameError.textContent = '대결 처리에 실패했어요';
+    } finally {
+      duelBusy = false;
+      els.btnDuelRoll.disabled = false;
+    }
+  };
+
+  els.btnRoll.onclick = async function () {
+    if (rolling) return;
+    els.gameError.textContent = '';
+    try {
+      var fresh = await getRoom(myRoomCode);
+      if (!fresh) { els.gameError.textContent = '방 정보를 불러오지 못했어요'; return; }
+      if (fresh.duel) {
+        lastRoomSnapshot = fresh;
+        renderGame(fresh);
+        els.gameError.textContent = '대결이 끝날 때까지 기다려주세요';
+        return;
+      }
+      if (fresh.relicChallenge) {
+        lastRoomSnapshot = fresh;
+        renderGame(fresh);
+        els.gameError.textContent = '유물 도전이 끝날 때까지 기다려주세요';
+        return;
+      }
+      if (fresh.winnerId) {
+        els.gameError.textContent = '이미 게임이 종료되었습니다';
+        return;
+      }
+      if (fresh.augmentPick) {
+        lastRoomSnapshot = fresh;
+        renderGame(fresh);
+        if (fresh.augmentPick.playerId === myPlayerId) {
+          enterAugmentPick(fresh);
+        } else {
+          els.gameError.textContent = '다른 플레이어가 증강을 선택하는 중이에요';
+        }
+        return;
+      }
+      var currentPlayer = fresh.players[fresh.turnIndex % fresh.players.length];
+      if (!currentPlayer || currentPlayer.id !== myPlayerId) {
+        lastRoomSnapshot = fresh;
+        renderGame(fresh);
+        els.gameError.textContent = '지금은 내 차례가 아니에요';
+        return;
+      }
+
+      var meIndex = fresh.players.findIndex(function (p) { return p.id === myPlayerId; });
+      var me = fresh.players[meIndex];
+
+      if ((me.skipTurns || 0) > 0) {
+        me.skipTurns -= 1;
+        advanceTurn(fresh, false);
+        fresh.pendingRoll = null;
+        await saveRoom(fresh);
+        lastRoomSnapshot = fresh;
+        renderGame(fresh);
+        return;
+      }
+
+      rolling = true;
+      els.btnRoll.disabled = true;
+      els.btnRoll.textContent = '굴리는 중...';
+      els.turnBanner.className = 'ld-turn-banner rb-wait';
+      els.turnBanner.textContent = '굴리는 중...';
+
+      var rawFace = 1 + Math.floor(Math.random() * 6);
+      var mod = applyRollModifiers(rawFace, me, fresh);
+      var finalFace = mod.face;
+      var moveSteps = mod.move;
+      var oldPos = me.position;
+
+      fresh.pendingRoll = {
+        playerId: myPlayerId,
+        name: me.name,
+        face: finalFace,
+        move: moveSteps,
+        fromPos: oldPos,
+        ts: Date.now()
+      };
+      await saveRoom(fresh);
+      lastRoomSnapshot = fresh;
+
+      // 1) spin dice
+      spinCube(finalFace);
+      await new Promise(function (r) { setTimeout(r, 1100); });
+      // 2) show result briefly, then move
+      els.turnBanner.className = 'ld-turn-banner rb-' + (RESULT_KIND[Math.min(6, finalFace)] || 'mid');
+      els.turnBanner.textContent = finalFace + '이(가) 나왔습니다!';
+      await new Promise(function (r) { setTimeout(r, POST_ROLL_DELAY); });
+
+      await moveTokenSteps(myPlayerId, oldPos, moveSteps);
+
+      fresh = await getRoom(myRoomCode) || fresh;
+      meIndex = fresh.players.findIndex(function (p) { return p.id === myPlayerId; });
+      if (meIndex < 0) throw new Error('PLAYER_GONE');
+      me = fresh.players[meIndex];
+
+      var landPos = (oldPos + moveSteps) % BOARD_SIZE;
+      var lapsGained = Math.floor((oldPos + moveSteps) / BOARD_SIZE);
+      me.position = landPos;
+      me.laps = (me.laps || 0) + lapsGained;
+
+      var effect = resolveCellEffect(fresh, me, landPos);
+
+      if (effect.swapWith) {
+        var other = fresh.players.find(function (p) { return p.id === effect.swapWith; });
+        if (other) {
+          var tmp = other.position;
+          other.position = me.position;
+          me.position = tmp;
+          effect.pos = me.position;
+        }
+      } else {
+        me.position = effect.pos;
+      }
+
+      // 특수 효과 공지를 먼저 보여 준 뒤 이동/발동
+      if (effect.announce && effect.effectText) {
+        showAnnounce(
+          effect.effectIcon || '✨',
+          (effect.effectTitle || '특수 효과') + '!',
+          me.name + ' — ' + effect.effectText,
+          '칸 ' + landPos
+        );
+        await new Promise(function (r) { setTimeout(r, EFFECT_READ_MS); });
+      }
+
+      if (effect.extraSteps && effect.extraSteps !== 0) {
+        if (Math.abs(effect.extraSteps) <= 8 && effect.effectText.indexOf('워프') === -1) {
+          await moveTokenSteps(myPlayerId, landPos, effect.extraSteps);
+        } else {
+          placeTokensInstant(fresh);
+        }
+      } else if (effect.swapWith || (effect.effectText && effect.effectText.indexOf('광대') !== -1)) {
+        placeTokensInstant(fresh);
+      }
+
+      var extraTurn = mod.extraTurn || effect.extraTurn;
+      if (effect.skipNext) fresh.skipNext = true;
+
+      // 한 바퀴 완주 → 증강 선택 예약
+      var needAugPick = lapsGained > 0;
+      if (needAugPick) {
+        fresh.augmentPick = { playerId: myPlayerId, ts: Date.now() };
+        fresh.pendingPickExtraTurn = extraTurn;
+      }
+
+      // 유물/강탈 칸 도전
+      var startedRelic = false;
+      if (effect.startSteal) {
+        var victims = fresh.players.filter(function (p) {
+          return p.id !== myPlayerId && playerRelics(p).length > 0;
+        });
+        if (!victims.length) {
+          effect.effectText = '🏴‍☠️ 강탈할 유물이 있는 상대 없음';
+          fresh.announce = {
+            icon: '🏴‍☠️', title: '강탈 실패', text: me.name + ' — 대상 없음', sub: '', ts: Date.now()
+          };
+        } else {
+          fresh.relicChallenge = {
+            mode: 'steal',
+            playerId: myPlayerId,
+            phase: 'selectTarget',
+            targetId: null,
+            rolls: {},
+            pendingExtraTurn: extraTurn,
+            pendingAugmentPick: needAugPick,
+            pendingDuelWith: null,
+            ts: Date.now()
+          };
+          var occ2 = fresh.players.find(function (p) {
+            return p.id !== myPlayerId && p.position === me.position;
+          });
+          if (occ2 && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ2.id;
+          startedRelic = true;
+          fresh.announce = {
+            icon: '🏴‍☠️', title: '유물 강탈!', text: me.name + ' — 대상을 선택하세요', sub: '', ts: Date.now()
+          };
+        }
+      } else if (effect.startRelic) {
+        var target = 1 + Math.floor(Math.random() * 6); // 1~6
+        fresh.relicChallenge = {
+          playerId: myPlayerId,
+          target: target,
+          rolls: [],
+          noAugment: true,
+          pendingExtraTurn: extraTurn,
+          pendingAugmentPick: needAugPick,
+          pendingDuelWith: null,
+          ts: Date.now()
+        };
+        // 같은 칸 대결은 유물 도전 후로 미룸
+        var occ = fresh.players.find(function (p) {
+          return p.id !== myPlayerId && p.position === me.position;
+        });
+        if (occ && me.position !== 0) {
+          fresh.relicChallenge.pendingDuelWith = occ.id;
+        }
+        startedRelic = true;
+        var rr = getRelicById(fresh.relicChallenge.relicId);
+        fresh.announce = {
+          icon: '💎',
+          title: '유물 도전!',
+          text: me.name + ' — 목표 ' + target + (rr ? ' · ' + rr.icon + rr.name : ''),
+          sub: '주사위 한 번이 목표와 같으면 획득 (증강 미적용)',
+          ts: Date.now()
+        };
+      }
+
+      // 같은 칸에 다른 플레이어가 있으면 대결 시작 (턴 진행 보류)
+      var occupant = fresh.players.find(function (p) {
+        return p.id !== myPlayerId && p.position === me.position;
+      });
+      var startedDuel = false;
+      if (!startedRelic && occupant && me.position !== 0) {
+        fresh.duel = {
+          attackerId: myPlayerId,
+          defenderId: occupant.id,
+          phase: 'contest',
+          rolls: {},
+          winnerId: null,
+          loserId: null,
+          punishRoll: null,
+          pendingExtraTurn: extraTurn,
+          pendingAugmentPick: needAugPick,
+          ts: Date.now()
+        };
+        startedDuel = true;
+        fresh.announce = {
+          icon: '⚔️',
+          title: '같은 칸 대결!',
+          text: me.name + ' vs ' + occupant.name,
+          sub: '높은 주사위가 이깁니다',
+          ts: Date.now()
+        };
+      } else if (!startedRelic && needAugPick) {
+        fresh.announce = {
+          icon: '🏁',
+          title: me.name + ' 한 바퀴 완주!',
+          text: '증강을 선택합니다',
+          sub: (me.laps || 0) + '바퀴',
+          ts: Date.now()
+        };
+      } else if (!startedRelic && !startedDuel) {
+        advanceTurn(fresh, extraTurn);
+      }
+
+      var effectNotes = mod.notes.concat(effect.effectText ? [effect.effectText] : []);
+      if (!startedDuel && effect.announce && effect.effectText) {
+        fresh.announce = {
+          icon: effect.effectIcon || '✨',
+          title: (effect.effectTitle || '특수 효과') + '!',
+          text: me.name + ' — ' + effect.effectText,
+          sub: '칸 ' + me.position,
+          ts: Date.now()
+        };
+      }
+
+      fresh.log = fresh.log || [];
+      fresh.log.unshift({
+        name: me.name,
+        face: finalFace,
+        newPos: me.position,
+        effectText: effectNotes.join(' · ') + (startedDuel ? ' · ⚔️대결!' : ''),
+        ts: Date.now()
+      });
+      fresh.log = fresh.log.slice(0, 10);
+      fresh.pendingRoll = null;
+
+      await saveRoom(fresh);
+
+      var kind = RESULT_KIND[Math.min(6, finalFace)] || 'mid';
+      els.turnBanner.className = 'ld-turn-banner ' + (effect.effectText ? 'rb-effect' : 'rb-' + kind);
+      var msg = finalFace + ' → 칸 ' + me.position;
+      if (effectNotes.length) msg += ' · ' + effectNotes.join(' · ');
+      els.turnBanner.textContent = msg;
+
+      lastRoomSnapshot = fresh;
+      placeTokensInstant(fresh);
+      renderGame(fresh);
+      maybeShowAnnounce(fresh);
+
+      rolling = false;
+      if (fresh.augmentPick && fresh.augmentPick.playerId === myPlayerId && !fresh.duel) {
+        enterAugmentPick(fresh);
+      } else {
+        setTimeout(function () {
+          if (!rolling) renderGame(lastRoomSnapshot);
+        }, 1600);
+      }
+    } catch (e) {
+      rolling = false;
+      els.gameError.textContent = '주사위를 굴리지 못했어요. 다시 시도해주세요.';
+      els.btnRoll.disabled = false;
+      els.btnRoll.textContent = '주사위 굴리기';
+      try {
+        var cleanup = await getRoom(myRoomCode);
+        if (cleanup && cleanup.pendingRoll && cleanup.pendingRoll.playerId === myPlayerId) {
+          cleanup.pendingRoll = null;
+          await saveRoom(cleanup);
+        }
+      } catch (err) {}
+    }
+  };
+
+  function roomsEqual(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  async function pollTick() {
+    if (!myRoomCode || remoteAnimating) return;
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room) return;
+      if (myPlayerId && room.players && !room.players.some(function (p) { return p.id === myPlayerId; })) {
+        alert('방에서 강퇴되었습니다.');
+        leaveRoom();
+        return;
+      }
+
+      maybeShowAnnounce(room);
+
+      if (roomsEqual(room, lastRoomSnapshot)) return;
+
+      if (room.status === 'waiting') {
+        lastRoomSnapshot = room;
+        if (els.screenLobby.classList.contains('active')) renderLobby(room);
+        if (els.screenAugment.classList.contains('active') || els.screenGame.classList.contains('active')) {
+          enterLobby(room);
+        }
+        return;
+      }
+
+      if (room.status === 'playing' && room.augmentPick) {
+        lastRoomSnapshot = room;
+        if (room.augmentPick.playerId === myPlayerId) {
+          if (!els.screenAugment.classList.contains('active')) {
+            enterAugmentPick(room);
+          } else {
+            renderAugmentUI(room);
+          }
+        } else if (els.screenAugment.classList.contains('active')) {
+          // 내 선택이 끝났거나 다른 사람 차례
+          enterGame(room);
+        } else if (els.screenLobby.classList.contains('active')) {
+          enterGame(room);
+        } else if (els.screenGame.classList.contains('active')) {
+          renderGame(room);
+        }
+        return;
+      }
+
+      if (room.status === 'playing' && els.screenAugment.classList.contains('active') && !room.augmentPick) {
+        enterGame(room);
+        return;
+      }
+
+      if (room.status === 'playing' && els.screenLobby.classList.contains('active')) {
+        enterGame(room);
+        return;
+      }
+
+      if (room.status === 'playing' && els.screenGame.classList.contains('active')) {
+        var pending = room.pendingRoll;
+        if (pending && pending.playerId !== myPlayerId && pending.ts !== lastPendingTs && !rolling) {
+          lastPendingTs = pending.ts;
+          remoteAnimating = true;
+          lastRoomSnapshot = room;
+
+          els.turnBanner.className = 'ld-turn-banner rb-wait';
+          els.turnBanner.textContent = pending.name + '님이 굴리는 중...';
+          els.btnRoll.disabled = true;
+          els.btnRoll.textContent = '상대가 굴리는 중...';
+
+          spinCube(pending.face);
+          await new Promise(function (r) { setTimeout(r, 1100); });
+          els.turnBanner.className = 'ld-turn-banner rb-' + (RESULT_KIND[Math.min(6, pending.face)] || 'mid');
+          els.turnBanner.textContent = pending.name + ' · ' + pending.face;
+          await new Promise(function (r) { setTimeout(r, POST_ROLL_DELAY); });
+
+          var updated = await getRoom(myRoomCode) || room;
+          var mover = updated.players.find(function (p) { return p.id === pending.playerId; });
+          var fromPos = tokenRenderedPos[pending.playerId];
+          if (fromPos === undefined) fromPos = pending.fromPos;
+          var targetPos = mover ? mover.position : ((fromPos + (pending.move || pending.face)) % BOARD_SIZE);
+          var steps = (targetPos - fromPos + BOARD_SIZE) % BOARD_SIZE;
+          if (steps > BOARD_SIZE / 2) {
+            if (mover) tokenRenderedPos[pending.playerId] = mover.position;
+            placeTokensInstant(updated);
+          } else if (steps > 0) {
+            await moveTokenSteps(pending.playerId, fromPos, steps);
+          }
+
+          lastRoomSnapshot = updated;
+          placeTokensInstant(updated);
+          remoteAnimating = false;
+          if (!rolling) renderGame(updated);
+          maybeShowAnnounce(updated);
+          return;
+        }
+
+        var animations = [];
+        room.players.forEach(function (p) {
+          var prevPos = tokenRenderedPos[p.id];
+          if (prevPos === undefined) {
+            tokenRenderedPos[p.id] = p.position;
+            return;
+          }
+          if (prevPos !== p.position && p.id !== myPlayerId) {
+            var steps = (p.position - prevPos + BOARD_SIZE) % BOARD_SIZE;
+            if (steps > BOARD_SIZE / 2) {
+              tokenRenderedPos[p.id] = p.position;
+              return;
+            }
+            if (steps > 0) {
+              animations.push(moveTokenSteps(p.id, prevPos, steps));
+            }
+          }
+        });
+        lastRoomSnapshot = room;
+        if (animations.length) {
+          remoteAnimating = true;
+          await Promise.all(animations);
+          remoteAnimating = false;
+        }
+        placeTokensInstant(room);
+        if (!rolling) renderGame(room);
+      }
+    } catch (e) {
+      remoteAnimating = false;
+    }
+  }
+
+  function startPolling() {
+    stopPolling();
+    pollTimer = setInterval(pollTick, POLL_MS);
+  }
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+
+  // ---- Admin (password 1183) ----
+  var isAdmin = false;
+  var ADMIN_PASS = '1183';
+  var btnAdmin = document.getElementById('btnAdmin');
+  var adminPanel = document.getElementById('adminPanel');
+  if (btnAdmin) {
+    btnAdmin.onclick = function () {
+      adminPanel.classList.toggle('show');
+    };
+  }
+  var btnAdminLogin = document.getElementById('btnAdminLogin');
+  if (btnAdminLogin) {
+    btnAdminLogin.onclick = function () {
+      var pass = (document.getElementById('adminPass').value || '').trim();
+      if (pass === ADMIN_PASS) {
+        isAdmin = true;
+        document.getElementById('adminLoginWrap').style.display = 'none';
+        document.getElementById('adminTools').style.display = 'block';
+        refreshAdminTargets();
+        document.getElementById('adminMsg').textContent = '관리자 모드 ON';
+      } else {
+        document.getElementById('adminMsg').textContent = '비밀번호가 틀렸습니다';
+      }
+    };
+  }
+  function refreshAdminTargets() {
+    var sel = document.getElementById('adminTarget');
+    if (!sel || !lastRoomSnapshot) return;
+    sel.innerHTML = '';
+    (lastRoomSnapshot.players || []).forEach(function (p) {
+      var opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = (p.avatar || '') + ' ' + p.name;
+      sel.appendChild(opt);
+    });
+    var rwInput = document.getElementById('adminRelicWin');
+    if (rwInput && lastRoomSnapshot.relicsToWin != null) {
+      rwInput.value = lastRoomSnapshot.relicsToWin;
+    }
+  }
+  async function adminAct(kind) {
+    if (!isAdmin || !myRoomCode) return;
+    var sel = document.getElementById('adminTarget');
+    var tid = sel && sel.value;
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room) return;
+      room.muted = room.muted || {};
+      if (kind === 'kick') {
+        room.players = room.players.filter(function (p) { return p.id !== tid; });
+        if (!room.players.length) { document.getElementById('adminMsg').textContent = '유저 없음'; return; }
+        room.turnIndex = room.turnIndex % room.players.length;
+        room.announce = { icon: '⛔', title: '강퇴', text: '관리자가 플레이어를 강퇴했습니다', sub: '', ts: Date.now() };
+      } else if (kind === 'mute') {
+        room.muted[tid] = !room.muted[tid];
+        document.getElementById('adminMsg').textContent = room.muted[tid] ? '채금 적용' : '채금 해제';
+      } else if (kind === 'skip') {
+        var idx = room.players.findIndex(function (p) { return p.id === tid; });
+        if (idx >= 0) {
+          room.turnIndex = (idx + 1) % room.players.length;
+          room.pendingRoll = null;
+          room.duel = null;
+          room.relicChallenge = null;
+          room.announce = { icon: '⏭️', title: '턴 스킵', text: '관리자가 턴을 넘겼습니다', sub: '', ts: Date.now() };
+        }
+      } else if (kind === 'move') {
+        var cell = parseInt(document.getElementById('adminCell').value, 10);
+        if (isNaN(cell) || cell < 0 || cell >= BOARD_SIZE) {
+          document.getElementById('adminMsg').textContent = '칸 번호 오류';
+          return;
+        }
+        var tp = room.players.find(function (p) { return p.id === tid; });
+        if (tp) {
+          tp.position = cell;
+          room.announce = { icon: '🪄', title: '강제 이동', text: tp.name + ' → 칸 ' + cell, sub: '', ts: Date.now() };
+        }
+      } else if (kind === 'relicWin') {
+        var rw = parseInt(document.getElementById('adminRelicWin').value, 10);
+        if (isNaN(rw) || rw < 1 || rw > 5) {
+          document.getElementById('adminMsg').textContent = '1~5 사이 숫자를 입력하세요';
+          return;
+        }
+        room.relicsToWin = rw;
+        room.announce = {
+          icon: '💎',
+          title: '승리 조건 변경',
+          text: '유물 ' + rw + '개 모으면 승리',
+          sub: '관리자 설정',
+          ts: Date.now()
+        };
+        document.getElementById('adminMsg').textContent = '유물 목표: ' + rw + '개';
+        // 이미 달성한 사람 즉시 승리 처리
+        room.players.forEach(function (p) {
+          if (!room.winnerId && hasAllRelics(p, rw)) {
+            room.winnerId = p.id;
+            room.status = 'finished';
+            room.announce = { icon: '🏆', title: p.name + ' 승리!', text: '유물 ' + rw + '개 달성!', sub: '게임 종료', ts: Date.now() };
+          }
+        });
+      }
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      if (els.screenGame.classList.contains('active')) {
+        placeTokensInstant(room);
+        renderGame(room);
+      }
+      maybeShowAnnounce(room);
+      refreshAdminTargets();
+    } catch (e) {
+      document.getElementById('adminMsg').textContent = '실패';
+    }
+  }
+  var btnAdminKick = document.getElementById('btnAdminKick');
+  var btnAdminMute = document.getElementById('btnAdminMute');
+  var btnAdminSkip = document.getElementById('btnAdminSkip');
+  var btnAdminMove = document.getElementById('btnAdminMove');
+  if (btnAdminKick) btnAdminKick.onclick = function () { adminAct('kick'); };
+  if (btnAdminMute) btnAdminMute.onclick = function () { adminAct('mute'); };
+  if (btnAdminSkip) btnAdminSkip.onclick = function () { adminAct('skip'); };
+  if (btnAdminMove) btnAdminMove.onclick = function () { adminAct('move'); };
+  var btnAdminRelicWin = document.getElementById('btnAdminRelicWin');
+  if (btnAdminRelicWin) btnAdminRelicWin.onclick = function () { adminAct('relicWin'); };
+
+  // ---- Chat ----
+  function renderChat(room) {
+    var log = document.getElementById('chatLog');
+    if (!log) return;
+    var lines = room.chat || [];
+    log.innerHTML = lines.slice(-40).map(function (c) {
+      return '<div class="ld-chat-line"><span class="who">' + escapeHtml(c.name) + '</span> ' + escapeHtml(c.text) + '</div>';
+    }).join('');
+    log.scrollTop = log.scrollHeight;
+  }
+  var chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', async function (e) {
+      if (e.key !== 'Enter') return;
+      var msg = chatInput.value.trim();
+      if (!msg || !myRoomCode || !myPlayerId) return;
+      chatInput.value = '';
+      try {
+        var room = await getRoom(myRoomCode);
+        if (!room) return;
+        room.muted = room.muted || {};
+        if (room.muted[myPlayerId]) {
+          els.gameError.textContent = '채금 상태입니다';
+          return;
+        }
+        var me = room.players.find(function (p) { return p.id === myPlayerId; });
+        room.chat = room.chat || [];
+        room.chat.push({ name: me ? me.name : '?', text: msg, ts: Date.now() });
+        room.chat = room.chat.slice(-50);
+        await saveRoom(room);
+        lastRoomSnapshot = room;
+        renderChat(room);
+      } catch (err) {}
+    });
+  }
+
+  // hook renderGame to refresh chat + admin targets
+  var _renderGameOrig = renderGame;
+  renderGame = function (room) {
+    _renderGameOrig(room);
+    renderChat(room);
+    if (isAdmin) refreshAdminTargets();
+  };
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+})();
+</script>
+</body>
+</html>
