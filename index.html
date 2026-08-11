@@ -465,6 +465,8 @@
           <div class="ld-field-label">승리 유물 개수 (1~5)</div>
           <input type="number" id="adminRelicWin" min="1" max="5" value="5" />
           <button class="ld-btn ld-btn-primary" id="btnAdminRelicWin">유물 목표 적용</button>
+          <div class="ld-field-label">방 관리</div>
+          <button class="ld-btn ld-btn-outline" id="btnAdminDeleteRoom" style="border-color:var(--red);color:var(--red);">방 삭제</button>
           <div class="ld-error" id="adminMsg" style="min-height:14px;"></div>
         </div>
       </div>
@@ -3126,6 +3128,17 @@ refreshRoomList();
     var sel = document.getElementById('adminTarget');
     var tid = sel && sel.value;
     try {
+      if (kind === 'deleteRoom') {
+        if (!confirm('이 방을 삭제할까요? 모든 플레이어가 퇴장됩니다.')) return;
+        var code = myRoomCode;
+        try { await removeRoomFromLobby(code); } catch (e1) {}
+        if (fbDb) {
+          await fbDb.ref(roomPath(code)).remove();
+        }
+        document.getElementById('adminMsg').textContent = '방 삭제됨';
+        leaveRoom();
+        return;
+      }
       var room = await getRoom(myRoomCode);
       if (!room) return;
       room.muted = room.muted || {};
@@ -3203,6 +3216,8 @@ refreshRoomList();
   if (btnAdminMove) btnAdminMove.onclick = function () { adminAct('move'); };
   var btnAdminRelicWin = document.getElementById('btnAdminRelicWin');
   if (btnAdminRelicWin) btnAdminRelicWin.onclick = function () { adminAct('relicWin'); };
+  var btnAdminDeleteRoom = document.getElementById('btnAdminDeleteRoom');
+  if (btnAdminDeleteRoom) btnAdminDeleteRoom.onclick = function () { adminAct('deleteRoom'); };
 
   // ---- Chat ----
   function renderChat(room) {
