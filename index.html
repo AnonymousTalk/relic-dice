@@ -33,7 +33,7 @@
     color: var(--text-main);
   }
   .ld-root { min-height: 100vh; width: 100%; padding: 20px 14px 40px; position: relative; overflow-x: hidden; }
-  .ld-shell { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+  .ld-shell { max-width: 980px; margin: 0 auto; position: relative; z-index: 1; }
   .ld-glow-blob { position: fixed; border-radius: 50%; filter: blur(60px); opacity: 0.5; pointer-events: none; z-index: 0; }
   .blob1 { width: 240px; height: 240px; background: var(--purple); top: -80px; left: -60px; }
   .blob2 { width: 200px; height: 200px; background: var(--cyan); bottom: -60px; right: -60px; }
@@ -224,12 +224,12 @@
   /* Game layout: left roster | center controls | right board */
   .ld-game-body {
     display: grid;
-    grid-template-columns: 110px 92px minmax(150px, 1fr) minmax(220px, 1.25fr);
+    grid-template-columns: 150px 100px minmax(150px, 1fr) minmax(220px, 1.25fr);
     gap: 10px;
     align-items: start;
   }
   .ld-roster {
-    width: 92px; display: flex; flex-direction: column; gap: 8px;
+    width: 100px; display: flex; flex-direction: column; gap: 8px;
   }
   .ld-roster-title { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
   .ld-roster-card {
@@ -250,10 +250,33 @@
   .ld-aug-detail {
     margin-top: 8px; padding: 12px; border-radius: 12px;
     background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);
-    font-size: 12.5px; line-height: 1.45; display: none;
+    font-size: 12.5px; line-height: 1.45; display: none; max-height: 280px; overflow-y: auto;
   }
   .ld-aug-detail.show { display: block; }
-  .ld-aug-detail-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .ld-aug-detail-title { font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .ld-aug-item {
+    display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; margin-bottom: 6px;
+    border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(139,92,246,0.25);
+  }
+  .ld-aug-item.off { opacity: 0.45; border-style: dashed; }
+  .ld-aug-item-icon { font-size: 18px; flex-shrink: 0; }
+  .ld-aug-item-body { flex: 1; min-width: 0; }
+  .ld-aug-item-name { font-weight: 700; font-size: 12px; margin-bottom: 2px; }
+  .ld-aug-item-desc { font-size: 11px; color: var(--text-dim); line-height: 1.35; }
+  .ld-aug-toggle {
+    flex-shrink: 0; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(165,160,201,0.35);
+    background: rgba(255,255,255,0.06); color: var(--text-main); font-size: 10px; font-weight: 700; cursor: pointer;
+  }
+  .ld-aug-toggle.on { border-color: var(--green); color: var(--green); }
+  .ld-aug-toggle.off { border-color: var(--red); color: var(--red); }
+  .ld-relic-item {
+    display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; margin-bottom: 6px;
+    border-radius: 10px; background: rgba(240,171,252,0.08); border: 1px solid rgba(240,171,252,0.3);
+  }
+  .ld-player-panel-section {
+    font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.4px; margin: 10px 0 6px;
+  }
 
 
   .ld-avatar-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -331,13 +354,13 @@
   .ld-admin-panel .ld-btn { margin-top: 6px; padding: 8px; font-size: 12px; }
 
   .ld-chat {
-    width: 110px; display: flex; flex-direction: column; gap: 6px; max-height: 420px;
+    width: 150px; display: flex; flex-direction: column; gap: 6px; max-height: 420px;
   }
   .ld-chat-title { font-size: 10px; font-weight: 700; color: var(--text-dim); text-align: center; text-transform: uppercase; }
   .ld-chat-log {
     flex: 1; min-height: 160px; max-height: 280px; overflow-y: auto; padding: 6px;
     border-radius: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(139,92,246,0.2);
-    font-size: 10px; line-height: 1.35;
+    font-size: 11px; line-height: 1.4;
   }
   .ld-chat-line { margin-bottom: 5px; word-break: break-word; }
   .ld-chat-line .who { color: var(--cyan); font-weight: 700; }
@@ -447,7 +470,7 @@
         "chat roster main"
         "board board board";
     }
-    .ld-chat { grid-area: chat; width: 90px; }
+    .ld-chat { grid-area: chat; width: 120px; }
     .ld-roster { grid-area: roster; width: 78px; }
     .ld-main-col { grid-area: main; }
     .ld-board-col { grid-area: board; }
@@ -711,15 +734,18 @@
   }
 
   var RELIC_TYPES = [
-    { id: 'sun', icon: '☀️', name: '태양 유물' },
-    { id: 'moon', icon: '🌙', name: '달 유물' },
-    { id: 'star', icon: '⭐', name: '별 유물' },
-    { id: 'herb', icon: '🌿', name: '허브 유물' },
-    { id: 'flame', icon: '🔥', name: '불꽃 유물' }
+    { id: 'sun', icon: '☀️', name: '태양 유물', desc: '이동 +1칸 (항상)' },
+    { id: 'moon', icon: '🌙', name: '달 유물', desc: '함정 피해 -1 / 대결 방어 +1' },
+    { id: 'star', icon: '⭐', name: '별 유물', desc: '주사위 6 나올 확률 소폭 상승 (재굴림 1회 15%)' },
+    { id: 'herb', icon: '🌿', name: '허브 유물', desc: '휴식 칸 무시 · 스킵 턴 1회 자동 회복' },
+    { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈 주사위 +1 · 벌칙 +1' }
   ];
 
   function getRelicById(id) {
     return RELIC_TYPES.find(function (r) { return r.id === id; }) || null;
+  }
+  function hasRelic(player, id) {
+    return playerRelics(player).indexOf(id) !== -1;
   }
   function playerRelics(p) {
     if (!p) return [];
@@ -800,6 +826,11 @@
 
   function hasAug(player, id) {
     if (!player) return false;
+    var disabled = player.augDisabled;
+    if (disabled) {
+      var disList = Array.isArray(disabled) ? disabled : Object.keys(disabled).map(function (k) { return disabled[k]; });
+      if (disList.indexOf(id) !== -1) return false;
+    }
     var list = player.augments;
     if (!list) {
       if (player.augment === id) return true;
@@ -807,6 +838,12 @@
     }
     if (Array.isArray(list)) return list.indexOf(id) !== -1;
     return Object.keys(list).some(function (k) { return list[k] === id; });
+  }
+  function isAugDisabled(player, id) {
+    if (!player || !player.augDisabled) return false;
+    var disabled = player.augDisabled;
+    if (Array.isArray(disabled)) return disabled.indexOf(id) !== -1;
+    return Object.keys(disabled).some(function (k) { return disabled[k] === id; });
   }
 
   function playerAugList(player) {
@@ -914,6 +951,99 @@
   };
   var RESULT_KIND = { 1: 'low', 2: 'low', 3: 'mid', 4: 'mid', 5: 'good', 6: 'great' };
 
+
+  // ========== Web Audio SFX ==========
+  var _audioCtx = null;
+  function getAudioCtx() {
+    if (!_audioCtx) {
+      try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+    }
+    if (_audioCtx.state === 'suspended') _audioCtx.resume().catch(function () {});
+    return _audioCtx;
+  }
+  function playTone(freq, dur, type, vol, slideTo) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), ctx.currentTime + dur);
+    gain.gain.setValueAtTime(vol != null ? vol : 0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + dur + 0.02);
+  }
+  function playNoise(dur, vol) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var len = Math.floor(ctx.sampleRate * dur);
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    var gain = ctx.createGain();
+    gain.gain.value = vol != null ? vol : 0.08;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+  }
+  var SFX = {
+    dice: function () {
+      playNoise(0.12, 0.1);
+      playTone(180, 0.08, 'triangle', 0.08);
+      setTimeout(function () { playTone(240, 0.06, 'triangle', 0.06); }, 40);
+      setTimeout(function () { playTone(320, 0.1, 'square', 0.05); }, 90);
+    },
+    move: function () {
+      playTone(420, 0.05, 'sine', 0.06, 520);
+    },
+    land: function () {
+      playTone(300, 0.1, 'triangle', 0.1);
+      playTone(180, 0.15, 'sine', 0.07);
+    },
+    special: function () {
+      playTone(520, 0.12, 'sine', 0.1, 700);
+      setTimeout(function () { playTone(700, 0.15, 'triangle', 0.08); }, 80);
+    },
+    relic: function () {
+      playTone(440, 0.12, 'sine', 0.1);
+      setTimeout(function () { playTone(554, 0.12, 'sine', 0.1); }, 100);
+      setTimeout(function () { playTone(659, 0.2, 'sine', 0.12); }, 200);
+    },
+    relicFail: function () {
+      playTone(280, 0.2, 'sawtooth', 0.06, 120);
+    },
+    duel: function () {
+      playTone(200, 0.1, 'square', 0.08);
+      setTimeout(function () { playTone(160, 0.15, 'square', 0.08); }, 80);
+      setTimeout(function () { playTone(300, 0.12, 'sawtooth', 0.07); }, 180);
+    },
+    duelWin: function () {
+      playTone(400, 0.1, 'triangle', 0.1);
+      setTimeout(function () { playTone(500, 0.1, 'triangle', 0.1); }, 90);
+      setTimeout(function () { playTone(600, 0.18, 'sine', 0.12); }, 180);
+    },
+    duelLose: function () {
+      playTone(250, 0.15, 'sawtooth', 0.08, 100);
+    },
+    augment: function () {
+      playTone(523, 0.1, 'sine', 0.1);
+      setTimeout(function () { playTone(659, 0.1, 'sine', 0.1); }, 90);
+      setTimeout(function () { playTone(784, 0.2, 'sine', 0.12); }, 180);
+    },
+    click: function () {
+      playTone(600, 0.04, 'square', 0.04);
+    }
+  };
+  // Unlock audio on first user gesture
+  ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {
+    document.addEventListener(ev, function () { getAudioCtx(); }, { once: true, passive: true });
+  });
+
   // 표준 주사위 점 위치 (3x3 그리드 인덱스 0~8)
   var PIP_PATTERN = {
     1: [4],
@@ -961,6 +1091,9 @@
         }
         if (p.relics && !Array.isArray(p.relics)) {
           p.relics = Object.keys(p.relics).map(function (k) { return p.relics[k]; });
+        }
+        if (p.augDisabled && !Array.isArray(p.augDisabled)) {
+          p.augDisabled = Object.keys(p.augDisabled).map(function (k) { return p.augDisabled[k]; });
         }
       });
     }
@@ -1222,7 +1355,8 @@
       skipTurns: 0,
       shieldCharges: 0,
       lastFace: 0,
-      nextMoveBonus: 0
+      nextMoveBonus: 0,
+      augDisabled: []
     };
   }
 
@@ -1701,6 +1835,7 @@ refreshRoomList();
       room.augmentPick = null;
 
       var a = getAugmentById(augId);
+      try { SFX.augment(); } catch (e) {}
       room.announce = {
         icon: a ? a.icon : '✨',
         title: me.name + ' 증강 획득!',
@@ -1874,11 +2009,13 @@ refreshRoomList();
       function step() {
         if (remaining <= 0) {
           tokenRenderedPos[playerId] = ((current % BOARD_SIZE) + BOARD_SIZE) % BOARD_SIZE;
+          try { SFX.land(); } catch (e) {}
           resolve();
           return;
         }
         current = (current + dir + BOARD_SIZE) % BOARD_SIZE;
         remaining--;
+        try { SFX.move(); } catch (e) {}
         if (el) {
           var pos = tokenCellPercent(current);
           el.style.left = pos.left + '%';
@@ -1892,6 +2029,7 @@ refreshRoomList();
   }
 
   function spinCube(finalFace) {
+    try { SFX.dice(); } catch (e) {}
     var target = FACE_ROTATION[finalFace];
     var spinsX = 2 + Math.floor(Math.random() * 2);
     var spinsY = 3 + Math.floor(Math.random() * 2);
@@ -2024,23 +2162,88 @@ refreshRoomList();
   }
 
   function showAugDetail(player) {
-    var ids = playerAugs(player);
-    if (!ids.length) {
+    if (!player) {
       els.augDetail.classList.remove('show');
       return;
     }
-    var titleBits = ids.map(function (id) {
-      var a = getAugmentById(id);
-      return a ? a.icon + ' ' + a.name : id;
-    });
-    var descBits = ids.map(function (id) {
-      var a = getAugmentById(id);
-      return a ? a.icon + ' ' + a.desc : id;
-    });
-    els.augDetailTitle.innerHTML = escapeHtml(titleBits.join(' · ')) +
-      (player.id === myPlayerId ? ' (내 증강)' : ' · ' + escapeHtml(player.name));
-    els.augDetailDesc.textContent = descBits.join(' / ');
+    var ids = playerAugs(player);
+    var relics = playerRelics(player);
+    var isMe = player.id === myPlayerId;
+    els.augDetailTitle.innerHTML =
+      (player.avatar || '') + ' ' + escapeHtml(player.name) +
+      (isMe ? ' <span style="color:var(--gold)">(나)</span>' : '') +
+      ' · 칸 ' + player.position;
+
+    var html = '';
+    html += '<div class="ld-player-panel-section">증강 ' + ids.length + '개</div>';
+    if (!ids.length) {
+      html += '<div style="font-size:12px;color:var(--text-dim);padding:4px 0;">보유 증강 없음</div>';
+    } else {
+      ids.forEach(function (id) {
+        var a = getAugmentById(id);
+        var off = isAugDisabled(player, id);
+        html += '<div class="ld-aug-item' + (off ? ' off' : '') + '" data-aug-id="' + escapeHtml(id) + '">';
+        html += '<div class="ld-aug-item-icon">' + (a ? a.icon : '✨') + '</div>';
+        html += '<div class="ld-aug-item-body">';
+        html += '<div class="ld-aug-item-name">' + escapeHtml(a ? a.name : id) + (off ? ' (OFF)' : '') + '</div>';
+        html += '<div class="ld-aug-item-desc">' + escapeHtml(a ? a.desc : '') + '</div>';
+        html += '</div>';
+        if (isMe) {
+          html += '<button type="button" class="ld-aug-toggle ' + (off ? 'off' : 'on') + '" data-toggle-aug="' + escapeHtml(id) + '">' +
+            (off ? 'OFF' : 'ON') + '</button>';
+        }
+        html += '</div>';
+      });
+    }
+    html += '<div class="ld-player-panel-section">유물 ' + relics.length + '개</div>';
+    if (!relics.length) {
+      html += '<div style="font-size:12px;color:var(--text-dim);padding:4px 0;">보유 유물 없음</div>';
+    } else {
+      relics.forEach(function (id) {
+        var r = getRelicById(id);
+        html += '<div class="ld-relic-item">';
+        html += '<div class="ld-aug-item-icon">' + (r ? r.icon : '💎') + '</div>';
+        html += '<div class="ld-aug-item-body">';
+        html += '<div class="ld-aug-item-name">' + escapeHtml(r ? r.name : id) + '</div>';
+        html += '<div class="ld-aug-item-desc">' + escapeHtml(r && r.desc ? r.desc : '') + '</div>';
+        html += '</div></div>';
+      });
+    }
+    els.augDetailDesc.innerHTML = html;
     els.augDetail.classList.add('show');
+
+    if (isMe) {
+      els.augDetailDesc.querySelectorAll('[data-toggle-aug]').forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          toggleMyAugment(btn.getAttribute('data-toggle-aug'));
+        };
+      });
+    }
+  }
+
+  async function toggleMyAugment(augId) {
+    if (!myRoomCode || !myPlayerId || !augId) return;
+    try { SFX.click(); } catch (e) {}
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room) return;
+      var me = room.players.find(function (p) { return p.id === myPlayerId; });
+      if (!me) return;
+      var owned = playerAugs(me);
+      if (owned.indexOf(augId) === -1) return;
+      me.augDisabled = Array.isArray(me.augDisabled) ? me.augDisabled.slice() : [];
+      var idx = me.augDisabled.indexOf(augId);
+      if (idx === -1) me.augDisabled.push(augId);
+      else me.augDisabled.splice(idx, 1);
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      selectedRosterId = myPlayerId;
+      renderRoster(room);
+      showAugDetail(me);
+    } catch (e) {
+      if (els.gameError) els.gameError.textContent = '증강 토글 실패';
+    }
   }
 
 
@@ -2066,7 +2269,7 @@ refreshRoomList();
       var chip = document.createElement('span');
       chip.className = 'ld-relic-chip' + (owned.indexOf(r.id) !== -1 ? ' owned' : '');
       chip.textContent = r.icon + ' ' + r.name;
-      chip.title = r.name;
+      chip.title = r.name + (r.desc ? ' — ' + r.desc : '');
       els.relicBar.appendChild(chip);
     });
     var count = document.createElement('span');
@@ -2208,10 +2411,11 @@ refreshRoomList();
         if (me.relics.indexOf(extraId) === -1) me.relics.push(extraId);
       }
       var rt = getRelicById(relicId);
+      try { SFX.relic(); } catch (e) {}
       room.announce = {
         icon: rt ? rt.icon : '💎',
         title: '유물 획득!',
-        text: me.name + ' — ' + (rt ? rt.icon + ' ' + rt.name : relicId),
+        text: me.name + ' — ' + (rt ? rt.icon + ' ' + rt.name : relicId) + (rt && rt.desc ? ' · ' + rt.desc : ''),
         sub: me.relics.length + '/' + need,
         ts: Date.now()
       };
@@ -2226,7 +2430,7 @@ refreshRoomList();
           room.duel = {
             attackerId: myPlayerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
             winnerId: null, loserId: null, punishRoll: null,
-            pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, ts: Date.now()
+            pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, pendingAugmentPlayerId: needPick ? (ch && ch.playerId ? ch.playerId : myPlayerId) : null, ts: Date.now()
           };
         } else if (needPick) {
           room.augmentPick = { playerId: myPlayerId, ts: Date.now() };
@@ -2347,6 +2551,16 @@ refreshRoomList();
     var notes = [];
     var move = face;
 
+    // 별 유물: 15% 재굴림으로 6 노리기
+    if (hasRelic(player, 'star') && face < 6 && Math.random() < 0.15) {
+      var reroll = 1 + Math.floor(Math.random() * 6);
+      if (reroll > face) {
+        face = reroll;
+        move = face;
+        notes.push('⭐ 별 유물 재굴림 → ' + face);
+      }
+    }
+
     if (hasAug(player, 'loaded') && face < 2) {
       face = 2;
       move = 2;
@@ -2408,6 +2622,10 @@ refreshRoomList();
     if (syn.luckMove) {
       move += syn.luckMove;
       notes.push('행운 시너지 +' + syn.luckMove);
+    }
+    if (hasRelic(player, 'sun')) {
+      move += 1;
+      notes.push('☀️ 태양 +1칸');
     }
     player.lastFace = face;
     return { face: face, move: move, notes: notes, extraTurn: extraTurn };
@@ -2519,6 +2737,7 @@ refreshRoomList();
       var back = 3;
       if (hasAug(player, 'guardian')) back = 1;
       else if (hasAug(player, 'iron')) back = Math.floor(back / 2);
+      if (hasRelic(player, 'moon')) back = Math.max(0, back - 1);
       back = Math.max(0, back - synD.defendCut);
       result.pos = (landPos - back + BOARD_SIZE) % BOARD_SIZE;
       result.extraSteps = -back;
@@ -2564,8 +2783,12 @@ refreshRoomList();
         result.effectText += ' · 유령 +2';
       }
     } else if (type === 'rest') {
-      player.skipTurns = (player.skipTurns || 0) + 1;
-      result.effectText = '🔒 다음 턴 휴식';
+      if (hasRelic(player, 'herb')) {
+        result.effectText = '🌿 허브: 휴식 무시';
+      } else {
+        player.skipTurns = (player.skipTurns || 0) + 1;
+        result.effectText = '🔒 다음 턴 휴식';
+      }
     } else if (type === 'gift') {
       var g = 1 + Math.floor(Math.random() * 3) + bonus;
       var times = hasAug(player, 'doublegift') ? 2 : 1;
@@ -2657,8 +2880,11 @@ refreshRoomList();
         if (myPlayerId !== ch.playerId && myPlayerId !== ch.targetId) return;
         ch.rolls = ch.rolls || {};
         if (ch.rolls[myPlayerId] != null) return;
+        try { SFX.duel(); } catch (e) {}
         var faceS = 1 + Math.floor(Math.random() * 6);
         if (me && hasAug(me, 'duelist')) faceS = Math.min(6, faceS + 1);
+        if (me && hasRelic(me, 'flame')) faceS = Math.min(6, faceS + 1);
+        if (me && hasRelic(me, 'moon') && myPlayerId === ch.targetId) faceS = Math.min(6, faceS + 1);
         var syn = synergyBonus(me || {});
         if (syn.duelPlus) faceS = Math.min(6, faceS + syn.duelPlus);
         spinCube(faceS);
@@ -2700,7 +2926,7 @@ refreshRoomList();
             if (!room.winnerId && room.winnerTeam == null) {
               if (pendingDuel) {
                 room.duel = { attackerId: ch.playerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
-                  winnerId: null, loserId: null, punishRoll: null, pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, ts: Date.now() };
+                  winnerId: null, loserId: null, punishRoll: null, pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, pendingAugmentPlayerId: needPick ? (ch && ch.playerId ? ch.playerId : myPlayerId) : null, ts: Date.now() };
               } else if (needPick) {
                 room.augmentPick = { playerId: ch.playerId, ts: Date.now() };
                 room.pendingPickExtraTurn = extraTurn;
@@ -2714,7 +2940,7 @@ refreshRoomList();
             room.relicChallenge = null;
             if (pendingDuel2) {
               room.duel = { attackerId: ch.playerId, defenderId: pendingDuel2, phase: 'contest', rolls: {},
-                winnerId: null, loserId: null, punishRoll: null, pendingExtraTurn: extraTurn2, pendingAugmentPick: needPick2, ts: Date.now() };
+                winnerId: null, loserId: null, punishRoll: null, pendingExtraTurn: extraTurn2, pendingAugmentPick: needPick2, pendingAugmentPlayerId: needPick2 ? (ch && ch.playerId ? ch.playerId : myPlayerId) : null, ts: Date.now() };
             } else if (needPick2) {
               room.augmentPick = { playerId: ch.playerId, ts: Date.now() };
               room.pendingPickExtraTurn = extraTurn2;
@@ -2778,6 +3004,7 @@ refreshRoomList();
       if (me && hasAug(me, 'relicguard')) {
         me.shieldCharges = (me.shieldCharges || 0) + 1;
       }
+      try { SFX.relicFail(); } catch (e) {}
       room.announce = {
         icon: '💨',
         title: '유물 실패',
@@ -2798,7 +3025,7 @@ refreshRoomList();
         room.duel = {
           attackerId: myPlayerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
           winnerId: null, loserId: null, punishRoll: null,
-          pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, ts: Date.now()
+          pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, pendingAugmentPlayerId: needPick ? (ch && ch.playerId ? ch.playerId : myPlayerId) : null, ts: Date.now()
         };
       } else if (needPick) {
         room.augmentPick = { playerId: myPlayerId, ts: Date.now() };
@@ -2837,6 +3064,7 @@ refreshRoomList();
         if (myPlayerId !== duel.attackerId && myPlayerId !== duel.defenderId) return;
         if (duel.rolls && duel.rolls[myPlayerId] != null) return;
 
+        try { SFX.duel(); } catch (e) {}
         var face = 1 + Math.floor(Math.random() * 6);
         var meP = room.players.find(function (p) { return p.id === myPlayerId; });
         if (meP && hasAug(meP, 'duelist')) face = Math.min(6, face + 1);
@@ -2846,6 +3074,9 @@ refreshRoomList();
           if (foe && foe.position > meP.position) face = Math.min(6, face + 1);
         }
         if (meP && hasAug(meP, 'fortress') && meP.position === 0) face = Math.min(6, face + 1);
+        if (meP && hasRelic(meP, 'flame')) face = Math.min(6, face + 1);
+        // 달 유물: 방어 시(상대 공격자) +1
+        if (meP && hasRelic(meP, 'moon') && myPlayerId === duel.defenderId) face = Math.min(6, face + 1);
         spinCube(face);
         await new Promise(function (r) { setTimeout(r, 1100); });
 
@@ -2874,6 +3105,7 @@ refreshRoomList();
             duel.phase = 'punish';
             var w = room.players.find(function (p) { return p.id === duel.winnerId; });
             var l = room.players.find(function (p) { return p.id === duel.loserId; });
+            try { SFX.duelWin(); } catch (e) {}
             room.announce = {
               icon: '⚔️',
               title: (w ? w.name : '?') + ' 승리!',
@@ -2894,6 +3126,7 @@ refreshRoomList();
         var punish = 1 + Math.floor(Math.random() * 6);
         var winnerP = room.players.find(function (p) { return p.id === myPlayerId; });
         if (winnerP && hasAug(winnerP, 'bully')) punish = Math.min(6, punish + 1);
+        if (winnerP && hasRelic(winnerP, 'flame')) punish = Math.min(6, punish + 1);
         spinCube(punish);
         await new Promise(function (r) { setTimeout(r, 1100); });
 
@@ -2905,17 +3138,31 @@ refreshRoomList();
         if (loser) {
           var actualPunish = punish;
           if (hasAug(loser, 'intimidate')) actualPunish = Math.max(1, actualPunish - 1);
+          if (hasRelic(loser, 'moon')) actualPunish = Math.max(1, actualPunish - 1);
           var from = loser.position;
+          // 뒤로 이동만 — 스타트를 지나도 바퀴/증강 부여 없음
           loser.position = (from - actualPunish + BOARD_SIZE) % BOARD_SIZE;
+          try { SFX.duelLose(); } catch (e) {}
           await moveTokenSteps(loser.id, from, -actualPunish);
           punish = actualPunish;
         }
 
+        // 증강 선택은 "한 바퀴를 돈 사람"에게만. 대결 승자와 무관. 패자의 스타트 통과로 증강 생기지 않음.
         var extraTurn = !!duel.pendingExtraTurn;
         var needPick = !!duel.pendingAugmentPick;
-        var pickPlayer = duel.attackerId;
+        // pendingAugmentPlayerId가 있으면 그걸 쓰고, 없으면 공격자(바퀴를 돈 사람)만
+        var pickPlayer = duel.pendingAugmentPlayerId || (needPick ? duel.attackerId : null);
+        // 승자가 바퀴를 돌지 않았으면 증강 주면 안 됨
+        if (needPick && pickPlayer && pickPlayer !== duel.attackerId && pickPlayer !== duel.defenderId) {
+          pickPlayer = duel.attackerId;
+        }
+        // 패자가 스타트로 밀려도 승자에게 증강 이관 금지
+        if (needPick && pickPlayer === duel.winnerId && duel.winnerId !== duel.attackerId) {
+          // 공격자가 바퀴를 돌았고 패배한 경우 → 여전히 공격자
+          pickPlayer = duel.attackerId;
+        }
         room.duel = null;
-        if (needPick) {
+        if (needPick && pickPlayer) {
           room.augmentPick = { playerId: pickPlayer, ts: Date.now() };
           room.pendingPickExtraTurn = extraTurn;
         } else {
@@ -3000,13 +3247,38 @@ refreshRoomList();
       var me = fresh.players[meIndex];
 
       if ((me.skipTurns || 0) > 0) {
-        me.skipTurns -= 1;
-        advanceTurn(fresh, false);
-        fresh.pendingRoll = null;
-        await saveRoom(fresh);
-        lastRoomSnapshot = fresh;
-        renderGame(fresh);
-        return;
+        // 허브 유물: 스킵 1회 자동 회복
+        if (hasRelic(me, 'herb') && !me._herbUsedThisSkip) {
+          me.skipTurns -= 1;
+          me._herbUsedThisSkip = true;
+          if (me.skipTurns <= 0) {
+            // 회복으로 턴 진행 가능
+            fresh.announce = {
+              icon: '🌿', title: '허브 회복', text: me.name + ' — 휴식 턴 무시', sub: '', ts: Date.now()
+            };
+            await saveRoom(fresh);
+            lastRoomSnapshot = fresh;
+            // fall through to roll
+          } else {
+            advanceTurn(fresh, false);
+            fresh.pendingRoll = null;
+            await saveRoom(fresh);
+            lastRoomSnapshot = fresh;
+            renderGame(fresh);
+            return;
+          }
+        } else {
+          me.skipTurns -= 1;
+          me._herbUsedThisSkip = false;
+          advanceTurn(fresh, false);
+          fresh.pendingRoll = null;
+          await saveRoom(fresh);
+          lastRoomSnapshot = fresh;
+          renderGame(fresh);
+          return;
+        }
+      } else {
+        me._herbUsedThisSkip = false;
       }
 
       rolling = true;
@@ -3021,6 +3293,9 @@ refreshRoomList();
       var moveSteps = mod.move;
       var oldPos = me.position;
 
+      // 주사위 애니메이션을 먼저 시작 (저장 대기 때문에 늦게 굴러가는 느낌 제거)
+      spinCube(finalFace);
+
       fresh.pendingRoll = {
         playerId: myPlayerId,
         name: me.name,
@@ -3029,16 +3304,16 @@ refreshRoomList();
         fromPos: oldPos,
         ts: Date.now()
       };
-      await saveRoom(fresh);
+      // 저장과 애니메이션 대기 병렬
+      var saveP = saveRoom(fresh).catch(function (e) { console.warn(e); });
+      await new Promise(function (r) { setTimeout(r, 1100); });
+      await saveP;
       lastRoomSnapshot = fresh;
 
-      // 1) spin dice
-      spinCube(finalFace);
-      await new Promise(function (r) { setTimeout(r, 1100); });
-      // 2) show result, then move
+      // 결과 표시 후 이동
       els.turnBanner.className = 'ld-turn-banner rb-' + (RESULT_KIND[Math.min(6, finalFace)] || 'mid');
       els.turnBanner.textContent = finalFace + '이(가) 나왔습니다!';
-      await new Promise(function (r) { setTimeout(r, POST_ROLL_DELAY); });
+      await new Promise(function (r) { setTimeout(r, Math.min(POST_ROLL_DELAY, 350)); });
 
       await moveTokenSteps(myPlayerId, oldPos, moveSteps);
 
@@ -3070,6 +3345,7 @@ refreshRoomList();
 
       // 특수 효과 공지를 먼저 보여 준 뒤 이동/발동
       if (effect.announce && effect.effectText) {
+        try { SFX.special(); } catch (e) {}
         showAnnounce(
           effect.effectIcon || '✨',
           (effect.effectTitle || '특수 효과') + '!',
@@ -3092,6 +3368,19 @@ refreshRoomList();
       var extraTurn = mod.extraTurn || effect.extraTurn;
       if (effect.skipNext) fresh.skipNext = true;
 
+      // 특수칸(부스트/선물 등)으로 추가 이동해 스타트를 지나도 증강 획득
+      // effect.pos 기준 최종 위치가 주사위 이동보다 앞으로 넘어간 경우 바퀴 수 재계산
+      var finalPos = me.position;
+      // 주사위 이동으로 얻은 바퀴 + 특수 효과로 스타트를 추가로 지난 경우
+      var totalForward = moveSteps + (effect.extraSteps > 0 ? effect.extraSteps : 0);
+      // 워프/교체는 방향이 불확실하므로 주사위 바퀴만 인정하되, 부스트·선물·콤보 등 전진은 포함
+      if (effect.extraSteps > 0 && effect.effectText && effect.effectText.indexOf('워프') === -1) {
+        var crossed = Math.floor((oldPos + moveSteps + effect.extraSteps) / BOARD_SIZE);
+        if (crossed > lapsGained) {
+          lapsGained = crossed;
+          me.laps = (me.laps || 0) - Math.floor((oldPos + moveSteps) / BOARD_SIZE) + crossed;
+        }
+      }
       // 한 바퀴 완주 → 증강 선택 예약
       var needAugPick = lapsGained > 0;
       if (needAugPick) {
@@ -3121,6 +3410,7 @@ refreshRoomList();
             rolls: {},
             pendingExtraTurn: extraTurn,
             pendingAugmentPick: needAugPick,
+            pendingAugmentPlayerId: needAugPick ? myPlayerId : null,
             pendingDuelWith: null,
             ts: Date.now()
           };
@@ -3131,6 +3421,7 @@ refreshRoomList();
           });
           if (occ2 && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ2.id;
           startedRelic = true;
+          if (needAugPick) fresh.augmentPick = null;
           fresh.announce = {
             icon: '🏴‍☠️', title: '유물 강탈!', text: me.name + ' — 대상을 선택하세요', sub: '', ts: Date.now()
           };
@@ -3144,6 +3435,7 @@ refreshRoomList();
           noAugment: true,
           pendingExtraTurn: extraTurn,
           pendingAugmentPick: needAugPick,
+          pendingAugmentPlayerId: needAugPick ? myPlayerId : null,
           pendingDuelWith: null,
           ts: Date.now()
         };
@@ -3157,6 +3449,7 @@ refreshRoomList();
           fresh.relicChallenge.pendingDuelWith = occ.id;
         }
         startedRelic = true;
+        if (needAugPick) fresh.augmentPick = null;
         var rr = getRelicById(fresh.relicChallenge.relicId);
         fresh.announce = {
           icon: '💎',
@@ -3185,9 +3478,15 @@ refreshRoomList();
           punishRoll: null,
           pendingExtraTurn: extraTurn,
           pendingAugmentPick: needAugPick,
+          pendingAugmentPlayerId: needAugPick ? myPlayerId : null,
           ts: Date.now()
         };
         startedDuel = true;
+        // 대결 중에는 증강 선택 UI가 뜨지 않도록 보류 (대결 종료 후 재설정)
+        if (needAugPick) {
+          fresh.augmentPick = null;
+        }
+        try { SFX.duel(); } catch (e) {}
         fresh.announce = {
           icon: '⚔️',
           title: '같은 칸 대결!',
