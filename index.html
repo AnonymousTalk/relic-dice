@@ -830,7 +830,7 @@
       </div>
       <h1 class="ld-title">유물 주사위</h1>
       <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.13</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.14</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -1016,7 +1016,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.13';
+  var GAME_VERSION = '1.0.0.14';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -1102,7 +1102,8 @@
     { id: 'shield_orb', icon: '🛡️', name: '보호막', desc: '다음 함정/휴식 1회 무시', target: 'self' },
     { id: 'swap_scroll', icon: '🔄', name: '교체 주문서', desc: '상대와 위치 교체', target: 'enemy' },
     { id: 'extra_dice', icon: '🎲', name: '추가 주사위', desc: '이번 턴 추가 1회 굴림', target: 'self' },
-    { id: 'steal_chip', icon: '🦝', name: '훔치기', desc: '상대 아이템 1개 강탈', target: 'enemy' }
+    { id: 'steal_chip', icon: '🦝', name: '훔치기', desc: '상대 아이템 1개 강탈', target: 'enemy' },
+    { id: 'relic_compass', icon: '🗺️', name: '유물 지도', desc: '가장 가까운 유물 또는 강탈 칸으로 이동', target: 'self' }
   ];
   function getItemById(id) {
     return ITEM_TYPES.find(function (x) { return x.id === id; }) || null;
@@ -1116,7 +1117,7 @@
   var RELIC_TYPES = [
     { id: 'sun', icon: '☀️', name: '태양 유물', desc: '이동 +1칸 (항상)' },
     { id: 'moon', icon: '🌙', name: '달 유물', desc: '함정 피해 -2 · 대결·강탈 방어 주사위 +1 · 대결 패배 벌칙 -2' },
-    { id: 'star', icon: '⭐', name: '별 유물', desc: '1~3이 나오면 18% 재굴림 제안 (수락 시 다시 굴림 · 더 높은 눈만 채택)' },
+    { id: 'star', icon: '⭐', name: '별 유물', desc: '1~3이 나오면 18% 재굴림 제안 (수락 시 다시 굴림)' },
     { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 재굴림 제안 (수락 시 다시 굴림)' },
     { id: 'herb', icon: '🌿', name: '허브 유물', desc: '휴식 칸 무시 · 스킵 턴 1회 자동 회복' },
     { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈에서 내가 굴리는 주사위 +1' },
@@ -1194,25 +1195,25 @@
 
   var AUGMENT_POOL = [
     // luck — 리스크/확률 이동 (이동 고정 보너스 시너지와 구분)
-    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1이면 이동 +1 · 6이면 이동 -1 (약 17%)', tag: '필드', chance: '17%' },
+    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1이면 이동 -1 · 6이면 이동 +1 (약 17%)', tag: '필드', chance: '17%' },
     { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '3 또는 4일 때 15%로 +1칸 (전체 약 5%)', tag: '필드', chance: '5%' },
     { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '2면 -1칸 · 5면 +1칸 (약 17%)', tag: '필드', chance: '17%' },
-    { id: 'momentum', cat: 'luck', icon: '⚖️', name: '기세', desc: '이전 눈: 6→+2 · 5→+1 · 4→0 · 3→0 · 2→-1 · 1→-1', tag: '필드', chance: '항상' },
-    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 12% 확률 이동 +1', tag: '필드', chance: '12%' },
+    { id: 'momentum', cat: 'luck', icon: '⚖️', name: '기세', desc: '이전 눈: 6→+1 · 5→0 · 4→0 · 3→-1 · 2→-1 · 1→-2', tag: '필드', chance: '항상' },
+    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 18% 확률 이동 +1', tag: '필드', chance: '18%' },
     { id: 'jackpot', cat: 'luck', icon: '🎰', name: '잭팟', desc: '6이 나오면 18% 추가 턴', tag: '필드', chance: '6일 때 18%' },
     // speed — 부스트/재굴림 특화
-    { id: 'swift', cat: 'speed', icon: '⚡', name: '신속', desc: '1이 나오면 재굴림 1회 (약 17%)', tag: '필드', chance: '17%' },
+    { id: 'swift', cat: 'luck', icon: '⚡', name: '초보자', desc: '1이 나오면 재굴림 1회 (약 17%)', tag: '필드', chance: '17%' },
     { id: 'courier', cat: 'speed', icon: '📦', name: '특송', desc: '부스트 칸 착지 시 +5칸 (기본 3 대신)', tag: '필드', chance: '칸 의존' },
-    { id: 'chainboost', cat: 'speed', icon: '🔗', name: '연쇄 부스트', desc: '부스트 +2 추가', tag: '필드', chance: '칸 의존' },
+    { id: 'chainboost', cat: 'speed', icon: '🔗', name: '연쇄 부스트', desc: '부스트 효과 2회 발동', tag: '필드', chance: '칸 의존' },
     { id: 'turbo', cat: 'speed', icon: '🏎️', name: '터보', desc: '부스트 착지 시 30% 추가 턴', tag: '필드', chance: '30%' },
-    { id: 'sprint', cat: 'speed', icon: '🏃', name: '질주', desc: '3 이상이면 50% 확률 이동 +1 (약 33%)', tag: '필드', chance: '33%' },
-    { id: 'slipstream', cat: 'speed', icon: '🌀', name: '슬립스트림', desc: '이전 눈이 5~6이면 이동 +1', tag: '필드', chance: '상황' },
+    { id: 'sprint', cat: 'speed', icon: '🏃', name: '질주', desc: '4 이상이면 50% 확률 휴식 1턴 또는 이동 +2', tag: '필드', chance: '50%' },
+    { id: 'slipstream', cat: 'speed', icon: '🌀', name: '슬립스트림', desc: '3 이하면 50% 확률 휴식 1턴 또는 이동 +2', tag: '필드', chance: '50%' },
     // defend — 함정/휴식만
     { id: 'guardian', cat: 'defend', icon: '🛡️', name: '수호', desc: '함정 피해 1로 고정', tag: '필드', chance: '칸 의존' },
-    { id: 'iron', cat: 'defend', icon: '🪨', name: '철벽', desc: '함정 피해 절반 (내림)', tag: '필드', chance: '칸 의존' },
-    { id: 'reflect', cat: 'defend', icon: '🪞', name: '반사', desc: '함정 시 가장 가까운 상대 -1칸', tag: '필드', chance: '칸 의존' },
-    { id: 'anchor', cat: 'defend', icon: '⚓', name: '닻', desc: '워프·교체 칸 효과 무시', tag: '필드', chance: '칸 의존' },
-    { id: 'evasion', cat: 'defend', icon: '💨', name: '회피', desc: '함정 칸 20% 완전 무시', tag: '필드', chance: '20%' },
+    { id: 'iron', cat: 'defend', icon: '🪨', name: '철벽', desc: '대결 패배 벌칙 1칸으로 고정', tag: '전투', chance: '전투 시' },
+    { id: 'reflect', cat: 'defend', icon: '🪞', name: '반사', desc: '워프 칸 효과 무시', tag: '필드', chance: '칸 의존' },
+    { id: 'anchor', cat: 'defend', icon: '⚓', name: '닻', desc: '교체 칸 효과 무시', tag: '필드', chance: '칸 의존' },
+    { id: 'evasion', cat: 'defend', icon: '💨', name: '회피', desc: '함정 칸 25% 완전 무시', tag: '필드', chance: '25%' },
     // chaos
     { id: 'mirror', cat: 'chaos', icon: '🔮', name: '거울', desc: '홀수 눈이면 (7-눈)칸 이동 · 약 50%', tag: '필드', chance: '50%' },
     { id: 'chaos', cat: 'chaos', icon: '🌪️', name: '혼돈', desc: '일반 칸 10%(+시너지) 랜덤 워프', tag: '필드', chance: '10%' },
@@ -1222,14 +1223,14 @@
     { id: 'vampire', cat: 'chaos', icon: '🧛', name: '흡혈', desc: '착지 칸에 상대가 있으면 +2칸', tag: '필드', chance: '상황' },
     { id: 'rift', cat: 'chaos', icon: '🕳️', name: '균열', desc: '특수칸 착지 시 15% 랜덤 워프', tag: '필드', chance: '15%' },
     // relic — 유물/선물/아이템 칸
-    { id: 'collector', cat: 'relic', icon: '🧰', name: '수집가', desc: '선물·부스트 보너스 +1', tag: '필드', chance: '칸 의존' },
+    { id: 'collector', cat: 'relic', icon: '🧰', name: '수집가', desc: '아이템 최대 보유 시 착지마다 무조건 +1칸', tag: '필드', chance: '상황' },
     { id: 'doublerelic', cat: 'relic', icon: '💎', name: '이중 유물', desc: '유물 획득 시 15% 추가 1개', tag: '필드', chance: '15%' },
-    { id: 'doublegift', cat: 'relic', icon: '🎀', name: '더블 선물', desc: '선물 이동량 +2', tag: '필드', chance: '칸 의존' },
-    { id: 'prospector', cat: 'relic', icon: '⛏️', name: '탐사자', desc: '유물/강탈/아이템 칸 착지 시 +1칸', tag: '필드', chance: '칸 의존' },
-    { id: 'hoarder', cat: 'relic', icon: '📦', name: '사재기', desc: '아이템 소지 상한 +1 (최대 4)', tag: '필드', chance: '항상' },
+    { id: 'doublegift', cat: 'relic', icon: '🎀', name: '더블 선물', desc: '선물 효과 2회 순차 발동 (중복 가능)', tag: '필드', chance: '칸 의존' },
+    { id: 'prospector', cat: 'relic', icon: '⛏️', name: '탐사자', desc: '유물/강탈/아이템 칸 착지 시 10% 유물·강탈 이동 아이템 획득', tag: '필드', chance: '10%' },
+    { id: 'hoarder', cat: 'relic', icon: '📦', name: '사재기', desc: '아이템 획득 시 랜덤 아이템 1개 추가', tag: '필드', chance: '항상' },
     // util
-    { id: 'loaded', cat: 'util', icon: '🎯', name: '조작 주사위', desc: '1이 나오면 2로 변경 (약 17%)', tag: '필드', chance: '17%' },
-    { id: 'thief', cat: 'util', icon: '🦝', name: '도둑', desc: '스킵 칸에서 +2칸', tag: '필드', chance: '칸 의존' },
+    { id: 'loaded', cat: 'util', icon: '🎯', name: '조작 주사위', desc: '1↔6 · 2↔5로 변경', tag: '필드', chance: '항상' },
+    { id: 'thief', cat: 'util', icon: '🦝', name: '도둑', desc: '훔치기 사용 시 훔친 아이템 + 랜덤 아이템 1개 추가', tag: '필드', chance: '아이템' },
     { id: 'timebend', cat: 'util', icon: '⏳', name: '시공', desc: '스킵 대신 본인 추가 턴', tag: '필드', chance: '칸 의존' },
     { id: 'phantom', cat: 'util', icon: '👻', name: '유령', desc: '워프 후 +2칸', tag: '필드', chance: '칸 의존' },
     { id: 'combo', cat: 'util', icon: '✨', name: '콤보', desc: '특수 효과 발동 후 +1칸', tag: '필드', chance: '칸 의존' },
@@ -1239,7 +1240,7 @@
     { id: 'intimidate', cat: 'battle', icon: '😤', name: '위압', desc: '대결 패배 시 벌칙 -1', tag: '전투', chance: '전투 시' },
     { id: 'challenger', cat: 'battle', icon: '🏅', name: '도전자', desc: '대결 시 상대보다 뒤면 주사위 +1', tag: '전투', chance: '전투 시' },
     { id: 'duelmaster', cat: 'battle', icon: '🗡️', name: '결투의 달인', desc: '대결 승리 시 25% 추가 턴', tag: '전투', chance: '25%' },
-    { id: 'counter', cat: 'battle', icon: '↩️', name: '반격', desc: '대결 패배 시 승자 -1칸', tag: '전투', chance: '전투 시' },
+    { id: 'counter', cat: 'battle', icon: '↩️', name: '반격', desc: '대결 패배 시 승자 -3칸', tag: '전투', chance: '전투 시' },
     // support
     { id: 'share', cat: 'support', icon: '🎁', name: '나눔', desc: '선물 칸 시 가장 뒤 동료/상대 1명 +1칸', tag: '필드', chance: '칸 의존' },
     { id: 'guide', cat: 'support', icon: '🗺️', name: '길잡이', desc: '워프 목적지 ±2 랜덤 보정', tag: '필드', chance: '칸 의존' },
@@ -1247,15 +1248,20 @@
     // leap (신규) — 큰 이동/도약만
     { id: 'hop', cat: 'leap', icon: '🐇', name: '홉', desc: '3이 나오면 1~3칸 중 랜덤 이동', tag: '필드', chance: '17%' },
     { id: 'vault', cat: 'leap', icon: '🚀', name: '도약', desc: '6이 나오면 4~6칸 중 랜덤 이동', tag: '필드', chance: '17%' },
-    { id: 'bound', cat: 'leap', icon: '🦘', name: '바운드', desc: '휴식 칸을 +3칸 이동으로 변경', tag: '필드', chance: '칸 의존' },
-    { id: 'pounce', cat: 'leap', icon: '🐆', name: '급습', desc: '앞 3칸 안에 상대가 있으면 그 칸으로 이동', tag: '필드', chance: '상황' },
-    { id: 'longstride', cat: 'leap', icon: '👣', name: '성큼', desc: '이동이 3 이하면 +1칸', tag: '필드', chance: '50%' },
+    { id: 'bound', cat: 'leap', icon: '🦘', name: '바운드', desc: '휴식에서 깨어날 때 이동 +1 예약', tag: '필드', chance: '칸 의존' },
+    { id: 'pounce', cat: 'leap', icon: '🐆', name: '급습', desc: '앞 2칸 안 상대로 이동 (그 칸 효과 미발동)', tag: '필드', chance: '상황' },
+    { id: 'longstride', cat: 'leap', icon: '👣', name: '성큼', desc: '이동 2 이하면 50% 확률 3칸 이동', tag: '필드', chance: '50%' },
     // curse (신규) — 상대 디버프만
-    { id: 'hex', cat: 'curse', icon: '🔮', name: '헥스', desc: '착지 칸 상대가 있으면 그 상대 -1칸', tag: '필드', chance: '상황' },
+    { id: 'hex', cat: 'curse', icon: '🔮', name: '헥스', desc: '착지 칸 상대가 있으면 그 상대 -2칸', tag: '필드', chance: '상황' },
     { id: 'jinx', cat: 'curse', icon: '🌀', name: '징크스', desc: '대결 시 상대 주사위 -1', tag: '전투', chance: '전투 시' },
-    { id: 'weaken', cat: 'curse', icon: '📉', name: '약화', desc: '함정 밟을 때 가장 앞 상대 -1칸', tag: '필드', chance: '칸 의존' },
+    { id: 'weaken', cat: 'curse', icon: '📉', name: '약화', desc: '함정 밟을 때 가장 앞 상대 -2칸', tag: '필드', chance: '칸 의존' },
     { id: 'snare', cat: 'curse', icon: '🕸️', name: '올가미', desc: '스킵 칸 착지 시 가장 가까운 상대에게 휴식 1턴', tag: '필드', chance: '칸 의존' },
-    { id: 'omen', cat: 'curse', icon: '👁️', name: '흉조', desc: '내가 1이 나오면 다음 상대 첫 이동 -1 예약', tag: '필드', chance: '17%' }
+    { id: 'omen', cat: 'curse', icon: '👁️', name: '흉조', desc: '내가 1이 나오면 다음 상대 첫 이동 -1 예약', tag: '필드', chance: '17%' },
+    { id: 'glitchstep', cat: 'leap', icon: '🔄', name: '길치', desc: '이동 후 50% 확률 이동 전 위치로 되돌아감', tag: '필드', chance: '50%' },
+    { id: 'dimtraveler', cat: 'util', icon: '🌌', name: '차원여행자', desc: '워프·교체 시 아이템 1개 획득', tag: '필드', chance: '칸 의존' },
+    { id: 'magi', cat: 'defend', icon: '✨', name: '매지', desc: '상대 아이템 사용 시 20% 반사(무효)', tag: '필드', chance: '20%' },
+    { id: 'graverobber', cat: 'relic', icon: '🪦', name: '도굴꾼', desc: '유물 강탈 성공 시 상대 휴식 1턴', tag: '전투', chance: '강탈 시' },
+    { id: 'cursebind', cat: 'curse', icon: '🧿', name: '저주', desc: '20% 확률로 다음 상대 첫 이동이 내 주사위 눈과 동일', tag: '필드', chance: '20%' }
   ];
 
   function hasAug(player, id) {
@@ -1369,9 +1375,9 @@
 
   // 시너지: 같은 카테고리 증강을 2개 이상 켜 두면 발동 (OFF 증강 제외)
   var SYNERGY_RULES = [
-    { cat: 'luck', need: 2, key: 'luckMove', value: 1, icon: '🍀', name: '행운 시너지 II', desc: '모든 이동 +1칸' },
-    { cat: 'luck', need: 3, key: 'luckMove', value: 2, icon: '🍀', name: '행운 시너지 III', desc: '모든 이동 +2칸' },
-    { cat: 'luck', need: 4, key: 'luckCrit', value: 0.15, icon: '🍀', name: '행운 시너지 IV', desc: '15% 확률 이동 추가 +2' },
+    { cat: 'luck', need: 2, key: 'luckMoveChance', value: 0.10, icon: '🍀', name: '행운 시너지 II', desc: '10% 확률 모든 이동 +1칸' },
+    { cat: 'luck', need: 3, key: 'luckMoveChance2', value: 0.15, icon: '🍀', name: '행운 시너지 III', desc: '15% 확률 모든 이동 +2칸' },
+    { cat: 'luck', need: 4, key: 'luckMoveChance3', value: 0.30, icon: '🍀', name: '행운 시너지 IV', desc: '30% 확률 모든 이동 +2칸' },
     { cat: 'speed', need: 2, key: 'boostExtra', value: 1, icon: '⚡', name: '신속 시너지 II', desc: '부스트 칸 +1칸' },
     { cat: 'speed', need: 3, key: 'boostExtra', value: 2, icon: '⚡', name: '신속 시너지 III', desc: '부스트 칸 +2칸' },
     { cat: 'speed', need: 4, key: 'speedAgain', value: 0.12, icon: '⚡', name: '신속 시너지 IV', desc: '12% 확률 추가 턴' },
@@ -1383,7 +1389,7 @@
     { cat: 'chaos', need: 4, key: 'chaosGift', value: 1, icon: '🌪️', name: '혼돈 시너지 IV', desc: '일반 칸 8% 선물 효과' },
     { cat: 'relic', need: 2, key: 'giftBonus', value: 1, icon: '💎', name: '유물 시너지 II', desc: '선물 이동 +1' },
     { cat: 'relic', need: 3, key: 'relicLuck', value: 0.12, icon: '💎', name: '유물 시너지 III', desc: '유물 성공 시 12% 추가 유물' },
-    { cat: 'relic', need: 4, key: 'relicItem', value: 1, icon: '💎', name: '유물 시너지 IV', desc: '아이템 칸 착지 시 +1칸' },
+    { cat: 'relic', need: 4, key: 'relicStealPath', value: 0.15, icon: '💎', name: '유물 시너지 IV', desc: '유물 성공 시 15% 추가 유물 선택 후 강탈 칸 이동' },
     { cat: 'util', need: 2, key: 'comboExtra', value: 1, icon: '🔧', name: '유틸 시너지 II', desc: '콤보/특수 후 +1칸' },
     { cat: 'util', need: 3, key: 'utilWarp', value: 1, icon: '🔧', name: '유틸 시너지 III', desc: '워프 후 +1칸' },
     { cat: 'util', need: 4, key: 'utilDice', value: 1, icon: '🔧', name: '유틸 시너지 IV', desc: '2→3 변환' },
@@ -1393,12 +1399,12 @@
     { cat: 'support', need: 2, key: 'supportGift', value: 1, icon: '🤝', name: '지원 시너지 II', desc: '선물 이동 +1' },
     { cat: 'support', need: 3, key: 'supportShare', value: 1, icon: '🤝', name: '지원 시너지 III', desc: '부스트 시 가장 뒤 동료 +1' },
     { cat: 'support', need: 4, key: 'supportInspire', value: 1, icon: '🤝', name: '지원 시너지 IV', desc: '추가 턴 시 이동 추가 +1' },
-    { cat: 'leap', need: 2, key: 'leapBonus', value: 1, icon: '🦘', name: '도약 시너지 II', desc: '이동 4 이상이면 +1' },
-    { cat: 'leap', need: 3, key: 'leapBonus', value: 2, icon: '🦘', name: '도약 시너지 III', desc: '이동 4 이상이면 +2' },
+    { cat: 'leap', need: 2, key: 'leapCap', value: 1, icon: '🦘', name: '도약 시너지 II', desc: '이동 5 이상이면 0~1칸으로' },
+    { cat: 'leap', need: 3, key: 'leapCap1', value: 1, icon: '🦘', name: '도약 시너지 III', desc: '이동 5 이상이면 1칸으로' },
     { cat: 'leap', need: 4, key: 'leapSix', value: 1, icon: '🦘', name: '도약 시너지 IV', desc: '6이 나오면 추가 턴 15%' },
     { cat: 'curse', need: 2, key: 'curseTrap', value: 1, icon: '😈', name: '저주 시너지 II', desc: '함정 시 랜덤 상대 -1' },
-    { cat: 'curse', need: 3, key: 'curseDuel', value: 1, icon: '😈', name: '저주 시너지 III', desc: '대결 상대 주사위 -1' },
-    { cat: 'curse', need: 4, key: 'curseSkip', value: 1, icon: '😈', name: '저주 시너지 IV', desc: '스킵 칸 시 랜덤 상대 휴식 1턴' }
+    { cat: 'curse', need: 3, key: 'curseSkip', value: 1, icon: '😈', name: '저주 시너지 III', desc: '스킵 칸 시 랜덤 상대 휴식 1턴' },
+    { cat: 'curse', need: 4, key: 'curseRestSkip', value: 1, icon: '😈', name: '저주 시너지 IV', desc: '스킵→랜덤 휴식 · 휴식→다음 사람 스킵' }
   ];
   function activeAugList(player) {
     return playerAugList(player).filter(function (id) { return !isAugDisabled(player, id); });
@@ -1413,12 +1419,12 @@
   }
   function synergyBonus(player) {
     var out = {
-      luckMove: 0, boostExtra: 0, defendCut: 0, chaosChance: 0,
+      luckMove: 0, luckMoveChance: 0, luckMoveChance2: 0, luckMoveChance3: 0, boostExtra: 0, defendCut: 0, chaosChance: 0,
       giftBonus: 0, relicLuck: 0, comboExtra: 0,
-      luckCrit: 0, speedAgain: 0, defendRest: 0, defendImmune: 0, chaosGift: 0, relicItem: 0, utilDice: 0, utilWarp: 0,
+      luckCrit: 0, speedAgain: 0, defendRest: 0, defendImmune: 0, chaosGift: 0, relicItem: 0, relicStealPath: 0, utilDice: 0, utilWarp: 0,
       battleSteal: 0, battlePunish: 0, battleWin: 0,
       supportGift: 0, supportShare: 0, supportInspire: 0,
-      leapBonus: 0, leapSix: 0, curseTrap: 0, curseDuel: 0, curseSkip: 0,
+      leapBonus: 0, leapCap: 0, leapCap1: 0, leapSix: 0, curseTrap: 0, curseDuel: 0, curseSkip: 0, curseRestSkip: 0,
       active: []
     };
     var counts = categoryCounts(player);
@@ -3189,8 +3195,63 @@ refreshRoomList();
       var extraTurn = !!ch.pendingExtraTurn;
       var needPick = !!ch.pendingAugmentPick;
       var pendingDuel = ch.pendingDuelWith;
+      var goSteal = !!ch.goStealAfter;
+      var extraRelic = !!ch.extraRelicAfter;
+      if (extraRelic && ch.phase === 'pickRelic' && !ch._extraDone) {
+        // 추가 유물 선택 1회 더
+        ch._extraDone = true;
+        ch.goStealAfter = goSteal;
+        room.relicChallenge = ch;
+        room.announce = {
+          icon: '💎', title: '유물 시너지 IV!',
+          text: me.name + ' 추가 유물 선택',
+          sub: goSteal ? '선택 후 강탈 칸으로 이동합니다' : '',
+          ts: Date.now()
+        };
+        await saveRoom(room);
+        lastRoomSnapshot = room;
+        renderGame(room);
+        maybeShowAnnounce(room);
+        return;
+      }
       room.relicChallenge = null;
-      if (!room.winnerId && room.winnerTeam == null) {
+      if (goSteal && !room.winnerId && room.winnerTeam == null) {
+        // 가장 가까운 강탈 칸으로 이동 후 강탈 시작
+        var specials = room.specials || {};
+        var stealPos = null;
+        for (var di = 1; di <= BOARD_SIZE; di++) {
+          var pp = (me.position + di) % BOARD_SIZE;
+          if (specials[pp] === 'steal' || specials[String(pp)] === 'steal') { stealPos = pp; break; }
+        }
+        if (stealPos != null) me.position = stealPos;
+        var victims = room.players.filter(function (p) {
+          if (p.id === myPlayerId) return false;
+          if (room.gameMode === 'team' && sameTeam(me, p)) return false;
+          return playerRelics(p).length > 0;
+        });
+        if (victims.length) {
+          room.relicChallenge = {
+            mode: 'steal', playerId: myPlayerId, phase: 'selectTarget', targetId: null, rolls: {},
+            pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, pendingAugmentPlayerId: needPick ? myPlayerId : null,
+            pendingDuelWith: pendingDuel, ts: Date.now()
+          };
+          room.announce = {
+            icon: '🏴‍☠️', title: '시너지 IV 강탈!',
+            text: me.name + ' — 강탈 대상을 선택하세요',
+            sub: stealPos != null ? ('칸 ' + stealPos) : '',
+            ts: Date.now()
+          };
+        } else if (pendingDuel) {
+          room.duel = {
+            attackerId: myPlayerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
+            winnerId: null, loserId: null, punishRoll: null,
+            pendingExtraTurn: extraTurn, pendingAugmentPick: needPick, pendingAugmentPlayerId: needPick ? myPlayerId : null, ts: Date.now()
+          };
+        } else if (needPick) {
+          room.augmentPick = { playerId: myPlayerId, ts: Date.now() };
+          room.pendingPickExtraTurn = extraTurn;
+        } else advanceTurn(room, extraTurn);
+      } else if (!room.winnerId && room.winnerTeam == null) {
         if (pendingDuel) {
           room.duel = {
             attackerId: myPlayerId, defenderId: pendingDuel, phase: 'contest', rolls: {},
@@ -3419,9 +3480,7 @@ refreshRoomList();
       if (title) title.textContent = label + ' — 재굴림 제안';
       if (hint) {
         hint.innerHTML = '현재 눈: <b style="color:var(--gold);font-size:22px;">' + currentFace + '</b><br/>' +
-          (kind === 'star'
-            ? '다시 굴려 <b>더 높은 눈</b>이 나오면 그 눈을 씁니다. 낮거나 같으면 현재 눈 유지.'
-            : '다시 굴리면 <b>새 눈</b>으로 교체됩니다.');
+          '다시 굴리면 <b>새 눈</b>으로 교체됩니다.';
       }
       function cleanup(val) {
         modal.classList.remove('show');
@@ -3449,15 +3508,27 @@ refreshRoomList();
         room.nextPlayerPenalty = 0;
       }
     }
+    if (room && room.nextPlayerForceMove != null && room.players) {
+      var curF = room.players[room.turnIndex % room.players.length];
+      if (curF && curF.id === player.id) {
+        move = room.nextPlayerForceMove | 0;
+        face = Math.max(1, Math.min(6, move));
+        notes.push('🧿 저주 강제 이동 ' + move);
+        room.nextPlayerForceMove = null;
+      }
+    }
 
     // 별/파도 자동 재굴림 제거 → 호출측에서 선택 UI 처리
     // (opts.skipRerollRelics 일 때 스킵)
 
-    // 조작 주사위: 1 → 2
-    if (hasAug(player, 'loaded') && face === 1) {
-      face = 2;
-      move = 2;
-      notes.push('조작 주사위: 2');
+    // 조작 주사위: 1↔6 · 2↔5
+    if (hasAug(player, 'loaded')) {
+      var mapL = { 1: 6, 6: 1, 2: 5, 5: 2 };
+      if (mapL[face]) {
+        face = mapL[face];
+        move = face;
+        notes.push('조작 주사위: →' + face);
+      }
     }
 
     // 신속: 1만 재굴림
@@ -3473,14 +3544,14 @@ refreshRoomList();
       notes.push('거울: ' + face + ' → ' + move + '칸');
     }
 
-    // 행운: 1 → +1, 6 → -1 (50% 발동 → 약 17%)
+    // 행운: 1 → -1, 6 → +1 (50% 발동 → 약 17%)
     if (hasAug(player, 'lucky') && Math.random() < 0.5) {
       if (face === 1) {
-        move = move + 1;
-        notes.push('행운: +1');
-      } else if (face === 6) {
         move = Math.max(1, move - 1);
         notes.push('행운: -1');
+      } else if (face === 6) {
+        move = move + 1;
+        notes.push('행운: +1');
       }
     }
 
@@ -3501,16 +3572,16 @@ refreshRoomList();
       }
     }
 
-    // 기세 (리스크 완화)
+    // 기세
     if (hasAug(player, 'momentum') && player.lastFace) {
       var prev = player.lastFace | 0;
       var delta = 0;
-      if (prev === 6) delta = 2;
-      else if (prev === 5) delta = 1;
+      if (prev === 6) delta = 1;
+      else if (prev === 5) delta = 0;
       else if (prev === 4) delta = 0;
-      else if (prev === 3) delta = 0;
+      else if (prev === 3) delta = -1;
       else if (prev === 2) delta = -1;
-      else if (prev === 1) delta = -1;
+      else if (prev === 1) delta = -2;
       if (delta !== 0) {
         move = Math.max(1, move + delta);
         notes.push('기세(이전' + prev + '): ' + (delta > 0 ? '+' : '') + delta);
@@ -3518,21 +3589,31 @@ refreshRoomList();
     }
 
     // 우연 25%
-    if (hasAug(player, 'serendipity') && Math.random() < 0.12) {
+    if (hasAug(player, 'serendipity') && Math.random() < 0.18) {
       move += 1;
       notes.push('우연: +1');
     }
 
-    // 질주: 3+ 이면 50% → +1 (~33%)
-    if (hasAug(player, 'sprint') && face >= 3 && Math.random() < 0.5) {
-      move += 1;
-      notes.push('질주: +1');
+    // 질주: 4+ 50% 휴식 또는 +2
+    if (hasAug(player, 'sprint') && face >= 4 && Math.random() < 0.5) {
+      if (Math.random() < 0.5) {
+        player.skipTurns = (player.skipTurns || 0) + 1;
+        notes.push('질주: 휴식 1턴');
+      } else {
+        move += 2;
+        notes.push('질주: +2');
+      }
     }
 
-    // 슬립스트림
-    if (hasAug(player, 'slipstream') && (player.lastFace === 5 || player.lastFace === 6)) {
-      move += 1;
-      notes.push('슬립스트림: +1');
+    // 슬립스트림: 3이하 50% 휴식 또는 +2
+    if (hasAug(player, 'slipstream') && face <= 3 && Math.random() < 0.5) {
+      if (Math.random() < 0.5) {
+        player.skipTurns = (player.skipTurns || 0) + 1;
+        notes.push('슬립스트림: 휴식 1턴');
+      } else {
+        move += 2;
+        notes.push('슬립스트림: +2');
+      }
     }
 
     // 도약: 홉 / 볼트 / 성큼
@@ -3544,9 +3625,9 @@ refreshRoomList();
       move = 4 + Math.floor(Math.random() * 3); // 4~6
       notes.push('도약: ' + move + '칸(4~6)');
     }
-    if (hasAug(player, 'longstride') && move <= 3) {
-      move += 1;
-      notes.push('성큼: +1');
+    if (hasAug(player, 'longstride') && move <= 2 && Math.random() < 0.5) {
+      move = 3;
+      notes.push('성큼: 3칸');
     }
 
     if (player.nextMoveBonus) {
@@ -3570,17 +3651,33 @@ refreshRoomList();
       move += 1;
       notes.push('지원 IV: +1');
     }
+    if (syn.luckMoveChance && Math.random() < syn.luckMoveChance) {
+      move += 1;
+      notes.push('행운 II +1');
+    }
+    if (syn.luckMoveChance2 && Math.random() < syn.luckMoveChance2) {
+      move += 2;
+      notes.push('행운 III +2');
+    }
+    if (syn.luckMoveChance3 && Math.random() < syn.luckMoveChance3) {
+      move += 2;
+      notes.push('행운 IV +2');
+    }
     if (syn.luckMove) {
       move += syn.luckMove;
       notes.push('행운 시너지 +' + syn.luckMove);
     }
-    if (syn.luckCrit && Math.random() < syn.luckCrit) {
-      move += 2;
-      notes.push('행운 IV 크리 +2');
-    }
     if (syn.speedAgain && Math.random() < syn.speedAgain) {
       extraTurn = true;
       notes.push('신속 IV 추가 턴');
+    }
+    if (syn.leapCap1 && move >= 5) {
+      move = 1;
+      notes.push('도약 III: 1칸');
+    } else if (syn.leapCap && move >= 5) {
+      move = Math.floor(Math.random() * 2); // 0~1
+      if (move < 1) move = 0;
+      notes.push('도약 II: ' + move + '칸');
     }
     if (syn.leapBonus && move >= 4) {
       move += syn.leapBonus;
@@ -3649,15 +3746,34 @@ refreshRoomList();
       }
     }
 
+    // 저주: 20% 다음 상대 이동 = 내 눈
+    if (hasAug(player, 'cursebind') && room && Math.random() < 0.20) {
+      room.nextPlayerForceMove = face;
+      notes.push('🧿 저주: 다음 상대 이동=' + face);
+    }
+
     // 악마 유물: 이동 방향 반전 (보유 중)
     if (hasRelic(player, 'demon') && move !== 0) {
       move = -move;
       notes.push('😈 악마: 이동 반전');
     }
 
+    // 길치: 이동 후 50% 원위치 (호출측에서 fromPos 저장)
+    if (hasAug(player, 'glitchstep') && Math.random() < 0.5) {
+      notes.push('🔄 길치 예약');
+      player._glitchReturn = true;
+    } else if (player) {
+      player._glitchReturn = false;
+    }
+
     player.lastFace = face;
     // 악마 반전 등으로 0이 될 수 있음 → 최소 절댓값 유지하되 0 허용은 안 함
-    if (move === 0) move = hasRelic(player, 'demon') ? -1 : 1;
+    // 도약 II 등으로 0칸 허용
+    if (move === 0 && !hasAug(player, 'glitchstep')) {
+      // keep 0 for leap cap
+    } else if (move === 0) {
+      move = hasRelic(player, 'demon') ? -1 : 1;
+    }
     return { face: face, move: move, notes: notes, extraTurn: extraTurn };
   }
 
@@ -3720,21 +3836,22 @@ refreshRoomList();
       if (hasAug(player, 'hex')) {
         room.players.forEach(function (p) {
           if (p.id !== player.id && p.position === landPos) {
-            p.position = (p.position - 1 + BOARD_SIZE) % BOARD_SIZE;
-            result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '😈 헥스 ' + p.name + ' -1';
+            p.position = (p.position - 2 + BOARD_SIZE) % BOARD_SIZE;
+            result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '😈 헥스 ' + p.name + ' -2';
             result.announce = true;
           }
         });
       }
       // 급습: 앞 3칸 상대
       if (!chain && hasAug(player, 'pounce')) {
-        for (var pi = 1; pi <= 3; pi++) {
+        for (var pi = 1; pi <= 2; pi++) {
           var pp = (landPos + pi) % BOARD_SIZE;
           var prey = room.players.find(function (p) { return p.id !== player.id && p.position === pp; });
           if (prey) {
             result.pos = pp;
             result.extraSteps = pi;
-            result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🐆 급습 → ' + prey.name;
+            result.skipCellEffect = true; // 그 칸 효과 미발동
+            result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🐆 급습 → ' + prey.name + ' (효과 없음)';
             result.announce = true;
             break;
           }
@@ -3761,6 +3878,16 @@ refreshRoomList();
         result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '💠 수정 +1';
         result.announce = true;
       }
+      // 수집가: 아이템 최대 보유 시 +1
+      if (hasAug(player, 'collector')) {
+        var capC = 3;
+        if (playerItems(player).length >= capC) {
+          result.pos = (result.pos + 1) % BOARD_SIZE;
+          result.extraSteps = (result.extraSteps || 0) + 1;
+          result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🧰 수집가 +1';
+          result.announce = true;
+        }
+      }
       return result;
     }
 
@@ -3784,8 +3911,12 @@ refreshRoomList();
     result.effectTitle = ct.label;
     result.announce = true;
 
-    if (hasAug(player, 'anchor') && (type === 'warp' || type === 'swap')) {
-      result.effectText = ct.icon + ' 닻으로 무시';
+    if (hasAug(player, 'anchor') && type === 'swap') {
+      result.effectText = ct.icon + ' 닻으로 교체 무시';
+      return result;
+    }
+    if (hasAug(player, 'reflect') && type === 'warp') {
+      result.effectText = '🪞 반사: 워프 무시';
       return result;
     }
     if (shield && (type === 'trap' || type === 'rest')) {
@@ -3793,12 +3924,13 @@ refreshRoomList();
       result.effectText = ct.icon + ' 방패로 무시';
       return result;
     }
-    var bonus = hasAug(player, 'collector') ? 1 : 0;
+    var bonus = 0;
 
     if (type === 'boost') {
       var synB = synergyBonus(player);
-      var b = hasAug(player, 'courier') ? 5 : (3 + bonus + (synB.giftBonus || 0));
-      if (hasAug(player, 'chainboost')) b += 2;
+      var b = hasAug(player, 'courier') ? 5 : (3 + (synB.giftBonus || 0));
+      // 연쇄 부스트: 효과 2회 = 이동량 2배 순차
+      if (hasAug(player, 'chainboost')) b = b * 2;
       b += synB.boostExtra;
       if (hasRelic(player, 'demon')) {
         result.pos = (landPos - b + BOARD_SIZE) % BOARD_SIZE;
@@ -3831,13 +3963,12 @@ refreshRoomList();
         result.announce = true;
         return result;
       }
-      if (hasAug(player, 'evasion') && Math.random() < 0.20) {
+      if (hasAug(player, 'evasion') && Math.random() < 0.25) {
         result.effectText = '💨 회피: 함정 무시';
         result.announce = true;
         return result;
       }
       if (hasAug(player, 'guardian')) back = 1;
-      else if (hasAug(player, 'iron')) back = Math.max(1, Math.floor(back / 2));
       if (hasRelic(player, 'moon')) back = Math.max(0, back - 2);
       back = Math.max(0, back - (synD.defendCut || 0));
       if (hasRelic(player, 'demon')) {
@@ -3849,18 +3980,7 @@ refreshRoomList();
         result.extraSteps = -back;
         result.effectText = '💀 함정 -' + back;
       }
-      if (hasAug(player, 'reflect')) {
-        var nearest = null, best = 999;
-        room.players.forEach(function (p) {
-          if (p.id === player.id) return;
-          var d = Math.min((p.position - landPos + BOARD_SIZE) % BOARD_SIZE, (landPos - p.position + BOARD_SIZE) % BOARD_SIZE);
-          if (d < best) { best = d; nearest = p; }
-        });
-        if (nearest) {
-          nearest.position = (nearest.position - 1 + BOARD_SIZE) % BOARD_SIZE;
-          result.effectText += ' · 반사 → ' + nearest.name + ' -1';
-        }
-      }
+
       if (hasAug(player, 'weaken')) {
         var front = null, maxPos = -1;
         room.players.forEach(function (p) {
@@ -3868,8 +3988,8 @@ refreshRoomList();
           if (p.position > maxPos) { maxPos = p.position; front = p; }
         });
         if (front) {
-          front.position = (front.position - 1 + BOARD_SIZE) % BOARD_SIZE;
-          result.effectText += ' · 약화 → ' + front.name + ' -1';
+          front.position = (front.position - 2 + BOARD_SIZE) % BOARD_SIZE;
+          result.effectText += ' · 약화 → ' + front.name + ' -2';
         }
       }
       if (synD.curseTrap) {
@@ -3898,11 +4018,6 @@ refreshRoomList();
       result.skipNext = true;
       result.effectText = '⏭️ 상대 스킵';
       }
-      if (hasAug(player, 'thief')) {
-        result.pos = (landPos + 2) % BOARD_SIZE;
-        result.extraSteps = 2;
-        result.effectText += ' · 도둑 +2';
-      }
       if (hasAug(player, 'timebend')) {
         result.skipNext = false;
         result.extraTurn = true;
@@ -3924,6 +4039,14 @@ refreshRoomList();
       var dest = 1 + Math.floor(Math.random() * (BOARD_SIZE - 1));
       result.pos = dest;
       result.effectText = '🌀 워프 → ' + dest;
+      if (hasAug(player, 'dimtraveler') && typeof ITEM_TYPES !== 'undefined') {
+        player.items = playerItems(player);
+        if (player.items.length < 3) {
+          var dit = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+          player.items.push(dit.id);
+          result.effectText += ' · 🌌아이템 ' + dit.icon;
+        }
+      }
       if (hasAug(player, 'phantom')) {
         result.pos = (dest + 2) % BOARD_SIZE;
         result.effectText += ' · 유령 +2';
@@ -3939,17 +4062,23 @@ refreshRoomList();
       }
     } else if (type === 'rest') {
       var synRest = synergyBonus(player);
-      if (hasAug(player, 'bound')) {
-        result.pos = (landPos + 3) % BOARD_SIZE;
-        result.extraSteps = 3;
-        result.effectText = '🦘 바운드: +3칸';
-      } else if (hasRelic(player, 'herb')) {
+      if (hasRelic(player, 'herb')) {
         result.effectText = '🌿 허브: 휴식 무시';
       } else if (synRest.defendImmune && Math.random() < synRest.defendImmune) {
         result.effectText = '🛡️시너지 IV: 휴식 무시';
       } else {
         player.skipTurns = (player.skipTurns || 0) + 1;
-        result.effectText = '🔒 다음 턴 휴식';
+        if (hasAug(player, 'bound')) {
+          player.nextMoveBonus = (player.nextMoveBonus || 0) + 1;
+          result.effectText = '🔒 다음 턴 휴식 · 🦘바운드 후 +1 예약';
+        } else {
+          result.effectText = '🔒 다음 턴 휴식';
+        }
+        // 저주 시너지 IV: 휴식 시 다음 사람 스킵
+        if (synergyBonus(player).curseRestSkip) {
+          result.skipNext = true;
+          result.effectText += ' · 저주IV 다음 스킵';
+        }
       }
     } else if (type === 'gift') {
       var synG = synergyBonus(player);
@@ -3959,13 +4088,11 @@ refreshRoomList();
       if (giftRoll < 0.22) {
         // 기본 이동 1~3 (+보너스)
         var g = 1 + Math.floor(Math.random() * 3) + bonus;
-        if (hasAug(player, 'doublegift')) g += 2;
         result.pos = (landPos + g) % BOARD_SIZE;
         result.extraSteps = g;
         result.effectText = '🎁 선물 이동 +' + g;
       } else if (giftRoll < 0.36) {
         var g2 = 4 + Math.floor(Math.random() * 2) + bonus; // 4~5
-        if (hasAug(player, 'doublegift')) g2 += 2; // 패시브 +2
         result.pos = (landPos + g2) % BOARD_SIZE;
         result.extraSteps = g2;
         result.effectText = '🎁 큰 선물 이동 +' + g2;
@@ -4043,6 +4170,23 @@ refreshRoomList();
           result.effectText += ' · 나눔 → ' + ally.name + ' +1';
         }
       }
+      // 더블 선물: 효과 한 번 더 (순차)
+      if (hasAug(player, 'doublegift') && !opts.doubleGiftDone) {
+        var second = resolveCellEffect(room, player, result.pos, { chain: true, doubleGiftDone: true, allowVampire: false });
+        // force gift-like second roll by re-rolling gift outcomes only if still on gift? simpler: apply small extra
+        var g3 = 1 + Math.floor(Math.random() * 3);
+        result.pos = (result.pos + g3) % BOARD_SIZE;
+        result.extraSteps = (result.extraSteps || 0) + g3;
+        result.effectText += ' · 🎀더블선물 +' + g3;
+        if (Math.random() < 0.35 && typeof ITEM_TYPES !== 'undefined') {
+          player.items = playerItems(player);
+          if (player.items.length < 3) {
+            var git = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+            player.items.push(git.id);
+            result.effectText += '·아이템' + git.icon;
+          }
+        }
+      }
     } else if (type === 'swap') {
       if (hasAug(player, 'jester')) {
         var positions = room.players.map(function (p) { return p.position; });
@@ -4057,6 +4201,14 @@ refreshRoomList();
           var target = others[Math.floor(Math.random() * others.length)];
           result.swapWith = target.id;
           result.effectText = '🔄 ' + target.name + '과 교체';
+          if (hasAug(player, 'dimtraveler') && typeof ITEM_TYPES !== 'undefined') {
+            player.items = playerItems(player);
+            if (player.items.length < 3) {
+              var sit2 = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+              player.items.push(sit2.id);
+              result.effectText += ' · 🌌아이템 ' + sit2.icon;
+            }
+          }
         } else {
           result.effectText = '🔄 교체 대상 없음';
           result.announce = false;
@@ -4068,10 +4220,12 @@ refreshRoomList();
       result.effectIcon = '💎';
       result.effectTitle = '유물';
       result.announce = true;
-      if (hasAug(player, 'prospector')) {
-        result.pos = (landPos + 1) % BOARD_SIZE;
-        result.extraSteps = 1;
-        result.effectText += ' · 탐사자 +1';
+      if (hasAug(player, 'prospector') && Math.random() < 0.10) {
+        player.items = playerItems(player);
+        if (player.items.length < 3) {
+          player.items.push('relic_compass');
+          result.effectText += ' · ⛏️유물지도 획득';
+        }
       }
     } else if (type === 'steal') {
       result.startSteal = true;
@@ -4079,19 +4233,26 @@ refreshRoomList();
       result.effectIcon = '🏴‍☠️';
       result.effectTitle = '강탈';
       result.announce = true;
-      if (hasAug(player, 'prospector')) {
-        result.pos = (landPos + 1) % BOARD_SIZE;
-        result.extraSteps = 1;
-        result.effectText += ' · 탐사자 +1';
+      if (hasAug(player, 'prospector') && Math.random() < 0.10) {
+        player.items = playerItems(player);
+        if (player.items.length < 3) {
+          player.items.push('relic_compass');
+          result.effectText += ' · ⛏️유물지도 획득';
+        }
       }
     } else if (type === 'item') {
       var it = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
       player.items = playerItems(player);
-      var itemCap = hasAug(player, 'hoarder') ? 4 : 3;
+      var itemCap = 3;
       if (player.items.length < itemCap) {
         player.items.push(it.id);
         result.effectText = '🎒 아이템 획득: ' + it.icon + ' ' + it.name;
         result.gotItem = it.id;
+        if (hasAug(player, 'hoarder') && player.items.length < itemCap) {
+          var itH = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+          player.items.push(itH.id);
+          result.effectText += ' · 📦사재기 +' + itH.icon;
+        }
         if (hasRelic(player, 'ore') && Math.random() < 0.20 && player.items.length < itemCap) {
           var it2 = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
           player.items.push(it2.id);
@@ -4103,8 +4264,15 @@ refreshRoomList();
       result.effectIcon = '🎒';
       result.effectTitle = '아이템';
       result.announce = true;
+      if (hasAug(player, 'prospector') && Math.random() < 0.10) {
+        player.items = playerItems(player);
+        if (player.items.length < 3) {
+          player.items.push('relic_compass');
+          result.effectText += ' · ⛏️유물지도 획득';
+        }
+      }
       var synI = synergyBonus(player);
-      var itemBonus = (hasAug(player, 'prospector') ? 1 : 0) + (synI.relicItem || 0);
+      var itemBonus = (synI.relicItem || 0);
       if (itemBonus) {
         result.pos = (landPos + itemBonus) % BOARD_SIZE;
         result.extraSteps = itemBonus;
@@ -4223,6 +4391,10 @@ refreshRoomList();
                 text: attacker.name + ' ← ' + (srt ? srt.icon + srt.name : stolen) + ' ← ' + defender.name,
                 sub: aR + ' vs ' + bR, ts: Date.now()
               };
+              if (hasAug(attacker, 'graverobber')) {
+                defender.skipTurns = (defender.skipTurns || 0) + 1;
+                room.announce.text += ' · 🪦도굴꾼 휴식';
+              }
               checkWinner(room);
             }
             var extraTurn = !!ch.pendingExtraTurn;
@@ -4289,12 +4461,17 @@ refreshRoomList();
       if (success && me) {
         ch.phase = 'pickRelic';
         ch.successSum = sum;
+        var synR = synergyBonus(me || {});
+        if (synR.relicStealPath && Math.random() < synR.relicStealPath) {
+          ch.extraRelicAfter = true;
+          ch.goStealAfter = true;
+        }
         room.relicChallenge = ch;
         room.announce = {
           icon: ev.icon || '💎',
           title: '이벤트 성공! ' + ev.name,
           text: me.name + ' — 주사위 ' + sum + ' · ' + ev.desc,
-          sub: '획득할 유물을 선택하세요',
+          sub: ch.extraRelicAfter ? '추가 유물+강탈 기회!' : '획득할 유물을 선택하세요',
           ts: Date.now()
         };
         room.log = room.log || [];
@@ -4450,6 +4627,7 @@ refreshRoomList();
           var synL = synergyBonus(loser);
           if (synL.battlePunish) actualPunish = Math.max(1, actualPunish - 1);
           if (hasRelic(loser, 'moon')) actualPunish = Math.max(0, actualPunish - 2);
+          if (hasAug(loser, 'iron') && actualPunish > 0) actualPunish = 1;
           // 악마: 벌칙도 반대로 → 앞으로 이동
           if (hasRelic(loser, 'demon') && actualPunish > 0) {
             // handled below with sign flip
@@ -4471,7 +4649,7 @@ refreshRoomList();
           if (hasAug(loser, 'counter')) {
             var winP2 = room.players.find(function (p) { return p.id === duel.winnerId; });
             if (winP2) {
-              winP2.position = (winP2.position - 1 + BOARD_SIZE) % BOARD_SIZE;
+              winP2.position = (winP2.position - 3 + BOARD_SIZE) % BOARD_SIZE;
             }
           }
         }
@@ -4653,18 +4831,8 @@ refreshRoomList();
           var newFace = 1 + Math.floor(Math.random() * 6);
           spinCube(newFace);
           await new Promise(function (r) { setTimeout(r, 900); });
-          if (rerollKind === 'star') {
-            if (newFace > rawFace) {
-              faceForMod = newFace;
-              rerollNotes.push('⭐ 별 재굴림 ' + rawFace + '→' + newFace);
-            } else {
-              faceForMod = rawFace;
-              rerollNotes.push('⭐ 별 재굴림 ' + newFace + ' (낮아 유지 ' + rawFace + ')');
-            }
-          } else {
-            faceForMod = newFace;
-            rerollNotes.push('🌊 파도 재굴림 ' + rawFace + '→' + newFace);
-          }
+          faceForMod = newFace;
+          rerollNotes.push((rerollKind === 'star' ? '⭐ 별' : '🌊 파도') + ' 재굴림 ' + rawFace + '→' + newFace);
         } else {
           rerollNotes.push((rerollKind === 'star' ? '⭐ 별' : '🌊 파도') + ' 재굴림 거절 (유지 ' + rawFace + ')');
         }
@@ -4717,6 +4885,15 @@ refreshRoomList();
       me = fresh.players[meIndex];
 
       var landPos = ((oldPos + moveSteps) % BOARD_SIZE + BOARD_SIZE) % BOARD_SIZE;
+      // 길치: 이동 후 원위치 (칸 효과·바퀴 없음)
+      var glitchBack = !!me._glitchReturn;
+      me._glitchReturn = false;
+      if (glitchBack) {
+        await moveTokenSteps(myPlayerId, landPos, -((landPos - oldPos + BOARD_SIZE) % BOARD_SIZE) || 0);
+        landPos = oldPos;
+        moveSteps = 0;
+        mod.notes.push('🔄 길치: 원위치');
+      }
       // 바퀴: 앞으로만 카운트 (악마 역이동은 바퀴 미부여)
       var lapsGained = 0;
       if (moveSteps > 0) {
@@ -4736,7 +4913,13 @@ refreshRoomList();
       // 착지 위치를 먼저 동기화해서 상대 지연을 줄임
       try { await saveRoom(fresh); } catch (e) {}
 
-      var effect = resolveCellEffect(fresh, me, landPos, { chain: false, allowVampire: true });
+      var effect = glitchBack
+        ? { pos: landPos, effectText: '🔄 길치 원위치', announce: true, effectIcon: '🔄', effectTitle: '길치' }
+        : resolveCellEffect(fresh, me, landPos, { chain: false, allowVampire: true });
+      if (effect.skipCellEffect) {
+        effect.announce = true;
+        // stay on pos but no further cell type resolution already done in normal path for pounce from empty cell
+      }
       var extraTurn = !!mod.extraTurn;
       var chainDepth = 0;
       var fromForAnim = landPos;
@@ -4791,6 +4974,7 @@ refreshRoomList();
         // 선물로 유물/강탈 칸에 즉시 도착한 경우 연쇄 없이 해당 도전만
         if (effect.startRelic || effect.startSteal) break;
 
+        if (effect.skipCellEffect) break;
         // 이동이 있었으면 도착 칸 효과 재해석
         if (moved && me.position !== fromForAnim) {
           fromForAnim = me.position;
@@ -5946,8 +6130,31 @@ refreshRoomList();
         me.items.push(stolen);
         var sit = getItemById(stolen);
         msg = me.name + ' ← ' + (sit ? sit.icon + sit.name : stolen) + ' ← ' + target.name;
+        if (hasAug(me, 'thief') && me.items.length < 3) {
+          var extraIt = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+          me.items.push(extraIt.id);
+          msg += ' · 도둑 +' + extraIt.icon;
+        }
       } else {
         msg = target.name + '에게 아이템 없음';
+      }
+    } else if (itemId === 'relic_compass') {
+      var specials = room.specials || {};
+      var best = null, bestD = 999;
+      for (var di = 1; di < BOARD_SIZE; di++) {
+        var p = (me.position + di) % BOARD_SIZE;
+        var ty = specials[p] != null ? specials[p] : specials[String(p)];
+        if (ty === 'relic' || ty === 'steal') {
+          best = p; bestD = di; break;
+        }
+      }
+      if (best != null) {
+        me.position = best;
+        msg = me.name + ' 지도 → 칸 ' + best + (specials[best] === 'steal' || specials[String(best)] === 'steal' ? ' (강탈)' : ' (유물)');
+        if (specials[best] === 'steal' || specials[String(best)] === 'steal') room._pendingStealFromItem = me.id;
+        if (specials[best] === 'relic' || specials[String(best)] === 'relic') room._pendingRelicFromItem = me.id;
+      } else {
+        msg = '유물/강탈 칸을 찾지 못함';
       }
     } else {
       msg = '알 수 없는 아이템';
@@ -5985,6 +6192,24 @@ refreshRoomList();
       if (!it) return;
       var target = room.players.find(function (p) { return p.id === tid; });
       if (!target) return;
+
+      // 매지: 대상이 보유 시 20% 반사(아이템 소모, 효과 무효)
+      if (it.target === 'enemy' && target && hasAug(target, 'magi') && Math.random() < 0.20) {
+        me.items.splice(at, 1);
+        room.announce = {
+          icon: '✨', title: '매지 반사!',
+          text: target.name + '이(가) ' + it.name + ' 반사',
+          sub: me.name + ' 아이템 소모',
+          ts: Date.now()
+        };
+        await saveRoom(room);
+        lastRoomSnapshot = room;
+        renderGame(room);
+        maybeShowAnnounce(room);
+        document.getElementById('itemUseBox').classList.remove('show');
+        selectedItemId = null;
+        return;
+      }
 
       // 아이템 선차감 후 천사 중재 가능
       me.items.splice(at, 1);
