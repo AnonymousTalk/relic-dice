@@ -695,17 +695,25 @@
   .ld-owned-empty { text-align: center; color: var(--text-dim); font-size: 11px; padding: 10px 4px; }
   .ld-board-relic-wrap { margin-bottom: 8px; }
   .ld-board-relic-list {
-    display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto;
-    padding: 6px; border-radius: 10px; background: rgba(240,171,252,0.06);
-    border: 1px solid rgba(240,171,252,0.25);
+    display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;
+    padding: 10px; border-radius: 12px;
+    background: rgba(18,14,42,0.92);
+    border: 1px solid rgba(240,171,252,0.45);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25), inset 0 0 20px rgba(240,171,252,0.06);
   }
   .ld-board-relic-list.collapsed { display: none; }
   .ld-board-relic-row {
-    font-size: 11px; line-height: 1.35; padding: 5px 8px; border-radius: 8px;
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(240,171,252,0.2);
-    color: var(--text-main);
+    font-size: 12.5px; line-height: 1.45; padding: 8px 10px; border-radius: 10px;
+    background: rgba(240,171,252,0.1);
+    border: 1px solid rgba(240,171,252,0.35);
+    color: #f3f0ff;
   }
-  .ld-board-relic-row b { color: #f0abfc; }
+  .ld-board-relic-row b { color: #f0abfc; font-size: 13px; }
+  #boardRelicToggle {
+    background: rgba(240,171,252,0.14);
+    border-color: rgba(240,171,252,0.45);
+    color: #f0abfc; font-size: 13px;
+  }
 
   .ld-side-panel .ld-relic-catalog {
     margin: 0; padding: 4px; justify-content: flex-start;
@@ -742,6 +750,20 @@
       <div class="ld-modal-body">
         <p class="ld-code-hint" id="pathChoiceHint">이동할 칸 수를 고르세요</p>
         <div id="pathChoiceButtons" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="ld-modal" id="rerollChoiceModal" aria-hidden="true">
+    <div class="ld-modal-card" style="max-width:400px;">
+      <div class="ld-modal-head">
+        <h3 id="rerollChoiceTitle">재굴림 제안</h3>
+      </div>
+      <div class="ld-modal-body">
+        <p class="ld-code-hint" id="rerollChoiceHint" style="font-size:14px;color:var(--text-main);">현재 눈</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
+          <button type="button" class="ld-btn ld-btn-primary" id="btnRerollYes" style="flex:1;padding:12px;font-size:14px;">다시 굴리기</button>
+          <button type="button" class="ld-btn ld-btn-ghost" id="btnRerollNo" style="flex:1;padding:12px;font-size:14px;">유지하기</button>
+        </div>
       </div>
     </div>
   </div>
@@ -808,7 +830,7 @@
       </div>
       <h1 class="ld-title">유물 주사위</h1>
       <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.12</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.13</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -994,7 +1016,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.12';
+  var GAME_VERSION = '1.0.0.13';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -1094,11 +1116,11 @@
   var RELIC_TYPES = [
     { id: 'sun', icon: '☀️', name: '태양 유물', desc: '이동 +1칸 (항상)' },
     { id: 'moon', icon: '🌙', name: '달 유물', desc: '함정 피해 -2 · 대결·강탈 방어 주사위 +1 · 대결 패배 벌칙 -2' },
-    { id: 'star', icon: '⭐', name: '별 유물', desc: '1~3이 나오면 18% 재굴림 (더 높은 눈 우선)' },
+    { id: 'star', icon: '⭐', name: '별 유물', desc: '1~3이 나오면 18% 재굴림 제안 (수락 시 다시 굴림 · 더 높은 눈만 채택)' },
+    { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 재굴림 제안 (수락 시 다시 굴림)' },
     { id: 'herb', icon: '🌿', name: '허브 유물', desc: '휴식 칸 무시 · 스킵 턴 1회 자동 회복' },
     { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈에서 내가 굴리는 주사위 +1' },
     { id: 'wind', icon: '💨', name: '바람 유물', desc: '방 공유: 전원 주사위 15% +3칸 · 누구든 한 바퀴 시 바퀴 카운트 +2 (증강 선택은 1회)' },
-    { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 재굴림' },
     { id: 'crystal', icon: '💠', name: '수정 유물', desc: '일반 칸 착지 시 30% 확률 +1칸' },
     { id: 'thunder', icon: '⚡', name: '번개 유물', desc: '짝수 눈이면 이동 +1' },
     { id: 'compass', icon: '🧭', name: '나침반 유물', desc: '이동 시 7% 확률로 1~굴린칸 중 도착 칸 선택' },
@@ -3385,6 +3407,36 @@ refreshRoomList();
     });
   }
 
+  function openRerollChoice(kind, currentFace) {
+    return new Promise(function (resolve) {
+      var modal = document.getElementById('rerollChoiceModal');
+      var title = document.getElementById('rerollChoiceTitle');
+      var hint = document.getElementById('rerollChoiceHint');
+      var yes = document.getElementById('btnRerollYes');
+      var no = document.getElementById('btnRerollNo');
+      if (!modal || !yes || !no) { resolve(false); return; }
+      var label = kind === 'star' ? '⭐ 별 유물' : '🌊 파도 유물';
+      if (title) title.textContent = label + ' — 재굴림 제안';
+      if (hint) {
+        hint.innerHTML = '현재 눈: <b style="color:var(--gold);font-size:22px;">' + currentFace + '</b><br/>' +
+          (kind === 'star'
+            ? '다시 굴려 <b>더 높은 눈</b>이 나오면 그 눈을 씁니다. 낮거나 같으면 현재 눈 유지.'
+            : '다시 굴리면 <b>새 눈</b>으로 교체됩니다.');
+      }
+      function cleanup(val) {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        yes.onclick = null;
+        no.onclick = null;
+        resolve(val);
+      }
+      yes.onclick = function () { try { SFX.click(); } catch (e) {} cleanup(true); };
+      no.onclick = function () { try { SFX.click(); } catch (e) {} cleanup(false); };
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+    });
+  }
+
   function applyRollModifiers(face, player, room) {
     var notes = [];
     var move = face;
@@ -3398,22 +3450,8 @@ refreshRoomList();
       }
     }
 
-    // 별 유물: 1~3일 때 18% 재굴림 (높은 눈 우선)
-    if (hasRelic(player, 'star') && face >= 1 && face <= 3 && Math.random() < 0.18) {
-      var reroll = 1 + Math.floor(Math.random() * 6);
-      if (reroll > face) {
-        face = reroll;
-        move = face;
-        notes.push('⭐ 별 재굴림 → ' + face);
-      }
-    }
-
-    // 파도 유물: 3~6일 때 18% 재굴림
-    if (hasRelic(player, 'tide') && face >= 3 && face <= 6 && Math.random() < 0.18) {
-      face = 1 + Math.floor(Math.random() * 6);
-      move = face;
-      notes.push('🌊 파도 재굴림 → ' + face);
-    }
+    // 별/파도 자동 재굴림 제거 → 호출측에서 선택 UI 처리
+    // (opts.skipRerollRelics 일 때 스킵)
 
     // 조작 주사위: 1 → 2
     if (hasAug(player, 'loaded') && face === 1) {
@@ -4594,10 +4632,48 @@ refreshRoomList();
       els.turnBanner.textContent = '굴리는 중...';
 
       var rawFace = 1 + Math.floor(Math.random() * 6);
-      var mod = applyRollModifiers(rawFace, me, fresh);
+      var oldPos = me.position;
+      var faceForMod = rawFace;
+      var rerollNotes = [];
+
+      // 별/파도: 18% 제안 → 플레이어가 재굴림 여부 선택
+      spinCube(rawFace);
+      await new Promise(function (r) { setTimeout(r, 700); });
+      var rerollKind = null;
+      if (hasRelic(me, 'star') && rawFace >= 1 && rawFace <= 3 && Math.random() < 0.18) {
+        rerollKind = 'star';
+      } else if (hasRelic(me, 'tide') && rawFace >= 3 && rawFace <= 6 && Math.random() < 0.18) {
+        rerollKind = 'tide';
+      }
+      if (rerollKind) {
+        els.turnBanner.className = 'ld-turn-banner rb-effect';
+        els.turnBanner.textContent = (rerollKind === 'star' ? '⭐ 별' : '🌊 파도') + ' 재굴림 제안!';
+        var accept = await openRerollChoice(rerollKind, rawFace);
+        if (accept) {
+          var newFace = 1 + Math.floor(Math.random() * 6);
+          spinCube(newFace);
+          await new Promise(function (r) { setTimeout(r, 900); });
+          if (rerollKind === 'star') {
+            if (newFace > rawFace) {
+              faceForMod = newFace;
+              rerollNotes.push('⭐ 별 재굴림 ' + rawFace + '→' + newFace);
+            } else {
+              faceForMod = rawFace;
+              rerollNotes.push('⭐ 별 재굴림 ' + newFace + ' (낮아 유지 ' + rawFace + ')');
+            }
+          } else {
+            faceForMod = newFace;
+            rerollNotes.push('🌊 파도 재굴림 ' + rawFace + '→' + newFace);
+          }
+        } else {
+          rerollNotes.push((rerollKind === 'star' ? '⭐ 별' : '🌊 파도') + ' 재굴림 거절 (유지 ' + rawFace + ')');
+        }
+      }
+
+      var mod = applyRollModifiers(faceForMod, me, fresh);
       var finalFace = mod.face;
       var moveSteps = mod.move;
-      var oldPos = me.position;
+      if (rerollNotes.length) mod.notes = rerollNotes.concat(mod.notes || []);
 
       // 나침반 유물: 7% 확률로 1~moveSteps 중 선택
       if (hasRelic(me, 'compass') && moveSteps >= 2 && Math.random() < 0.07) {
@@ -4611,7 +4687,7 @@ refreshRoomList();
         }
       }
 
-      // 주사위 애니메이션을 먼저 시작 (저장 대기 때문에 늦게 굴러가는 느낌 제거)
+      // 최종 눈 표시 (재굴림 이미 애니 했을 수 있음)
       spinCube(finalFace);
 
       fresh.pendingRoll = {
