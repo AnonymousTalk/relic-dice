@@ -685,7 +685,7 @@
       </div>
       <h1 class="ld-title">유물 주사위</h1>
       <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.7</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.8</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -844,7 +844,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.7';
+  var GAME_VERSION = '1.0.0.8';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -896,8 +896,8 @@
   function generateSpecials(seed) {
     var rng = mulberry32(seed || 1);
     var specials = {};
-    // 고정: 유물 3 + 강탈 1 + 아이템 2
-    var fixed = { 5: 'relic', 10: 'steal', 15: 'relic', 20: 'item', 25: 'relic', 28: 'item' };
+    // 고정: 유물 4 + 강탈 2 + 아이템 2
+    var fixed = { 4: 'relic', 8: 'steal', 12: 'relic', 16: 'item', 20: 'relic', 24: 'steal', 28: 'relic', 30: 'item' };
     Object.keys(fixed).forEach(function (k) { specials[k] = fixed[k]; });
 
     // 각 일반 특수칸 타입 최소 1개 보장
@@ -952,9 +952,11 @@
     { id: 'crystal', icon: '💠', name: '수정 유물', desc: '일반 칸 착지 시 30% 확률 +1칸' },
     { id: 'thunder', icon: '⚡', name: '번개 유물', desc: '짝수 눈이면 이동 +1' },
     { id: 'compass', icon: '🧭', name: '나침반 유물', desc: '이동 시 7% 확률로 1~굴린칸 중 도착 칸 선택' },
-    { id: 'shadow', icon: '🌑', name: '그림자 유물', desc: '대결 패배 벌칙 -1' },
+    { id: 'shadow', icon: '🌑', name: '그림자 유물', desc: '앞·뒤 2칸 이내 상대가 있으면 그 위치로 이동 (해당 칸 효과 발동)' },
     { id: 'bloom', icon: '🌸', name: '꽃 유물', desc: '홀수 눈이면 이동 +1' },
-    { id: 'ore', icon: '⛏️', name: '광석 유물', desc: '아이템 칸 착지 시 20% 아이템 1개 추가' }
+    { id: 'ore', icon: '⛏️', name: '광석 유물', desc: '아이템 칸 착지 시 20% 아이템 1개 추가' },
+    { id: 'demon', icon: '😈', name: '악마 유물', desc: '보유 중 모든 이동·특수 이동이 반대로 발동 (앞↔뒤)' },
+    { id: 'angel', icon: '😇', name: '천사 유물', desc: '모든 방해 효과 무시 (함정·휴식·스킵·대결 벌칙 등)' }
   ];
 
   // 유물 칸 이벤트 3종 (랜덤 1개)
@@ -1020,12 +1022,12 @@
 
   var AUGMENT_POOL = [
     // luck — 리스크/확률 이동 (이동 고정 보너스 시너지와 구분)
-    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1이면 이동 +1 · 6이면 이동 -1 (약 33%)', tag: '필드', chance: '33%' },
-    { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '3 또는 4일 때 30%로 +1칸 (전체 약 10%)', tag: '필드', chance: '10%' },
-    { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '2면 -1칸 · 5면 +1칸 (약 33%)', tag: '필드', chance: '33%' },
+    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1이면 이동 +1 · 6이면 이동 -1 (약 17%)', tag: '필드', chance: '17%' },
+    { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '3 또는 4일 때 15%로 +1칸 (전체 약 5%)', tag: '필드', chance: '5%' },
+    { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '2면 -1칸 · 5면 +1칸 (약 17%)', tag: '필드', chance: '17%' },
     { id: 'momentum', cat: 'luck', icon: '⚖️', name: '기세', desc: '이전 눈: 6→+2 · 5→+1 · 4→0 · 3→0 · 2→-1 · 1→-1', tag: '필드', chance: '항상' },
-    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 25% 확률 이동 +1', tag: '필드', chance: '25%' },
-    { id: 'jackpot', cat: 'luck', icon: '🎰', name: '잭팟', desc: '6이 나오면 35% 추가 턴', tag: '필드', chance: '6일 때 35%' },
+    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 12% 확률 이동 +1', tag: '필드', chance: '12%' },
+    { id: 'jackpot', cat: 'luck', icon: '🎰', name: '잭팟', desc: '6이 나오면 18% 추가 턴', tag: '필드', chance: '6일 때 18%' },
     // speed — 부스트/재굴림 특화
     { id: 'swift', cat: 'speed', icon: '⚡', name: '신속', desc: '1이 나오면 재굴림 1회 (약 17%)', tag: '필드', chance: '17%' },
     { id: 'courier', cat: 'speed', icon: '📦', name: '특송', desc: '부스트 칸 착지 시 +5칸 (기본 3 대신)', tag: '필드', chance: '칸 의존' },
@@ -1072,7 +1074,7 @@
     { id: 'guide', cat: 'support', icon: '🗺️', name: '길잡이', desc: '워프 목적지 ±2 랜덤 보정', tag: '필드', chance: '칸 의존' },
     { id: 'inspire', cat: 'support', icon: '🌟', name: '격려', desc: '추가 턴 획득 시 그 턴 이동 +1', tag: '필드', chance: '상황' },
     // leap (신규) — 큰 이동/도약만
-    { id: 'hop', cat: 'leap', icon: '🐇', name: '홉', desc: '2가 나오면 이동 4칸으로', tag: '필드', chance: '17%' },
+    { id: 'hop', cat: 'leap', icon: '🐇', name: '홉', desc: '3이면 1~3칸 중 랜덤 · 6이면 4~6칸 중 랜덤 이동', tag: '필드', chance: '33%' },
     { id: 'vault', cat: 'leap', icon: '🚀', name: '도약', desc: '6이 나오면 추가 +2칸', tag: '필드', chance: '17%' },
     { id: 'bound', cat: 'leap', icon: '🦘', name: '바운드', desc: '휴식 칸을 +3칸 이동으로 변경', tag: '필드', chance: '칸 의존' },
     { id: 'pounce', cat: 'leap', icon: '🐆', name: '급습', desc: '앞 3칸 안에 상대가 있으면 그 칸으로 이동', tag: '필드', chance: '상황' },
@@ -3190,8 +3192,8 @@ refreshRoomList();
       notes.push('거울: ' + face + ' → ' + move + '칸');
     }
 
-    // 행운: 1 → +1, 6 → -1
-    if (hasAug(player, 'lucky')) {
+    // 행운: 1 → +1, 6 → -1 (50% 발동 → 약 17%)
+    if (hasAug(player, 'lucky') && Math.random() < 0.5) {
       if (face === 1) {
         move = move + 1;
         notes.push('행운: +1');
@@ -3202,13 +3204,13 @@ refreshRoomList();
     }
 
     // 네잎클로버: 3·4일 때 30% → +1 (전체 ~10%)
-    if (hasAug(player, 'clover') && (face === 3 || face === 4) && Math.random() < 0.30) {
+    if (hasAug(player, 'clover') && (face === 3 || face === 4) && Math.random() < 0.15) {
       move = move + 1;
       notes.push('네잎클로버: +1칸');
     }
 
-    // 대박: 2 → -1, 5 → +1
-    if (hasAug(player, 'fortune')) {
+    // 대박: 2 → -1, 5 → +1 (50% 발동 → 약 17%)
+    if (hasAug(player, 'fortune') && Math.random() < 0.5) {
       if (face === 2) {
         move = Math.max(1, move - 1);
         notes.push('대박: -1칸');
@@ -3235,7 +3237,7 @@ refreshRoomList();
     }
 
     // 우연 25%
-    if (hasAug(player, 'serendipity') && Math.random() < 0.25) {
+    if (hasAug(player, 'serendipity') && Math.random() < 0.12) {
       move += 1;
       notes.push('우연: +1');
     }
@@ -3253,9 +3255,13 @@ refreshRoomList();
     }
 
     // 도약: 홉 / 볼트 / 성큼
-    if (hasAug(player, 'hop') && face === 2) {
-      move = 4;
-      notes.push('홉: 4칸');
+    if (hasAug(player, 'hop') && face === 3) {
+      move = 1 + Math.floor(Math.random() * 3); // 1~3
+      notes.push('홉: ' + move + '칸(1~3)');
+    }
+    if (hasAug(player, 'hop') && face === 6) {
+      move = 4 + Math.floor(Math.random() * 3); // 4~6
+      notes.push('홉: ' + move + '칸(4~6)');
     }
     if (hasAug(player, 'vault') && face === 6) {
       move += 2;
@@ -3273,7 +3279,7 @@ refreshRoomList();
     }
 
     var extraTurn = false;
-    if (hasAug(player, 'jackpot') && face === 6 && Math.random() < 0.35) {
+    if (hasAug(player, 'jackpot') && face === 6 && Math.random() < 0.18) {
       extraTurn = true;
       notes.push('잭팟: 추가 턴');
     }
@@ -3332,9 +3338,43 @@ refreshRoomList();
       move += 3;
       notes.push('💨 바람 +3');
     }
-    // 별 유물 18%
+
+    // 그림자 유물: 현재 위치 기준 앞·뒤 2칸 이내 상대 → 그 위치로 이동
+    if (hasRelic(player, 'shadow') && room && room.players) {
+      var curPos = player.position | 0;
+      var shadowTarget = null;
+      var shadowDist = 99;
+      room.players.forEach(function (p) {
+        if (!p || p.id === player.id) return;
+        for (var d = 1; d <= 2; d++) {
+          var ahead = (curPos + d) % BOARD_SIZE;
+          var behind = (curPos - d + BOARD_SIZE) % BOARD_SIZE;
+          if (p.position === ahead || p.position === behind) {
+            if (d < shadowDist) {
+              shadowDist = d;
+              shadowTarget = p;
+            }
+          }
+        }
+      });
+      if (shadowTarget) {
+        var delta = (shadowTarget.position - curPos + BOARD_SIZE) % BOARD_SIZE;
+        if (delta > BOARD_SIZE / 2) delta = delta - BOARD_SIZE; // signed steps
+        move = delta;
+        notes.push('🌑 그림자 → ' + shadowTarget.name + ' (칸 ' + shadowTarget.position + ')');
+      }
+    }
+
+    // 악마 유물: 이동 방향 반전 (보유 중)
+    if (hasRelic(player, 'demon') && move !== 0) {
+      move = -move;
+      notes.push('😈 악마: 이동 반전');
+    }
+
     player.lastFace = face;
-    return { face: face, move: Math.max(1, move), notes: notes, extraTurn: extraTurn };
+    // 악마 반전 등으로 0이 될 수 있음 → 최소 절댓값 유지하되 0 허용은 안 함
+    if (move === 0) move = hasRelic(player, 'demon') ? -1 : 1;
+    return { face: face, move: move, notes: notes, extraTurn: extraTurn };
   }
 
   function resolveCellEffect(room, player, landPos, opts) {
@@ -3460,6 +3500,12 @@ refreshRoomList();
     result.effectTitle = ct.label;
     result.announce = true;
 
+    // 천사 유물: 방해 효과(함정·휴식·스킵) 무시
+    if (hasRelic(player, 'angel') && (type === 'trap' || type === 'rest' || type === 'skip')) {
+      result.effectText = '😇 천사: ' + ct.label + ' 무시';
+      return result;
+    }
+
     if (hasAug(player, 'anchor') && (type === 'warp' || type === 'swap')) {
       result.effectText = ct.icon + ' 닻으로 무시';
       return result;
@@ -3481,9 +3527,15 @@ refreshRoomList();
       var b = hasAug(player, 'courier') ? 5 : (3 + bonus + (synB.giftBonus || 0));
       if (hasAug(player, 'chainboost')) b += 2;
       b += synB.boostExtra;
-      result.pos = (landPos + b) % BOARD_SIZE;
-      result.extraSteps = b;
-      result.effectText = '🚀 부스트 +' + b;
+      if (hasRelic(player, 'demon')) {
+        result.pos = (landPos - b + BOARD_SIZE) % BOARD_SIZE;
+        result.extraSteps = -b;
+        result.effectText = '😈 악마 부스트 -' + b;
+      } else {
+        result.pos = (landPos + b) % BOARD_SIZE;
+        result.extraSteps = b;
+        result.effectText = '🚀 부스트 +' + b;
+      }
       if (hasAug(player, 'turbo') && Math.random() < 0.30) {
         result.extraTurn = true;
         result.effectText += ' · 터보 추가 턴';
@@ -3510,9 +3562,15 @@ refreshRoomList();
       else if (hasAug(player, 'iron')) back = Math.max(1, Math.floor(back / 2));
       if (hasRelic(player, 'moon')) back = Math.max(0, back - 1);
       back = Math.max(0, back - (synD.defendCut || 0));
-      result.pos = (landPos - back + BOARD_SIZE) % BOARD_SIZE;
-      result.extraSteps = -back;
-      result.effectText = '💀 함정 -' + back;
+      if (hasRelic(player, 'demon')) {
+        result.pos = (landPos + back) % BOARD_SIZE;
+        result.extraSteps = back;
+        result.effectText = '😈 악마 함정 +' + back;
+      } else {
+        result.pos = (landPos - back + BOARD_SIZE) % BOARD_SIZE;
+        result.extraSteps = -back;
+        result.effectText = '💀 함정 -' + back;
+      }
       if (hasAug(player, 'reflect')) {
         var nearest = null, best = 999;
         room.players.forEach(function (p) {
@@ -3779,6 +3837,18 @@ refreshRoomList();
       result.extraSteps = (result.extraSteps || 0) + synC.comboExtra;
       result.effectText += ' · 🔧시너지 +' + synC.comboExtra;
     }
+
+    // 악마 유물: 특수칸으로 인한 추가 이동 방향 반전 (부스트/함정은 이미 처리됐을 수 있음)
+    if (hasRelic(player, 'demon') && result.extraSteps && result.extraSteps !== 0) {
+      // 부스트/함정은 위에서 이미 반전 표기됨 — 중복 반전 방지
+      if (result.effectText && result.effectText.indexOf('악마') === -1) {
+        var es = result.extraSteps;
+        result.extraSteps = -es;
+        result.pos = (landPos + result.extraSteps + BOARD_SIZE) % BOARD_SIZE;
+        result.effectText += ' · 😈반전';
+      }
+    }
+    result.pos = ((result.pos % BOARD_SIZE) + BOARD_SIZE) % BOARD_SIZE;
     return result;
   }
 
@@ -4092,15 +4162,27 @@ refreshRoomList();
         if (loser) {
           var actualPunish = punish;
           if (hasAug(loser, 'intimidate')) actualPunish = Math.max(1, actualPunish - 1);
-          if (hasRelic(loser, 'shadow')) actualPunish = Math.max(1, actualPunish - 1);
           var synL = synergyBonus(loser);
           if (synL.battlePunish) actualPunish = Math.max(1, actualPunish - 1);
           if (hasRelic(loser, 'moon')) actualPunish = Math.max(1, actualPunish - 1);
+          // 천사: 대결 벌칙 무시
+          if (hasRelic(loser, 'angel')) actualPunish = 0;
+          // 악마: 벌칙도 반대로 → 앞으로 이동
+          if (hasRelic(loser, 'demon') && actualPunish > 0) {
+            // handled below with sign flip
+          }
           var from = loser.position;
-          // 뒤로 이동만 — 스타트를 지나도 바퀴/증강 부여 없음
-          loser.position = (from - actualPunish + BOARD_SIZE) % BOARD_SIZE;
+          var punishSteps = -actualPunish;
+          if (hasRelic(loser, 'demon') && actualPunish > 0) {
+            punishSteps = actualPunish; // 악마: 벌칙 반전 → 앞으로
+          }
+          if (actualPunish === 0) {
+            punishSteps = 0;
+          }
+          // 뒤로 이동만 — 스타트를 지나도 바퀴/증강 부여 없음 (악마 예외)
+          loser.position = (from + punishSteps + BOARD_SIZE) % BOARD_SIZE;
           try { SFX.duelLose(); } catch (e) {}
-          await moveTokenSteps(loser.id, from, -actualPunish);
+          if (punishSteps !== 0) await moveTokenSteps(loser.id, from, punishSteps);
           punish = actualPunish;
           // 반격: 패자 증강 → 승자 -1칸
           if (hasAug(loser, 'counter')) {
@@ -4313,8 +4395,12 @@ refreshRoomList();
       if (meIndex < 0) throw new Error('PLAYER_GONE');
       me = fresh.players[meIndex];
 
-      var landPos = (oldPos + moveSteps) % BOARD_SIZE;
-      var lapsGained = Math.floor((oldPos + moveSteps) / BOARD_SIZE);
+      var landPos = ((oldPos + moveSteps) % BOARD_SIZE + BOARD_SIZE) % BOARD_SIZE;
+      // 바퀴: 앞으로만 카운트 (악마 역이동은 바퀴 미부여)
+      var lapsGained = 0;
+      if (moveSteps > 0) {
+        lapsGained = Math.floor((oldPos + moveSteps) / BOARD_SIZE);
+      }
       me.position = landPos;
       me.laps = (me.laps || 0) + lapsGained;
       // 착지 위치를 먼저 동기화해서 상대 지연을 줄임
