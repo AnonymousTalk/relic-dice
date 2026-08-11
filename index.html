@@ -224,7 +224,7 @@
   /* Game layout: left roster | center controls | right board */
   .ld-game-body {
     display: grid;
-    grid-template-columns: 190px 100px minmax(150px, 1fr) minmax(220px, 1.25fr);
+    grid-template-columns: 260px 90px minmax(140px, 1fr) minmax(200px, 1.2fr);
     gap: 10px;
     align-items: start;
   }
@@ -354,7 +354,7 @@
   .ld-admin-panel .ld-btn { margin-top: 6px; padding: 8px; font-size: 12px; }
 
   .ld-chat {
-    width: 190px; display: flex; flex-direction: column; gap: 6px; max-height: 480px;
+    width: 260px; display: flex; flex-direction: column; gap: 6px; max-height: none;
   }
   .ld-chat-title { font-size: 10px; font-weight: 700; color: var(--text-dim); text-align: center; text-transform: uppercase; }
   .ld-chat-log {
@@ -470,7 +470,7 @@
         "chat roster main"
         "board board board";
     }
-    .ld-chat { grid-area: chat; width: 150px; }
+    .ld-chat { grid-area: chat; width: 180px; }
     .ld-roster { grid-area: roster; width: 78px; }
     .ld-main-col { grid-area: main; }
     .ld-board-col { grid-area: board; }
@@ -687,10 +687,26 @@
     color: #fff;
   }
   .ld-side-panel {
-    margin-top: 6px; max-height: 220px; overflow-y: auto; padding: 6px;
+    margin-top: 6px; max-height: 280px; overflow-y: auto; padding: 8px;
     border-radius: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(139,92,246,0.2);
-    font-size: 11px;
+    font-size: 12px;
   }
+  .ld-side-panel .ld-aug-detail-title { font-size: 13px; }
+  .ld-owned-empty { text-align: center; color: var(--text-dim); font-size: 11px; padding: 10px 4px; }
+  .ld-board-relic-wrap { margin-bottom: 8px; }
+  .ld-board-relic-list {
+    display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto;
+    padding: 6px; border-radius: 10px; background: rgba(240,171,252,0.06);
+    border: 1px solid rgba(240,171,252,0.25);
+  }
+  .ld-board-relic-list.collapsed { display: none; }
+  .ld-board-relic-row {
+    font-size: 11px; line-height: 1.35; padding: 5px 8px; border-radius: 8px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(240,171,252,0.2);
+    color: var(--text-main);
+  }
+  .ld-board-relic-row b { color: #f0abfc; }
+
   .ld-side-panel .ld-relic-catalog {
     margin: 0; padding: 4px; justify-content: flex-start;
     background: transparent; border: none;
@@ -699,8 +715,8 @@
   .ld-side-panel .ld-relic-bar {
     margin: 4px 0 0; padding: 4px; min-height: 0;
   }
-  .ld-chat { max-height: none; }
-  .ld-chat-log { max-height: 160px; min-height: 100px; }
+  .ld-chat { max-height: none; width: 260px; }
+  .ld-chat-log { max-height: 180px; min-height: 110px; font-size: 12px; }
 
 </style>
 </head>
@@ -792,7 +808,7 @@
       </div>
       <h1 class="ld-title">유물 주사위</h1>
       <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.11</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.12</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -858,7 +874,7 @@
             <div class="ld-react-bar" id="reactBar"></div>
             <div class="ld-quick-chat" id="quickChat"></div>
             <div class="ld-side-toggle" id="sideToggle">
-              <button type="button" class="active" data-side="relics" id="sideBtnRelics">💎 유물</button>
+              <button type="button" class="active" data-side="relics" id="sideBtnRelics">💎 보유 유물</button>
               <button type="button" data-side="info" id="sideBtnInfo">📋 내 정보</button>
             </div>
             <div class="ld-side-panel" id="sidePanel">
@@ -944,6 +960,10 @@
           </div>
           <div class="ld-board-col">
             <button type="button" class="ld-aug-book-btn" id="btnAugBook">📖 전체 증강 · 시너지 보기</button>
+            <div class="ld-board-relic-wrap">
+              <button type="button" class="ld-legend-toggle" id="boardRelicToggle">💎 유물 설명 ▼</button>
+              <div class="ld-board-relic-list" id="boardRelicList"></div>
+            </div>
             <div class="ld-legend-wrap">
               <button type="button" class="ld-legend-toggle" id="legendToggle">📋 보드 범례 ▼</button>
               <div class="ld-legend" id="boardLegend"></div>
@@ -974,7 +994,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.11';
+  var GAME_VERSION = '1.0.0.12';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -6056,19 +6076,63 @@ refreshRoomList();
     var el = document.getElementById('relicCatalog');
     if (!el) return;
     el.innerHTML = '';
-    RELIC_TYPES.forEach(function (r) {
+    var room = lastRoomSnapshot;
+    var me = room && myPlayerId
+      ? (room.players || []).find(function (p) { return p.id === myPlayerId; })
+      : null;
+    var owned = playerRelics(me);
+    if (!owned.length) {
+      el.innerHTML = '<div class="ld-owned-empty">보유한 유물 없음<br/><span style="font-size:10px;opacity:0.8;">유물 칸·강탈로 획득</span></div>';
+      return;
+    }
+    owned.forEach(function (id) {
+      var r = getRelicById(id);
+      if (!r) return;
       var chip = document.createElement('span');
-      chip.className = 'ld-relic-cat-chip';
+      chip.className = 'ld-relic-cat-chip owned';
       chip.textContent = r.icon + ' ' + r.name;
       chip.title = (r.desc || r.name);
       chip.style.cursor = 'pointer';
       chip.onclick = function () {
-        showAnnounce(r.icon, r.name, r.desc, '유물 설명');
+        showAnnounce(r.icon, r.name, r.desc, '보유 유물');
         try { SFX.click(); } catch (e) {}
       };
       el.appendChild(chip);
     });
   }
+
+  function renderBoardRelicGuide() {
+    var list = document.getElementById('boardRelicList');
+    if (!list || list.dataset.ready === '1') return;
+    list.innerHTML = '';
+    RELIC_TYPES.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'ld-board-relic-row';
+      row.innerHTML = '<b>' + r.icon + ' ' + escapeHtml(r.name) + '</b> — ' + escapeHtml(r.desc || '');
+      list.appendChild(row);
+    });
+    list.dataset.ready = '1';
+  }
+  (function initBoardRelicToggle() {
+    var btn = document.getElementById('boardRelicToggle');
+    var list = document.getElementById('boardRelicList');
+    if (!btn || !list) return;
+    var open = true;
+    try { open = localStorage.getItem('ld_board_relic_open') !== '0'; } catch (e) {}
+    function apply() {
+      if (open) list.classList.remove('collapsed');
+      else list.classList.add('collapsed');
+      btn.textContent = open ? '💎 유물 설명 ▼' : '💎 유물 설명 ▶ (접힘)';
+    }
+    apply();
+    renderBoardRelicGuide();
+    btn.onclick = function () {
+      open = !open;
+      try { localStorage.setItem('ld_board_relic_open', open ? '1' : '0'); } catch (e) {}
+      apply();
+      try { SFX.click(); } catch (e) {}
+    };
+  })();
 
 
   // ---- 내 턴 UX / 대기 안내 / 다음 칸 미리보기 ----
