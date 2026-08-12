@@ -760,6 +760,20 @@
   }
   .ld-paused-banner.show { display: block; }
 
+
+  .ld-privacy-row {
+    display: flex; gap: 8px; margin: 10px 0 4px;
+  }
+  .ld-privacy-row button {
+    flex: 1; padding: 10px 8px; border-radius: 12px; cursor: pointer;
+    border: 1px solid rgba(165,160,201,0.3); background: rgba(255,255,255,0.04);
+    color: var(--text-dim); font-size: 13px; font-weight: 700;
+  }
+  .ld-privacy-row button.active {
+    border-color: var(--purple2); color: #fff;
+    background: linear-gradient(135deg, rgba(139,92,246,0.4), rgba(59,130,246,0.3));
+  }
+
 </style>
 </head>
 <body>
@@ -884,8 +898,8 @@
         </div>
       </div>
       <h1 class="ld-title">유물 주사위</h1>
-      <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.18</span></div>
+      <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
+      <div class="ld-version">패치 <span>v1.0.0.19</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -897,6 +911,12 @@
         <input class="ld-input" id="homeNickname" placeholder="예: 행운의주사위" maxlength="10" />
         <div class="ld-field-label">프로필</div>
         <div class="ld-avatar-grid" id="homeAvatarGrid"></div>
+        <div class="ld-field-label">방 공개 설정</div>
+        <div class="ld-privacy-row" id="createPrivacyRow">
+          <button type="button" class="active" data-privacy="public" id="btnPrivacyPublic">🌐 공개 방</button>
+          <button type="button" data-privacy="private" id="btnPrivacyPrivate">🔒 비공개 방</button>
+        </div>
+        <p class="ld-code-hint" id="privacyHint" style="margin:4px 0 8px;text-align:left;">공개 방은 목록에 표시됩니다. 비공개는 코드로만 입장합니다.</p>
         <div class="ld-room-actions">
           <button class="ld-btn ld-btn-primary" id="btnConfirmCreate">방 만들기</button>
           <button class="ld-btn ld-btn-outline" id="btnRefreshRooms">목록 새로고침</button>
@@ -1071,7 +1091,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.18';
+  var GAME_VERSION = '1.0.0.19';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -2048,6 +2068,12 @@
     var list = lobby.rooms || [];
     var host = room.players && room.players[0] ? room.players[0].name : '호스트';
     list = list.filter(function (r) { return r && r.code !== room.code; });
+    // 비공개 방은 목록에 올리지 않음 (코드 입장만)
+    if (room.isPrivate) {
+      lobby.rooms = list;
+      await saveLobby(lobby);
+      return;
+    }
     if (room.status === 'waiting' && room.players && room.players.length > 0) {
       list.unshift({
         code: room.code,
@@ -2055,6 +2081,7 @@
         players: room.players.length,
         status: room.status,
         mode: room.gameMode || 'solo',
+        isPrivate: false,
         updatedAt: Date.now()
       });
     }
@@ -2241,7 +2268,7 @@
       var checks = await Promise.all(rooms.map(function (info) { return getRoom(info.code); }));
       var live = [];
       checks.forEach(function (r) {
-        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8) {
+        if (r && r.status === 'waiting' && !r.isPrivate && r.players && r.players.length > 0 && r.players.length < 8) {
           live.push({
             code: r.code,
             host: r.players[0].name,
@@ -2269,7 +2296,7 @@
         card.className = 'ld-room-card';
         card.innerHTML =
           '<div><div class="title">' + escapeHtml(info.host) + '의 방 · <span style="color:var(--gold)">' + escapeHtml(info.code) + '</span></div>' +
-          '<div class="meta">' + info.players + '/4명 · 대기 중</div></div>' +
+          '<div class="meta">' + info.players + '/8명 · 공개 · 대기 중</div></div>' +
           '<span class="ld-btn ld-btn-primary" style="width:auto;padding:8px 12px;font-size:12px;">입장</span>';
         card.onclick = function () { joinRoomByCode(info.code); };
         els.roomList.appendChild(card);
@@ -2321,6 +2348,7 @@ refreshRoomList();
         expandLapsThreshold: 50,
         bannedAugs: [],
         classicMode: false,
+        isPrivate: !!(window.__createPrivate),
         turnStartedAt: null,
         winnerTeam: null,
         players: [makePlayer(myPlayerId, nickname, 0, selectedHomeAvatar, 0)],
@@ -2394,6 +2422,22 @@ refreshRoomList();
 
   function renderLobby(room) {
     els.lobbyCode.textContent = room.code;
+    if (els.lobbyCode && room.isPrivate) {
+      els.lobbyCode.title = '비공개 방 — 코드로만 입장';
+    }
+    var codeHint = document.querySelector('.ld-code-hint');
+    // show privacy on lobby
+    var privTag = document.getElementById('lobbyPrivacyTag');
+    if (!privTag && els.lobbyCode && els.lobbyCode.parentNode) {
+      privTag = document.createElement('div');
+      privTag.id = 'lobbyPrivacyTag';
+      privTag.style.cssText = 'text-align:center;font-size:12px;margin:0 0 8px;font-weight:700;';
+      els.lobbyCode.parentNode.insertBefore(privTag, els.lobbyCode.nextSibling);
+    }
+    if (privTag) {
+      privTag.textContent = room.isPrivate ? '🔒 비공개 방 · 코드로만 입장' : '🌐 공개 방';
+      privTag.style.color = room.isPrivate ? 'var(--gold)' : 'var(--cyan)';
+    }
     els.lobbyPlayers.innerHTML = '';
     var hostMe = isHost(room);
     var mode = room.gameMode || 'solo';
