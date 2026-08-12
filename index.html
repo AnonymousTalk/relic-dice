@@ -726,12 +726,53 @@
   .ld-chat { max-height: none; width: 260px; }
   .ld-chat-log { max-height: 180px; min-height: 110px; font-size: 12px; }
 
+
+  .ld-victory-overlay {
+    position: fixed; inset: 0; z-index: 9999; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(8,6,24,0.82); flex-direction: column; gap: 12px;
+    pointer-events: auto;
+  }
+  .ld-victory-overlay.show { display: flex; }
+  .ld-victory-overlay .v-icon { font-size: 72px; animation: v-bounce 0.8s ease infinite alternate; }
+  .ld-victory-overlay .v-title {
+    font-size: 32px; font-weight: 900; color: #fbbf24;
+    text-shadow: 0 0 24px rgba(251,191,36,0.6); text-align: center;
+  }
+  .ld-victory-overlay .v-sub { font-size: 16px; color: #e9e5ff; text-align: center; max-width: 90%; }
+  .ld-victory-overlay .v-count {
+    margin-top: 8px; font-size: 22px; font-weight: 800; color: #a5b4fc;
+  }
+  @keyframes v-bounce { from { transform: translateY(0) scale(1); } to { transform: translateY(-10px) scale(1.08); } }
+  .ld-confetti-piece {
+    position: fixed; z-index: 10000; width: 10px; height: 14px; border-radius: 2px;
+    pointer-events: none; opacity: 0.95;
+    animation: confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0.85; }
+  }
+  .ld-paused-banner {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 500;
+    background: rgba(239,68,68,0.9); color: #fff; font-weight: 800; font-size: 14px;
+    padding: 8px 18px; border-radius: 999px; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  }
+  .ld-paused-banner.show { display: block; }
+
 </style>
 </head>
 <body>
 <div class="ld-root">
   <div class="ld-turn-edge" id="turnEdge" aria-hidden="true"></div>
   <div class="ld-turn-toast" id="turnToast">🎲 당신 차례!</div>
+  <div class="ld-paused-banner" id="pausedBanner">⏸ 관리자가 게임을 일시정지했습니다</div>
+  <div class="ld-victory-overlay" id="victoryOverlay">
+    <div class="v-icon" id="victoryIcon">🏆</div>
+    <div class="v-title" id="victoryTitle">승리!</div>
+    <div class="v-sub" id="victorySub"></div>
+    <div class="v-count" id="victoryCount">10초 후 로비로 돌아갑니다</div>
+  </div>
   <div class="ld-glow-blob blob1"></div>
   <div class="ld-glow-blob blob2"></div>
 
@@ -815,6 +856,8 @@
         <!-- 방 안 전용: 플레이어/게임 관리 -->
         <div id="adminRoomTools" style="display:none;">
           <div class="ld-field-label" style="margin-top:0;">방 안 · 게임 관리</div>
+          <button class="ld-btn ld-btn-outline" id="btnAdminPause" style="border-color:#fbbf24;color:#fbbf24;">⏸ 게임 일시정지 토글</button>
+          <button class="ld-btn ld-btn-outline" id="btnAdminClassic" style="border-color:#a78bfa;color:#c4b5fd;">🎲 클래식 모드 토글</button>
           <div class="ld-field-label">대상 플레이어</div>
           <select id="adminTarget"></select>
           <button class="ld-btn ld-btn-outline" id="btnAdminKick">강퇴</button>
@@ -842,7 +885,7 @@
       </div>
       <h1 class="ld-title">유물 주사위</h1>
       <p class="ld-subtitle">한 바퀴·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.16</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.18</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -1028,7 +1071,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.16';
+  var GAME_VERSION = '1.0.0.18';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -1184,9 +1227,25 @@
     { id: 'mid', icon: '🎯', name: '중점 도전', desc: '3 이상 4 이하면 유물 획득', check: function (f) { return f >= 3 && f <= 4; } }
   ];
   function getRelicEvent(id) {
+    if (typeof id === 'string' && id.indexOf('classic_') === 0) {
+      var n = parseInt(id.replace('classic_', ''), 10);
+      if (!(n >= 1 && n <= 6)) n = 1;
+      return {
+        id: 'classic_' + n,
+        icon: '🎲',
+        name: '클래식 도전',
+        desc: n + '이 정확히 나오면 유물 획득',
+        check: function (f) { return f === n; },
+        targetFace: n
+      };
+    }
     return RELIC_EVENTS.find(function (e) { return e.id === id; }) || RELIC_EVENTS[0];
   }
-  function pickRelicEvent() {
+  function pickRelicEvent(room) {
+    if (room && room.classicMode) {
+      var n = 1 + Math.floor(Math.random() * 6);
+      return getRelicEvent('classic_' + n);
+    }
     return RELIC_EVENTS[Math.floor(Math.random() * RELIC_EVENTS.length)];
   }
 
@@ -1370,6 +1429,137 @@
     return teamRelics(room, teamId).length >= relicsNeeded(room);
   }
 
+
+  var victoryShownFor = null;
+  var victoryCountdownTimer = null;
+
+  function spawnConfetti(n) {
+    n = n || 80;
+    var colors = ['#fbbf24','#f472b6','#60a5fa','#34d399','#a78bfa','#fb7185','#fde68a','#38bdf8'];
+    for (var i = 0; i < n; i++) {
+      var el = document.createElement('div');
+      el.className = 'ld-confetti-piece';
+      el.style.left = (Math.random() * 100) + 'vw';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.animationDuration = (2.2 + Math.random() * 2.5) + 's';
+      el.style.animationDelay = (Math.random() * 0.8) + 's';
+      el.style.width = (6 + Math.random() * 10) + 'px';
+      el.style.height = (8 + Math.random() * 12) + 'px';
+      el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+      document.body.appendChild(el);
+      (function (node) {
+        setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 5500);
+      })(el);
+    }
+  }
+
+  function playFanfare() {
+    try {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var ctx = _audioCtx;
+      var now = ctx.currentTime;
+      var notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+      notes.forEach(function (freq, i) {
+        var o = ctx.createOscillator();
+        var g = ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, now + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.25 * sfxVolume, now + i * 0.12 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.35);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now + i * 0.12);
+        o.stop(now + i * 0.12 + 0.4);
+      });
+    } catch (e) {}
+    try { SFX.win(); } catch (e2) {}
+  }
+
+  function showVictoryCelebration(room) {
+    var key = room.winnerId || ('team' + room.winnerTeam) || '';
+    if (!key) return;
+    if (victoryShownFor === key + ':' + (room.code || myRoomCode)) return;
+    victoryShownFor = key + ':' + (room.code || myRoomCode);
+
+    var overlay = document.getElementById('victoryOverlay');
+    var title = document.getElementById('victoryTitle');
+    var sub = document.getElementById('victorySub');
+    var countEl = document.getElementById('victoryCount');
+    var icon = document.getElementById('victoryIcon');
+    if (!overlay) return;
+
+    var need = relicsNeeded(room);
+    if (room.winnerTeam != null) {
+      if (icon) icon.textContent = '🏆';
+      if (title) title.textContent = '팀 ' + TEAM_NAMES[room.winnerTeam] + ' 승리!';
+      var names = (room.players || []).filter(function (p) { return (p.team | 0) === room.winnerTeam; })
+        .map(function (p) { return p.name; }).join(', ');
+      if (sub) sub.textContent = '유물 ' + need + '종 수집 · ' + names;
+    } else {
+      var wp = (room.players || []).find(function (p) { return p.id === room.winnerId; });
+      if (icon) icon.textContent = '🏆';
+      if (title) title.textContent = (wp ? wp.name : '승자') + ' 승리!';
+      if (sub) sub.textContent = '유물 ' + need + '개 달성! 축하합니다!';
+    }
+    overlay.classList.add('show');
+    spawnConfetti(100);
+    setTimeout(function () { spawnConfetti(60); }, 900);
+    setTimeout(function () { spawnConfetti(40); }, 1800);
+    playFanfare();
+
+    var sec = 10;
+    if (countEl) countEl.textContent = sec + '초 후 로비로 돌아갑니다';
+    if (victoryCountdownTimer) clearInterval(victoryCountdownTimer);
+    victoryCountdownTimer = setInterval(function () {
+      sec -= 1;
+      if (countEl) {
+        if (sec > 0) countEl.textContent = sec + '초 후 로비로 돌아갑니다';
+        else countEl.textContent = '로비로 이동 중...';
+      }
+      if (sec <= 0) {
+        clearInterval(victoryCountdownTimer);
+        victoryCountdownTimer = null;
+        overlay.classList.remove('show');
+        // 로비로: 게임 종료 후 waiting 복귀 시도, 실패 시 leave
+        (async function () {
+          try {
+            var r = await getRoom(myRoomCode);
+            if (r) {
+              r.status = 'waiting';
+              r.winnerId = null;
+              r.winnerTeam = null;
+              r.duel = null;
+              r.relicChallenge = null;
+              r.augmentPick = null;
+              r.pendingRoll = null;
+              // 플레이어 상태 일부 리셋
+              (r.players || []).forEach(function (p) {
+                p.position = 0;
+                p.laps = 0;
+                p.augments = [];
+                p.relics = [];
+                p.items = [];
+                p.skipTurns = 0;
+                p.nextMoveBonus = 0;
+                p.augDisabled = [];
+              });
+              r.turnIndex = 0;
+              r.log = [];
+              r.specials = generateSpecials(Date.now() % 100000);
+              await saveRoom(r);
+              enterLobby(r);
+            } else {
+              leaveRoom();
+            }
+          } catch (e) {
+            leaveRoom();
+          }
+          victoryShownFor = null;
+        })();
+      }
+    }, 1000);
+  }
+
   function checkWinner(room) {
     if (room.winnerId || room.winnerTeam != null) return true;
     var need = relicsNeeded(room);
@@ -1384,9 +1574,10 @@
             icon: '🏆',
             title: '팀 ' + TEAM_NAMES[t] + ' 승리!',
             text: '유물 ' + need + '종 수집 · ' + names,
-            sub: '팀전 종료',
+            sub: '10초 후 로비로',
             ts: Date.now()
           };
+          room.victoryAt = Date.now();
           return true;
         }
       }
@@ -1400,9 +1591,10 @@
             icon: '🏆',
             title: p.name + ' 승리!',
             text: '유물 ' + need + '개 달성!',
-            sub: '게임 종료',
+            sub: '10초 후 로비로',
             ts: Date.now()
           };
+          room.victoryAt = Date.now();
           return true;
         }
       }
@@ -2128,6 +2320,7 @@ refreshRoomList();
         turnSeconds: TURN_SECONDS_DEFAULT,
         expandLapsThreshold: 50,
         bannedAugs: [],
+        classicMode: false,
         turnStartedAt: null,
         winnerTeam: null,
         players: [makePlayer(myPlayerId, nickname, 0, selectedHomeAvatar, 0)],
@@ -2582,7 +2775,7 @@ refreshRoomList();
           advanceTurn(room, extra);
         }
       } else if (after && after.type === 'relic') {
-        var ev2 = pickRelicEvent();
+        var ev2 = pickRelicEvent(room);
         room.relicChallenge = {
           playerId: myPlayerId, eventId: ev2.id, target: ev2.id, rolls: [], noAugment: true,
           pendingExtraTurn: !!after.pendingExtraTurn, pendingAugmentPick: false, pendingDuelWith: null, ts: Date.now()
@@ -2613,6 +2806,41 @@ refreshRoomList();
   els.btnLeaveLobby.onclick = function () { leaveRoom(); };
   els.btnLeaveGame.onclick = function () { leaveRoom(); };
 
+  function removePlayerFromRoom(room, pid) {
+    if (!room || !pid) return room;
+    var idx = (room.players || []).findIndex(function (p) { return p.id === pid; });
+    if (idx < 0) return room;
+    room.players = room.players.filter(function (p) { return p.id !== pid; });
+    // 대결/유물/증강 대상이면 정리
+    if (room.duel && (room.duel.attackerId === pid || room.duel.defenderId === pid)) {
+      room.duel = null;
+    }
+    if (room.relicChallenge && room.relicChallenge.playerId === pid) {
+      room.relicChallenge = null;
+    }
+    if (room.augmentPick && room.augmentPick.playerId === pid) {
+      room.augmentPick = null;
+      room.pendingPickExtraTurn = false;
+    }
+    if (room.itemPending && (room.itemPending.userId === pid || room.itemPending.targetId === pid)) {
+      room.itemPending = null;
+    }
+    if (room.players.length) {
+      if (room.turnIndex >= room.players.length) {
+        room.turnIndex = room.turnIndex % room.players.length;
+      }
+      if (idx < room.turnIndex) {
+        room.turnIndex = Math.max(0, room.turnIndex - 1);
+      } else if (idx === room.turnIndex) {
+        room.turnIndex = room.turnIndex % room.players.length;
+        room.turnStartedAt = Date.now();
+      }
+    } else {
+      room.status = 'closed';
+    }
+    return room;
+  }
+
   async function leaveRoom() {
     var code = myRoomCode;
     var pid = myPlayerId;
@@ -2621,10 +2849,18 @@ refreshRoomList();
       try {
         var room = await getRoom(code);
         if (room) {
-          room.players = (room.players || []).filter(function (p) { return p.id !== pid; });
+          removePlayerFromRoom(room, pid);
           if (!room.players.length) {
             room.status = 'closed';
             await removeRoomFromLobby(code);
+            try { if (fbDb) await fbDb.ref(roomPath(code)).remove(); } catch (eR) {}
+          } else {
+            room.announce = {
+              icon: '👋', title: '퇴장',
+              text: '플레이어가 게임을 떠났습니다',
+              sub: room.players.length + '명 남음',
+              ts: Date.now()
+            };
           }
           await saveRoom(room);
         }
@@ -3411,6 +3647,12 @@ refreshRoomList();
         }
         els.btnRoll.disabled = true;
         els.btnRoll.textContent = '게임 종료';
+        try { showVictoryCelebration(room); } catch (eV) {}
+      } else if (room.paused) {
+        els.turnBanner.className = 'ld-turn-banner rb-low';
+        els.turnBanner.textContent = '⏸ 일시정지 중';
+        els.btnRoll.disabled = true;
+        els.btnRoll.textContent = '일시정지';
       } else if (inDuel) {
         els.turnBanner.className = 'ld-turn-banner rb-low';
         els.turnBanner.textContent = '⚔️ 같은 칸 대결 진행 중!';
@@ -4929,6 +5171,10 @@ refreshRoomList();
         me._herbUsedThisSkip = false;
       }
 
+      if (fresh.paused) {
+        els.gameError.textContent = '게임이 일시정지 상태입니다';
+        return;
+      }
       rolling = true;
       window.__rollStartedAt = Date.now();
       els.btnRoll.disabled = true;
@@ -5216,7 +5462,7 @@ refreshRoomList();
             };
           }
         } else if (effect.startRelic) {
-          var ev = pickRelicEvent();
+          var ev = pickRelicEvent(fresh);
           fresh.relicChallenge = {
             playerId: myPlayerId,
             eventId: ev.id,
@@ -5355,6 +5601,38 @@ refreshRoomList();
   function roomsEqual(a, b) {
     return JSON.stringify(a) === JSON.stringify(b);
   }
+
+
+  // 창 닫기 / 새로고침 시 플레이어 제거
+  window.addEventListener('pagehide', function () {
+    try {
+      if (!myRoomCode || !myPlayerId || !fbDb) return;
+      // 동기적으로 보내기 어려워 beacon 대신 last-write: remove player via REST-less firebase set
+      var code = myRoomCode;
+      var pid = myPlayerId;
+      // fire-and-forget
+      fbDb.ref(roomPath(code)).once('value').then(function (snap) {
+        var room = snap.val();
+        if (!room) return;
+        removePlayerFromRoom(room, pid);
+        if (!room.players || !room.players.length) {
+          room.status = 'closed';
+          try { removeRoomFromLobby(code); } catch (e) {}
+          return fbDb.ref(roomPath(code)).remove();
+        }
+        room.announce = {
+          icon: '👋', title: '연결 종료',
+          text: '플레이어가 나갔습니다',
+          sub: room.players.length + '명 남음',
+          ts: Date.now()
+        };
+        return fbDb.ref(roomPath(code)).set(room);
+      }).catch(function () {});
+    } catch (e) {}
+  });
+  window.addEventListener('beforeunload', function () {
+    // pagehide가 주 처리. 여기서는 힌트만.
+  });
 
   async function pollTick() {
     if (!myRoomCode) return;
@@ -5829,6 +6107,7 @@ refreshRoomList();
   }
 
   function refreshAdminTargets() {
+    try { updateClassicBtn(lastRoomSnapshot); } catch (e) {}
     var sel = document.getElementById('adminTarget');
     if (!sel || !lastRoomSnapshot) return;
     sel.innerHTML = '';
@@ -5857,6 +6136,62 @@ refreshRoomList();
     var sel = document.getElementById('adminTarget');
     var tid = sel && sel.value;
     try {
+      if (kind === 'classic') {
+        var roomC = await getRoom(myRoomCode);
+        if (!roomC) return;
+        roomC.classicMode = !roomC.classicMode;
+        roomC.announce = {
+          icon: '🎲',
+          title: roomC.classicMode ? '클래식 모드 ON' : '클래식 모드 OFF',
+          text: roomC.classicMode
+            ? '유물 칸: 1~6 중 목표 숫자 정확히 일치 시 획득'
+            : '유물 칸: 저점·중점·고점 도전으로 복귀',
+          sub: '관리자 설정',
+          ts: Date.now()
+        };
+        document.getElementById('adminMsg').textContent = roomC.classicMode ? '클래식 모드 ON' : '클래식 모드 OFF';
+        await saveRoom(roomC);
+        lastRoomSnapshot = roomC;
+        if (els.screenGame && els.screenGame.classList.contains('active')) {
+          renderGame(roomC);
+          maybeShowAnnounce(roomC);
+        }
+        try { updateClassicBtn(roomC); } catch (e) {}
+        return;
+      }
+      if (kind === 'pause') {
+        var roomP = await getRoom(myRoomCode);
+        if (!roomP) return;
+        if (roomP.paused) {
+          // 재개: 멈춘 동안 흐른 시간만큼 turnStartedAt 보정
+          var pausedFor = roomP.pausedAt ? (Date.now() - roomP.pausedAt) : 0;
+          if (roomP.turnStartedAt) roomP.turnStartedAt += pausedFor;
+          roomP.paused = false;
+          roomP.pausedAt = null;
+          roomP.announce = {
+            icon: '▶️', title: '게임 재개',
+            text: '관리자가 일시정지를 해제했습니다',
+            sub: '', ts: Date.now()
+          };
+          document.getElementById('adminMsg').textContent = '게임 재개됨';
+        } else {
+          roomP.paused = true;
+          roomP.pausedAt = Date.now();
+          roomP.announce = {
+            icon: '⏸', title: '일시정지',
+            text: '관리자가 게임을 멈췄습니다',
+            sub: '타이머·턴 진행 중지', ts: Date.now()
+          };
+          document.getElementById('adminMsg').textContent = '게임 일시정지';
+        }
+        await saveRoom(roomP);
+        lastRoomSnapshot = roomP;
+        if (els.screenGame && els.screenGame.classList.contains('active')) {
+          renderGame(roomP);
+          maybeShowAnnounce(roomP);
+        }
+        return;
+      }
       if (kind === 'deleteRoom') {
         if (!confirm('이 방을 삭제할까요? 모든 플레이어가 퇴장됩니다.')) return;
         var code = myRoomCode;
@@ -5964,6 +6299,18 @@ refreshRoomList();
   var btnAdminMute = document.getElementById('btnAdminMute');
   var btnAdminSkip = document.getElementById('btnAdminSkip');
   var btnAdminMove = document.getElementById('btnAdminMove');
+  function updateClassicBtn(room) {
+    var b = document.getElementById('btnAdminClassic');
+    if (!b) return;
+    var on = !!(room && room.classicMode);
+    b.textContent = on ? '🎲 클래식 모드 ON (클릭: 끄기)' : '🎲 클래식 모드 OFF (클릭: 켜기)';
+    b.style.borderColor = on ? '#fbbf24' : '#a78bfa';
+    b.style.color = on ? '#fbbf24' : '#c4b5fd';
+  }
+  var btnAdminClassic = document.getElementById('btnAdminClassic');
+  if (btnAdminClassic) btnAdminClassic.onclick = function () { adminAct('classic'); };
+  var btnAdminPause = document.getElementById('btnAdminPause');
+  if (btnAdminPause) btnAdminPause.onclick = function () { adminAct('pause'); };
   if (btnAdminKick) btnAdminKick.onclick = function () { adminAct('kick'); };
   if (btnAdminMute) btnAdminMute.onclick = function () { adminAct('mute'); };
   if (btnAdminSkip) btnAdminSkip.onclick = function () { adminAct('skip'); };
@@ -6151,11 +6498,21 @@ refreshRoomList();
   }
   function updateTimerDisplay(room) {
     var el = document.getElementById('turnTimer');
+    var pb = document.getElementById('pausedBanner');
+    if (pb) {
+      if (room && room.paused && room.status === 'playing') pb.classList.add('show');
+      else pb.classList.remove('show');
+    }
     if (!el) return;
     if (!room || room.status !== 'playing' || room.winnerId || room.winnerTeam != null) {
       el.className = 'ld-timer idle';
       el.textContent = '턴 타이머';
       stopTurnTimer();
+      return;
+    }
+    if (room.paused) {
+      el.className = 'ld-timer warn';
+      el.textContent = '⏸ 일시정지';
       return;
     }
     if (room.duel || room.relicChallenge || room.augmentPick) {
@@ -6186,6 +6543,7 @@ refreshRoomList();
   }
   async function maybeTimeoutTurn(room) {
     if (!room || !myRoomCode) return;
+    if (room.paused) return;
     if (room.duel || room.relicChallenge || room.augmentPick) return;
     if (room.winnerId || room.winnerTeam != null) return;
     var cur = room.players[room.turnIndex % room.players.length];
