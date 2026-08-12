@@ -413,12 +413,13 @@
   /* Game layout: left roster | center controls | right board */
   .ld-game-body {
     display: grid;
-    grid-template-columns: 260px 90px minmax(140px, 1fr) minmax(200px, 1.2fr);
+    grid-template-columns: 260px 110px minmax(140px, 1fr) minmax(200px, 1.2fr);
     gap: 10px;
     align-items: start;
   }
   .ld-roster {
-    width: 100px; display: flex; flex-direction: column; gap: 8px;
+    width: 100%; box-sizing: border-box; padding-right: 10px;
+    display: flex; flex-direction: column; gap: 8px;
   }
   .ld-roster-title { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
   .ld-roster-card {
@@ -477,9 +478,13 @@
   .ld-avatar-opt.selected { border-color: var(--gold); background: rgba(251,191,36,0.15); box-shadow: 0 0 12px rgba(251,191,36,0.25); }
 
   .ld-turn-order {
-    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px; justify-content: center;
     margin: 0 0 12px; padding: 8px; border-radius: 12px;
     background: rgba(255,255,255,0.03); border: 1px solid rgba(139,92,246,0.2);
+  }
+  .ld-turn-order-title {
+    width: 100%; text-align: center; font-size: 10px; font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;
   }
   .ld-turn-chip {
     font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px;
@@ -487,6 +492,7 @@
   }
   .ld-turn-chip.now { border-color: var(--gold); color: var(--gold); background: rgba(251,191,36,0.12); }
   .ld-turn-chip .ord { color: var(--purple2); margin-right: 4px; }
+  .ld-turn-arrow { font-size: 12px; font-weight: 700; color: var(--purple2); opacity: 0.7; }
 
   .ld-duel {
     display: none; margin: 0 0 12px; padding: 14px; border-radius: 16px;
@@ -828,11 +834,6 @@
     color: var(--text-dim); font-size: 12px; font-weight: 700; cursor: pointer; text-align: left;
   }
   .ld-legend.collapsed { display: none; }
-  .ld-next-preview {
-    font-size: 11px; color: var(--text-dim); line-height: 1.45; margin: 0 0 8px; padding: 8px 10px;
-    border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px dashed rgba(139,92,246,0.3);
-  }
-  .ld-next-preview b { color: var(--cyan); }
   .ld-quick-chat {
     display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
   }
@@ -1045,8 +1046,9 @@
     .ld-timer.idle { font-size: 11px; }
     .ld-turn-banner { font-size: 12px; padding: 8px; min-height: 32px; margin: 4px 0 8px; }
     .ld-turn-order { padding: 6px; gap: 4px; margin: 0 0 8px; }
+    .ld-turn-order-title { font-size: 9px; }
     .ld-turn-chip { font-size: 10px; padding: 3px 6px; }
-    .ld-next-preview { font-size: 10px; padding: 6px 8px; margin: 0 0 6px; }
+    .ld-turn-arrow { font-size: 10px; }
     .ld-wait-bar { font-size: 12px; padding: 8px 10px; margin: 0 0 8px; }
 
     .ld-duel, .ld-relic-challenge { padding: 10px; margin: 0 0 10px; }
@@ -1372,7 +1374,6 @@
 
             <div class="ld-wait-bar" id="waitBar"></div>
             <div class="ld-timer idle" id="turnTimer">턴 타이머</div>
-            <div class="ld-next-preview" id="nextPreview" style="display:none;"></div>
             <div class="ld-turn-order" id="turnOrder"></div>
             <div class="ld-turn-banner rb-wait" id="turnBanner">대기 중</div>
 
@@ -3465,9 +3466,9 @@ refreshRoomList();
     } else if (type && CELL_TYPES[type]) {
       var ct = CELL_TYPES[type];
       document.getElementById('cellTipIcon').textContent = ct.icon;
-      document.getElementById('cellTipTitle').textContent = ct.label + ' (칸 ' + idx + ')';
+      document.getElementById('cellTipTitle').textContent = ct.label + (idx != null ? ' (칸 ' + idx + ')' : '');
       document.getElementById('cellTipDesc').textContent = ct.desc;
-    } else {
+    } else if (idx != null) {
       document.getElementById('cellTipIcon').textContent = '⬜';
       document.getElementById('cellTipTitle').textContent = '일반 칸 ' + idx;
       document.getElementById('cellTipDesc').textContent = '특별한 효과가 없는 칸입니다.';
@@ -3527,6 +3528,10 @@ refreshRoomList();
       item.className = 'ld-legend-item';
       item.textContent = t.icon + ' ' + t.label;
       item.title = t.desc;
+      item.style.cursor = 'pointer';
+      item.onclick = function () {
+        showCellTip(k);
+      };
       els.boardLegend.appendChild(item);
     });
   }
@@ -3627,9 +3632,19 @@ refreshRoomList();
     els.turnOrder.innerHTML = '';
     var n = room.players.length;
     if (!n) return;
+    var title = document.createElement('div');
+    title.className = 'ld-turn-order-title';
+    title.textContent = '🔁 턴 순서';
+    els.turnOrder.appendChild(title);
     for (var i = 0; i < n; i++) {
       var idx = (room.turnIndex + i) % n;
       var p = room.players[idx];
+      if (i > 0) {
+        var arrow = document.createElement('span');
+        arrow.className = 'ld-turn-arrow';
+        arrow.textContent = '→';
+        els.turnOrder.appendChild(arrow);
+      }
       var chip = document.createElement('span');
       chip.className = 'ld-turn-chip' + (i === 0 ? ' now' : '');
       chip.innerHTML = '<span class="ord">' + (i + 1) + '</span>' + (p.avatar || '') + ' ' + escapeHtml(p.name);
@@ -7852,29 +7867,6 @@ refreshRoomList();
       bar.textContent = '';
     }
   }
-  function updateNextPreview(room) {
-    var el = document.getElementById('nextPreview');
-    if (!el) return;
-    if (!room || room.status !== 'playing' || !myPlayerId) {
-      el.style.display = 'none';
-      return;
-    }
-    var me = (room.players || []).find(function (p) { return p.id === myPlayerId; });
-    if (!me) { el.style.display = 'none'; return; }
-    var specials = room.specials || {};
-    var lines = [];
-    for (var f = 1; f <= 6; f++) {
-      var pos = (me.position + f) % BOARD_SIZE;
-      var ty = specials[pos] != null ? specials[pos] : specials[String(pos)];
-      var label = '일반';
-      if (pos === 0) label = '🏁출발';
-      else if (ty && CELL_TYPES[ty]) label = CELL_TYPES[ty].icon + CELL_TYPES[ty].label;
-      lines.push('<b>' + f + '</b>→' + pos + '(' + label + ')');
-    }
-    el.innerHTML = '📍 내 위치 <b>' + me.position + '</b> · 눈금별 도착 미리보기<br/>' + lines.join(' · ');
-    el.style.display = 'block';
-  }
-
   // hook renderGame to refresh chat + admin targets
   var _renderGameOrig = renderGame;
   renderGame = function (room) {
@@ -7887,7 +7879,6 @@ refreshRoomList();
     updateTimerDisplay(room);
     updateTurnUX(room);
     updateWaitBar(room);
-    updateNextPreview(room);
     if (isAdmin) refreshAdminTargets();
     if (room && (room.winnerId || room.winnerTeam != null)) {
       handleGameEnd(room);
