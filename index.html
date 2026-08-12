@@ -657,19 +657,10 @@
     letter-spacing: 1px;
   }
 
-  @media (max-width: 640px) {
-    .ld-game-body {
-      grid-template-columns: 78px 1fr;
-      grid-template-areas:
-        "chat roster main"
-        "board board board";
-    }
-    .ld-chat { grid-area: chat; width: 180px; }
-    .ld-roster { grid-area: roster; width: 78px; }
-    .ld-main-col { grid-area: main; }
-    .ld-board-col { grid-area: board; }
-    .ld-card { padding: 20px 14px; }
-  }
+  /* NOTE: old broken mobile grid rules removed — replaced by the
+     comprehensive @media block at the end of this stylesheet, placed
+     there on purpose so it wins the cascade over later desktop rules
+     with equal specificity (e.g. .ld-chat{width:260px} further down). */
 
   .ld-version {
     text-align: center; font-size: 11px; color: var(--text-dim); margin: -12px 0 16px;
@@ -1006,6 +997,102 @@
   .ld-theme-name {
     width: 100%; text-align: center; font-size: 11px; color: var(--text-dim);
     margin-top: 6px; font-weight: 600;
+  }
+
+  /* ==========================================================
+     MOBILE WEB ONLY (<=640px). Desktop/PC styles above are
+     untouched. This block is placed last on purpose so it wins
+     the cascade over every earlier rule at equal specificity.
+     Goal: stop columns overlapping, bring dice-roll + board up,
+     and shrink everything else (chat/roster/panels/text) while
+     leaving the dice cube and the game board at full size.
+     ========================================================== */
+  @media (max-width: 640px) {
+    .ld-root { padding: 12px 8px 28px; }
+    .ld-card { padding: 16px 10px; border-radius: 18px; }
+    .ld-title { font-size: 22px; }
+    .ld-subtitle { font-size: 11px; margin-bottom: 16px; }
+    .ld-top-bar { margin-bottom: 10px; }
+    .ld-room-chip { font-size: 12px; padding: 5px 10px; }
+    .ld-admin-btn { width: 28px; height: 28px; font-size: 12px; top: 8px; right: 8px; }
+    .ld-admin-panel { width: 200px; top: 44px; right: 8px; }
+
+    /* ---- Game body: stop the grid, stack single-column ---- */
+    .ld-game-body {
+      display: flex !important;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+    /* Order: dice+roll (main) → board → roster → chat, per request */
+    .ld-game-body > .ld-main-col  { order: 1; width: 100%; }
+    .ld-game-body > .ld-board-col { order: 2; width: 100%; }
+    .ld-game-body > .ld-roster    { order: 3; width: 100%; }
+    .ld-game-body > .ld-chat      { order: 4; width: 100%; max-height: none; }
+
+    /* ---- Dice + board: keep full size, just recenter ---- */
+    .ld-dice-mini-stage { padding: 2px 0 8px; }
+    .ld-board-wrap { max-width: 420px; margin: 0 auto; }
+
+    /* ---- Everything around the dice: shrink ---- */
+    .ld-dice-result { font-size: 17px; margin: -4px 0 6px; }
+    .ld-timer { font-size: 14px; padding: 6px 10px; margin: 0 0 8px; }
+    .ld-timer.idle { font-size: 11px; }
+    .ld-turn-banner { font-size: 12px; padding: 8px; min-height: 32px; margin: 4px 0 8px; }
+    .ld-turn-order { padding: 6px; gap: 4px; margin: 0 0 8px; }
+    .ld-turn-chip { font-size: 10px; padding: 3px 6px; }
+    .ld-next-preview { font-size: 10px; padding: 6px 8px; margin: 0 0 6px; }
+    .ld-wait-bar { font-size: 12px; padding: 8px 10px; margin: 0 0 8px; }
+
+    .ld-duel, .ld-relic-challenge { padding: 10px; margin: 0 0 10px; }
+    .ld-duel-title, .ld-relic-challenge-title { font-size: 13px; }
+    .ld-duel-vs, .ld-relic-rolls { font-size: 12px; }
+    .ld-duel-roll-box .vl { font-size: 20px; }
+    .ld-relic-target { font-size: 22px; }
+
+    .ld-item-bar { padding: 6px; gap: 4px; margin: 0 0 8px; min-height: 30px; }
+    .ld-item-chip { font-size: 11px; padding: 4px 8px; }
+    .ld-item-use { padding: 10px; margin: 0 0 10px; }
+
+    .ld-btn { padding: 11px 14px; font-size: 14px; }
+    .ld-btn-ghost { font-size: 12px; padding: 8px 10px; }
+    .ld-log-title { font-size: 11px; }
+    .ld-log-row { font-size: 11px; padding: 6px 8px; gap: 8px; }
+    .ld-log-face { width: 18px; height: 18px; font-size: 10px; }
+    .ld-error { font-size: 11px; }
+
+    /* ---- Board column chrome: shrink text/buttons around the board ---- */
+    .ld-aug-book-btn { font-size: 12px; padding: 8px 10px; margin-bottom: 6px; }
+    .ld-legend-toggle { font-size: 11px; padding: 6px 8px; }
+    .ld-legend-item { font-size: 9px; padding: 2px 5px; }
+    .ld-board-relic-row { font-size: 11px; padding: 6px 8px; }
+    #boardRelicToggle { font-size: 12px; }
+
+    /* ---- Roster: horizontal scroll strip instead of a wide column ---- */
+    .ld-roster {
+      display: flex; flex-direction: row; gap: 6px;
+      overflow-x: auto; overflow-y: hidden;
+      padding: 2px 2px 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .ld-roster-title { flex: 0 0 auto; writing-mode: initial; font-size: 9px; align-self: center; padding-right: 2px; }
+    .ld-roster-card { flex: 0 0 auto; min-width: 66px; padding: 6px 6px; }
+    .ld-roster-dot { width: 16px; height: 16px; margin: 0 auto 4px; }
+    .ld-roster-name { font-size: 10px; max-width: 58px; }
+    .ld-roster-pos { font-size: 9px; margin-top: 1px; }
+    .ld-roster-aug-icon { font-size: 11px; margin-top: 3px; }
+
+    /* ---- Chat: compact, pushed to the very bottom ---- */
+    .ld-chat-title { font-size: 9px; }
+    .ld-chat-log { max-height: 130px; min-height: 80px; font-size: 11px; padding: 5px; }
+    .ld-chat-input { font-size: 12px; padding: 8px; margin-top: 4px; }
+    .ld-side-toggle button { font-size: 9px; padding: 6px 3px; }
+    .ld-side-panel { max-height: 150px; font-size: 11px; padding: 6px; }
+    .ld-quick-btn { font-size: 9px; padding: 4px 3px; }
+    .ld-react-bar { gap: 3px; }
+    .ld-react-btn { width: 24px; height: 24px; font-size: 12px; }
+    .ld-relic-bar, .ld-relic-catalog { padding: 6px; gap: 4px; }
+    .ld-relic-chip, .ld-relic-cat-chip { font-size: 10px; padding: 3px 6px; }
   }
 
 </style>
