@@ -10,18 +10,185 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <style>
-  :root {
-    --bg-deep: #0a0a1f;
-    --bg-card: rgba(24, 22, 56, 0.72);
-    --purple: #8b5cf6;
-    --purple2: #a78bfa;
-    --blue: #3b82f6;
-    --cyan: #22d3ee;
-    --gold: #fbbf24;
-    --red: #f87171;
-    --green: #34d399;
-    --text-main: #f3f0ff;
-    --text-dim: #a5a0c9;
+  :root, [data-theme="default"] {
+    --bg-deep: #12121c;
+    --bg-mid: #1a1a28;
+    --bg-card: rgba(28, 28, 40, 0.88);
+    --purple: #7a6f9b;
+    --purple2: #9a90b8;
+    --blue: #6b7c99;
+    --cyan: #7a9e9a;
+    --gold: #c4a574;
+    --red: #b87a7a;
+    --green: #7a9b84;
+    --text-main: #e8e6ef;
+    --text-dim: #9a96a8;
+    --glow1: rgba(122,111,155,0.22);
+    --glow2: rgba(122,158,154,0.16);
+    --glow3: rgba(107,124,153,0.14);
+    --border-soft: rgba(154,144,184,0.28);
+  }
+  [data-theme="black"] {
+    --bg-deep: #0a0a0a;
+    --bg-mid: #141414;
+    --bg-card: rgba(18, 18, 18, 0.92);
+    --purple: #6e6e6e;
+    --purple2: #9a9a9a;
+    --blue: #707070;
+    --cyan: #8a8a8a;
+    --gold: #b0a090;
+    --red: #a07070;
+    --green: #708070;
+    --text-main: #ececec;
+    --text-dim: #8a8a8a;
+    --glow1: rgba(80,80,80,0.2);
+    --glow2: rgba(60,60,60,0.15);
+    --glow3: rgba(40,40,40,0.12);
+    --border-soft: rgba(120,120,120,0.3);
+  }
+  [data-theme="charcoal"] {
+    --bg-deep: #1c1c1e;
+    --bg-mid: #2a2a2e;
+    --bg-card: rgba(36, 36, 40, 0.9);
+    --purple: #7d7a85;
+    --purple2: #a3a0ab;
+    --blue: #7a8290;
+    --cyan: #8a9490;
+    --gold: #b8a88a;
+    --red: #a88888;
+    --green: #889888;
+    --text-main: #ebeaed;
+    --text-dim: #9c9aa3;
+    --glow1: rgba(125,122,133,0.18);
+    --glow2: rgba(122,130,144,0.12);
+    --glow3: rgba(80,80,86,0.12);
+    --border-soft: rgba(163,160,171,0.28);
+  }
+  [data-theme="slate"] {
+    --bg-deep: #1a1f24;
+    --bg-mid: #252b32;
+    --bg-card: rgba(32, 38, 46, 0.9);
+    --purple: #7a8490;
+    --purple2: #9aa4b0;
+    --blue: #6e8498;
+    --cyan: #7a9590;
+    --gold: #b0a488;
+    --red: #a08080;
+    --green: #7a9080;
+    --text-main: #e6eaee;
+    --text-dim: #98a0a8;
+    --glow1: rgba(110,132,152,0.18);
+    --glow2: rgba(122,149,144,0.12);
+    --glow3: rgba(90,100,110,0.12);
+    --border-soft: rgba(154,164,176,0.28);
+  }
+  [data-theme="navy"] {
+    --bg-deep: #141820;
+    --bg-mid: #1c2230;
+    --bg-card: rgba(28, 34, 46, 0.9);
+    --purple: #6e7a90;
+    --purple2: #8e9ab0;
+    --blue: #5e7290;
+    --cyan: #6e8a8a;
+    --gold: #b0a080;
+    --red: #a07878;
+    --green: #6e8a78;
+    --text-main: #e4e8f0;
+    --text-dim: #8e96a4;
+    --glow1: rgba(94,114,144,0.2);
+    --glow2: rgba(110,138,138,0.12);
+    --glow3: rgba(70,80,100,0.12);
+    --border-soft: rgba(142,154,176,0.28);
+  }
+  [data-theme="white"] {
+    --bg-deep: #f2f1ef;
+    --bg-mid: #e8e6e3;
+    --bg-card: rgba(255, 255, 255, 0.82);
+    --purple: #7a7288;
+    --purple2: #6a6478;
+    --blue: #6a7488;
+    --cyan: #5a7874;
+    --gold: #9a8460;
+    --red: #a07070;
+    --green: #5a7860;
+    --text-main: #2a2a30;
+    --text-dim: #6a6a72;
+    --glow1: rgba(122,114,136,0.12);
+    --glow2: rgba(90,120,116,0.1);
+    --glow3: rgba(106,116,136,0.1);
+    --border-soft: rgba(106,100,120,0.22);
+  }
+  [data-theme="ivory"] {
+    --bg-deep: #f3efe6;
+    --bg-mid: #ebe4d6;
+    --bg-card: rgba(250, 246, 238, 0.88);
+    --purple: #8a8070;
+    --purple2: #7a7060;
+    --blue: #7a8078;
+    --cyan: #6a8078;
+    --gold: #a08858;
+    --red: #a08070;
+    --green: #6a8068;
+    --text-main: #3a342c;
+    --text-dim: #7a7268;
+    --glow1: rgba(160,136,88,0.12);
+    --glow2: rgba(106,128,104,0.1);
+    --glow3: rgba(122,112,96,0.1);
+    --border-soft: rgba(122,112,96,0.22);
+  }
+  [data-theme="olive"] {
+    --bg-deep: #1a1c16;
+    --bg-mid: #26281e;
+    --bg-card: rgba(34, 38, 30, 0.9);
+    --purple: #7a8070;
+    --purple2: #9aa090;
+    --blue: #6e7a6e;
+    --cyan: #7a9080;
+    --gold: #b0a070;
+    --red: #a08070;
+    --green: #7a9870;
+    --text-main: #e8ebe0;
+    --text-dim: #9aa090;
+    --glow1: rgba(122,144,112,0.16);
+    --glow2: rgba(176,160,112,0.1);
+    --glow3: rgba(90,100,80,0.12);
+    --border-soft: rgba(154,160,144,0.28);
+  }
+  [data-theme="dust"] {
+    --bg-deep: #1e1818;
+    --bg-mid: #2a2222;
+    --bg-card: rgba(40, 34, 34, 0.9);
+    --purple: #8a7878;
+    --purple2: #a89090;
+    --blue: #7a7078;
+    --cyan: #8a8080;
+    --gold: #b09878;
+    --red: #a87878;
+    --green: #7a8878;
+    --text-main: #f0e8e6;
+    --text-dim: #a89898;
+    --glow1: rgba(168,120,120,0.16);
+    --glow2: rgba(176,152,120,0.1);
+    --glow3: rgba(100,80,80,0.12);
+    --border-soft: rgba(168,144,144,0.28);
+  }
+  [data-theme="mocha"] {
+    --bg-deep: #1c1714;
+    --bg-mid: #2a221c;
+    --bg-card: rgba(40, 34, 28, 0.9);
+    --purple: #8a7a6e;
+    --purple2: #a89888;
+    --blue: #7a7068;
+    --cyan: #8a8070;
+    --gold: #b8a078;
+    --red: #a08070;
+    --green: #7a8870;
+    --text-main: #f0eae2;
+    --text-dim: #a89888;
+    --glow1: rgba(184,160,120,0.14);
+    --glow2: rgba(138,128,112,0.1);
+    --glow3: rgba(100,88,72,0.12);
+    --border-soft: rgba(168,152,136,0.28);
   }
   * { box-sizing: border-box; }
   html, body {
@@ -29,11 +196,12 @@
     min-height: 100%;
     font-family: 'Segoe UI', 'Pretendard', system-ui, -apple-system, sans-serif;
     background:
-      radial-gradient(circle at 20% 10%, rgba(139,92,246,0.35), transparent 45%),
-      radial-gradient(circle at 85% 25%, rgba(34,211,238,0.25), transparent 40%),
-      radial-gradient(circle at 50% 90%, rgba(59,130,246,0.25), transparent 45%),
+      radial-gradient(circle at 20% 10%, var(--glow1), transparent 45%),
+      radial-gradient(circle at 85% 25%, var(--glow2), transparent 40%),
+      radial-gradient(circle at 50% 90%, var(--glow3), transparent 45%),
       var(--bg-deep);
     color: var(--text-main);
+    transition: background 0.35s ease, color 0.25s ease;
   }
   .ld-root { min-height: 100vh; width: 100%; padding: 20px 14px 40px; position: relative; overflow-x: hidden; }
   .ld-shell { max-width: 1040px; margin: 0 auto; position: relative; z-index: 1; }
@@ -44,7 +212,7 @@
   .ld-card {
     position: relative;
     background: var(--bg-card);
-    border: 1px solid rgba(139,92,246,0.4);
+    border: 1px solid var(--border-soft);
     border-radius: 24px;
     padding: 28px 24px;
     backdrop-filter: blur(14px);
@@ -795,6 +963,40 @@
     background: linear-gradient(135deg, rgba(139,92,246,0.4), rgba(59,130,246,0.3));
   }
 
+
+  .ld-theme-wrap { display: flex; flex-direction: column; align-items: center; margin: 6px 0 2px; }
+  .ld-theme-btn {
+    width: auto; padding: 6px 12px; font-size: 12px; font-weight: 700;
+    border-radius: 10px; letter-spacing: 0.3px;
+  }
+  .ld-theme-panel {
+    display: none; margin: 8px 0 6px; padding: 12px 14px;
+    border-radius: 12px; background: var(--bg-card);
+    border: 1px solid var(--border-soft); width: 100%; max-width: 280px;
+  }
+  .ld-theme-panel.show { display: block; }
+  .ld-theme-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 32px);
+    gap: 10px 12px;
+    justify-content: center;
+    margin: 0 auto;
+    width: max-content;
+  }
+  .ld-theme-swatch {
+    width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; padding: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
+    justify-self: center;
+  }
+  .ld-theme-swatch.active {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(196,165,116,0.35), inset 0 0 0 1px rgba(0,0,0,0.1);
+  }
+  .ld-theme-name {
+    width: 100%; text-align: center; font-size: 11px; color: var(--text-dim);
+    margin-top: 6px; font-weight: 600;
+  }
+
 </style>
 </head>
 <body>
@@ -924,7 +1126,14 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.20</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.23</span></div>
+      <div class="ld-theme-wrap">
+        <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
+        <div class="ld-theme-panel" id="themePanelHome">
+          <div class="ld-theme-bar" id="themeBarHome"></div>
+          <div class="ld-theme-name" id="themeNameHome"></div>
+        </div>
+      </div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
@@ -978,6 +1187,13 @@
           <div id="lobbyPlayers" style="margin-top:8px;"></div>
         </div>
         <div id="lobbyHostControls" style="margin-top:14px;"></div>
+        <div class="ld-theme-wrap" style="width:100%;">
+          <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeLobby">테마</button>
+          <div class="ld-theme-panel" id="themePanelLobby">
+            <div class="ld-theme-bar" id="themeBarLobby"></div>
+            <div class="ld-theme-name" id="themeNameLobby"></div>
+          </div>
+        </div>
         <button class="ld-btn ld-btn-ghost" id="btnLeaveLobby" style="width:100%; margin-top:10px;">나가기</button>
         <div class="ld-error" id="lobbyError"></div>
       </div>
@@ -985,7 +1201,14 @@
       <div class="ld-screen" id="screen-game">
         <div class="ld-top-bar">
           <span class="ld-room-chip" id="gameRoomCode">----</span>
-          <button class="ld-btn ld-btn-ghost" id="btnLeaveGame" style="width:auto; padding:8px 12px;">나가기</button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeGame">테마</button>
+            <button class="ld-btn ld-btn-ghost" id="btnLeaveGame" style="width:auto; padding:8px 12px;">나가기</button>
+          </div>
+        </div>
+        <div class="ld-theme-panel" id="themePanelGame">
+          <div class="ld-theme-bar" id="themeBarGame"></div>
+          <div class="ld-theme-name" id="themeNameGame"></div>
         </div>
 
         <div class="ld-game-body">
@@ -7247,6 +7470,80 @@ refreshRoomList();
       gameEndHandled = false;
     }
   };
+
+
+  // ---- 테마 ----
+  var THEMES = [
+    { id: 'default', name: '기본', colors: ['#12121c', '#7a6f9b', '#c4a574'] },
+    { id: 'black', name: '블랙', colors: ['#0a0a0a', '#6e6e6e', '#b0a090'] },
+    { id: 'charcoal', name: '차콜', colors: ['#1c1c1e', '#7d7a85', '#b8a88a'] },
+    { id: 'slate', name: '슬레이트', colors: ['#1a1f24', '#6e8498', '#b0a488'] },
+    { id: 'navy', name: '네이비', colors: ['#141820', '#5e7290', '#b0a080'] },
+    { id: 'white', name: '화이트', colors: ['#f2f1ef', '#7a7288', '#9a8460'] },
+    { id: 'ivory', name: '아이보리', colors: ['#f3efe6', '#8a8070', '#a08858'] },
+    { id: 'olive', name: '올리브', colors: ['#1a1c16', '#7a9870', '#b0a070'] },
+    { id: 'dust', name: '더스트', colors: ['#1e1818', '#a87878', '#b09878'] },
+    { id: 'mocha', name: '모카', colors: ['#1c1714', '#8a7a6e', '#b8a078'] }
+  ];
+  function themeNameOf(id) {
+    var t = THEMES.find(function (x) { return x.id === id; });
+    return t ? t.name : '기본';
+  }
+  function applyTheme(id) {
+    if (!THEMES.some(function (t) { return t.id === id; })) id = 'default';
+    document.documentElement.setAttribute('data-theme', id);
+    try { localStorage.setItem('ld_theme', id); } catch (e) {}
+    document.querySelectorAll('.ld-theme-swatch').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-theme') === id);
+    });
+    var nm = themeNameOf(id);
+    ['themeNameHome', 'themeNameGame', 'themeNameLobby'].forEach(function (eid) {
+      var el = document.getElementById(eid);
+      if (el) el.textContent = '선택: ' + nm;
+    });
+  }
+  function renderThemeBar(container) {
+    if (!container) return;
+    container.innerHTML = '';
+    var cur = 'default';
+    try { cur = localStorage.getItem('ld_theme') || 'default'; } catch (e) {}
+    THEMES.forEach(function (t) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ld-theme-swatch' + (t.id === cur ? ' active' : '');
+      b.setAttribute('data-theme', t.id);
+      b.title = t.name;
+      b.style.background = 'linear-gradient(135deg, ' + t.colors[0] + ' 40%, ' + t.colors[1] + ' 70%, ' + t.colors[2] + ')';
+      b.onclick = function () {
+        applyTheme(t.id);
+        try { SFX.click(); } catch (e) {}
+      };
+      container.appendChild(b);
+    });
+  }
+  function bindThemeToggle(btnId, panelId) {
+    var btn = document.getElementById(btnId);
+    var panel = document.getElementById(panelId);
+    if (!btn || !panel) return;
+    btn.onclick = function () {
+      var open = !panel.classList.contains('show');
+      // close other panels
+      document.querySelectorAll('.ld-theme-panel').forEach(function (p) { p.classList.remove('show'); });
+      if (open) panel.classList.add('show');
+      try { SFX.click(); } catch (e) {}
+    };
+  }
+  (function initThemes() {
+    var saved = 'default';
+    try { saved = localStorage.getItem('ld_theme') || 'default'; } catch (e) {}
+    applyTheme(saved);
+    renderThemeBar(document.getElementById('themeBarHome'));
+    renderThemeBar(document.getElementById('themeBarGame'));
+    renderThemeBar(document.getElementById('themeBarLobby'));
+    bindThemeToggle('btnThemeHome', 'themePanelHome');
+    bindThemeToggle('btnThemeGame', 'themePanelGame');
+    bindThemeToggle('btnThemeLobby', 'themePanelLobby');
+  })();
 
   function escapeHtml(str) {
     var div = document.createElement('div');
