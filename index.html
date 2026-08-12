@@ -952,11 +952,13 @@
 
   .ld-privacy-row {
     display: flex; gap: 8px; margin: 10px 0 4px;
+    position: relative; z-index: 5;
   }
   .ld-privacy-row button {
     flex: 1; padding: 10px 8px; border-radius: 12px; cursor: pointer;
     border: 1px solid rgba(165,160,201,0.3); background: rgba(255,255,255,0.04);
     color: var(--text-dim); font-size: 13px; font-weight: 700;
+    pointer-events: auto; user-select: none;
   }
   .ld-privacy-row button.active {
     border-color: var(--purple2); color: #fff;
@@ -1126,7 +1128,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.24</span></div>
+      <div class="ld-version">패치 <span>v1.0.3.0</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -1339,7 +1341,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.19';
+  var GAME_VERSION = '1.0.3.0';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -2377,9 +2379,6 @@
     roomList: document.getElementById('roomList'),
     btnRefreshRooms: document.getElementById('btnRefreshRooms'),
     btnConfirmCreate: document.getElementById('btnConfirmCreate'),
-    btnPrivacyPublic: document.getElementById('btnPrivacyPublic'),
-    btnPrivacyPrivate: document.getElementById('btnPrivacyPrivate'),
-    privacyHint: document.getElementById('privacyHint'),
     joinCode: document.getElementById('joinCode'),
     btnConfirmJoin: document.getElementById('btnConfirmJoin'),
     homeError: document.getElementById('homeError'),
@@ -2559,21 +2558,47 @@
   if (els.btnRefreshRooms) els.btnRefreshRooms.onclick = function () { refreshRoomList(); };
 refreshRoomList();
 
+
+  // 공개/비공개 방 선택
   window.__createPrivate = false;
-  if (els.btnPrivacyPublic && els.btnPrivacyPrivate) {
-    els.btnPrivacyPublic.onclick = function () {
-      window.__createPrivate = false;
-      els.btnPrivacyPublic.classList.add('active');
-      els.btnPrivacyPrivate.classList.remove('active');
-      if (els.privacyHint) els.privacyHint.textContent = '공개 방은 목록에 표시됩니다. 비공개는 코드로만 입장합니다.';
-    };
-    els.btnPrivacyPrivate.onclick = function () {
-      window.__createPrivate = true;
-      els.btnPrivacyPrivate.classList.add('active');
-      els.btnPrivacyPublic.classList.remove('active');
-      if (els.privacyHint) els.privacyHint.textContent = '비공개 방은 목록에 표시되지 않아요. 코드로만 입장할 수 있습니다.';
-    };
-  }
+  (function initPrivacyToggle() {
+    var pub = document.getElementById('btnPrivacyPublic');
+    var priv = document.getElementById('btnPrivacyPrivate');
+    var hint = document.getElementById('privacyHint');
+    function setPriv(on) {
+      window.__createPrivate = !!on;
+      if (pub) {
+        if (on) pub.classList.remove('active');
+        else pub.classList.add('active');
+      }
+      if (priv) {
+        if (on) priv.classList.add('active');
+        else priv.classList.remove('active');
+      }
+      if (hint) {
+        hint.textContent = on
+          ? '비공개 방은 목록에 안 보입니다. 방 코드를 알려줘야 입장할 수 있어요.'
+          : '공개 방은 목록에 표시됩니다. 비공개는 코드로만 입장합니다.';
+      }
+    }
+    if (pub) {
+      pub.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPriv(false);
+        try { SFX.click(); } catch (err) {}
+      });
+    }
+    if (priv) {
+      priv.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPriv(true);
+        try { SFX.click(); } catch (err) {}
+      });
+    }
+    setPriv(false);
+  })();
 
   els.btnConfirmCreate.onclick = async function () {
     var nickname = (els.homeNickname.value || '').trim();
