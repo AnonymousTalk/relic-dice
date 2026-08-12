@@ -1132,7 +1132,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.3.1</span></div>
+      <div class="ld-version">패치 <span>v1.0.3.2</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -1208,15 +1208,9 @@
         <div class="ld-top-bar">
           <span class="ld-room-chip" id="gameRoomCode">----</span>
           <div style="display:flex;gap:6px;align-items:center;">
-            <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeGame">테마</button>
             <button class="ld-btn ld-btn-ghost" id="btnLeaveGame" style="width:auto; padding:8px 12px;">나가기</button>
           </div>
         </div>
-        <div class="ld-theme-panel" id="themePanelGame">
-          <div class="ld-theme-bar" id="themeBarGame"></div>
-          <div class="ld-theme-name" id="themeNameGame"></div>
-        </div>
-
         <div class="ld-game-body">
           <div class="ld-chat">
             <div class="ld-chat-title">채팅</div>
@@ -1303,7 +1297,6 @@
 
             <div style="display:flex;gap:8px;margin-bottom:10px;">
               <button class="ld-btn ld-btn-primary" id="btnRoll" style="margin-bottom:0;flex:1;">주사위 굴리기</button>
-              <button class="ld-btn ld-btn-outline" id="btnForceRefresh" title="새로고침" style="width:auto;padding:0 16px;flex-shrink:0;font-size:18px;">🔄</button>
             </div>
 
             <div class="ld-log">
@@ -6835,7 +6828,7 @@ refreshRoomList();
     });
   }
   // 리액션 버튼
-  var REACTIONS = ['👍', '👎', '😂', '💀', '🔥', '💎', '🎲', '😱', '👏'];
+  var REACTIONS = ['👍', '👎', '😂', '💀', '🔥', '🎲', '😱', '👏'];
   var QUICK_CHATS = ['빨리 굴려', '바보', '뭐함?', 'ㅋㅋ'];
   (function initReactBar() {
     var bar = document.getElementById('reactBar');
@@ -7598,7 +7591,7 @@ refreshRoomList();
       btn.classList.toggle('active', btn.getAttribute('data-theme') === id);
     });
     var nm = themeNameOf(id);
-    ['themeNameHome', 'themeNameGame', 'themeNameLobby'].forEach(function (eid) {
+    ['themeNameHome', 'themeNameLobby'].forEach(function (eid) {
       var el = document.getElementById(eid);
       if (el) el.textContent = '선택: ' + nm;
     });
@@ -7639,10 +7632,8 @@ refreshRoomList();
     try { saved = localStorage.getItem('ld_theme') || 'default'; } catch (e) {}
     applyTheme(saved);
     renderThemeBar(document.getElementById('themeBarHome'));
-    renderThemeBar(document.getElementById('themeBarGame'));
     renderThemeBar(document.getElementById('themeBarLobby'));
     bindThemeToggle('btnThemeHome', 'themePanelHome');
-    bindThemeToggle('btnThemeGame', 'themePanelGame');
     bindThemeToggle('btnThemeLobby', 'themePanelLobby');
   })();
 
