@@ -1116,7 +1116,7 @@
     <div class="v-icon" id="victoryIcon">🏆</div>
     <div class="v-title" id="victoryTitle">승리!</div>
     <div class="v-sub" id="victorySub"></div>
-    <div class="v-count" id="victoryCount">10초 후 로비로 돌아갑니다</div>
+    <div class="v-count" id="victoryCount">5초 후 로비로 돌아갑니다</div>
   </div>
   <div class="ld-glow-blob blob1"></div>
   <div class="ld-glow-blob blob2"></div>
@@ -1409,7 +1409,7 @@
               <div style="text-align:center;font-size:12px;color:var(--text-main);margin-bottom:8px;" id="itemPendingText"></div>
               <div style="display:flex;gap:8px;" id="itemPendingActions">
                 <button class="ld-btn ld-btn-primary" id="btnItemAllow" style="flex:1;padding:10px;font-size:13px;">허용</button>
-                <button class="ld-btn ld-btn-outline" id="btnItemDeny" style="flex:1;padding:10px;font-size:13px;border-color:var(--red);color:var(--red);">거부</button>
+                <button class="ld-btn ld-btn-outline" id="btnItemDeny" style="flex:1;padding:10px;font-size:13px;border-color:var(--red);color:var(--red);">거부 (50%)</button>
               </div>
               <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:6px;" id="itemPendingWait"></div>
             </div>
@@ -1606,7 +1606,7 @@
     { id: 'bloom', icon: '🌸', name: '꽃 유물', desc: '홀수 눈이면 이동 +1' },
     { id: 'ore', icon: '⛏️', name: '광석 유물', desc: '아이템 칸 착지 시 20% 아이템 1개 추가' },
     { id: 'demon', icon: '😈', name: '악마 유물', desc: '보유 중 모든 이동·특수 이동이 반대로 발동 (앞↔뒤)' },
-    { id: 'angel', icon: '😇', name: '천사 유물', desc: '다른 플레이어의 아이템 사용을 거부할 수 있음 (타인 대상 포함)' }
+    { id: 'angel', icon: '😇', name: '천사 유물', desc: '다른 플레이어의 아이템 사용을 거부 시도 가능 (타인 대상 포함) · 허용은 100%, 거부는 50% 확률로 성공 · 거부 성공 시 아이템 소멸' }
   ];
 
   // 유물 칸 이벤트 3종 (랜덤 1개)
@@ -1896,7 +1896,7 @@
     setTimeout(function () { spawnConfetti(40); }, 1800);
     playFanfare();
 
-    var sec = 10;
+    var sec = 5;
     if (countEl) countEl.textContent = sec + '초 후 로비로 돌아갑니다';
     if (victoryCountdownTimer) clearInterval(victoryCountdownTimer);
     victoryCountdownTimer = setInterval(function () {
@@ -1963,7 +1963,7 @@
             icon: '🏆',
             title: '팀 ' + TEAM_NAMES[t] + ' 승리!',
             text: '유물 ' + need + '종 수집 · ' + names,
-            sub: '10초 후 로비로',
+            sub: '5초 후 로비로',
             ts: Date.now()
           };
           room.victoryAt = Date.now();
@@ -1980,7 +1980,7 @@
             icon: '🏆',
             title: p.name + ' 승리!',
             text: '유물 ' + need + '개 달성!',
-            sub: '10초 후 로비로',
+            sub: '5초 후 로비로',
             ts: Date.now()
           };
           room.victoryAt = Date.now();
@@ -7629,32 +7629,52 @@ refreshRoomList();
       pend.votes[myPlayerId] = decision; // 'allow' | 'deny'
 
       if (decision === 'deny') {
-        // 거부: 아이템 환급
-        var user = room.players.find(function (p) { return p.id === pend.userId; });
-        if (user) {
-          user.items = playerItems(user);
-          user.items.push(pend.itemId);
-        }
+        var denySuccess = Math.random() < 0.5; // 거부는 50% 확률로만 성공
         var denier = room.players.find(function (p) { return p.id === myPlayerId; });
-        room.announce = {
-          icon: '😇', title: '천사가 거부!',
-          text: (denier ? denier.name : '천사') + ' — ' + pend.userName + '의 ' + pend.itemName + ' 무효',
-          sub: '아이템 반환',
-          ts: Date.now()
-        };
-        room.log = room.log || [];
-        room.log.unshift({ name: '천사', face: '😇', newPos: 0, effectText: pend.itemName + ' 거부', ts: Date.now() });
-        room.log = room.log.slice(0, 10);
-        room.itemPending = null;
-        await saveRoom(room);
-        lastRoomSnapshot = room;
-        placeTokensInstant(room);
-        renderGame(room);
-        maybeShowAnnounce(room);
-        return;
+        if (denySuccess) {
+          // 거부 성공: 아이템은 환급 없이 소멸
+          room.announce = {
+            icon: '😇', title: '천사가 거부!',
+            text: (denier ? denier.name : '천사') + ' — ' + pend.userName + '의 ' + pend.itemName + ' 무효 (소멸)',
+            sub: '거부 성공 (50%)',
+            ts: Date.now()
+          };
+          room.log = room.log || [];
+          room.log.unshift({ name: '천사', face: '😇', newPos: 0, effectText: pend.itemName + ' 거부 성공 · 아이템 소멸', ts: Date.now() });
+          room.log = room.log.slice(0, 10);
+          room.itemPending = null;
+          await saveRoom(room);
+          lastRoomSnapshot = room;
+          placeTokensInstant(room);
+          renderGame(room);
+          maybeShowAnnounce(room);
+          return;
+        } else {
+          // 거부 실패: 아이템 효과가 그대로 적용됨 (아이템은 이미 소모된 상태)
+          var itFail = getItemById(pend.itemId);
+          var msgFail = applyItemEffect(room, pend.userId, pend.targetId, pend.itemId);
+          var userFail = room.players.find(function (p) { return p.id === pend.userId; });
+          room.announce = {
+            icon: '😇', title: '천사의 거부 실패!',
+            text: (denier ? denier.name : '천사') + ' 거부 시도 실패 (50%) → ' + msgFail,
+            sub: '아이템 효과가 적용되었습니다',
+            ts: Date.now()
+          };
+          room.log = room.log || [];
+          room.log.unshift({ name: pend.userName || '?', face: '🎒', newPos: userFail ? userFail.position : 0, effectText: msgFail + ' (거부 실패)', ts: Date.now() });
+          room.log = room.log.slice(0, 10);
+          room.itemPending = null;
+          await saveRoom(room);
+          lastRoomSnapshot = room;
+          placeTokensInstant(room);
+          renderGame(room);
+          maybeShowAnnounce(room);
+          if (room.augmentPick && room.augmentPick.playerId === myPlayerId) enterAugmentPick(room);
+          return;
+        }
       }
 
-      // 허용: 모든 천사가 투표했는지 확인
+      // 허용: 모든 천사가 투표했는지 확인 (전원 허용 시 100% 적용)
       var allAllow = (pend.angelIds || []).every(function (aid) {
         return pend.votes[aid] === 'allow';
       });
