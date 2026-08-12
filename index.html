@@ -1132,7 +1132,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.3.2</span></div>
+      <div class="ld-version">패치 <span>v1.0.3.3</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -2515,7 +2515,8 @@
       var checks = await Promise.all(rooms.map(function (info) { return getRoom(info.code); }));
       var live = [];
       checks.forEach(function (r) {
-        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8) {
+        // 비공개 방은 목록에 노출하지 않는다 (코드를 아는 사람만 입장 가능해야 함)
+        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8 && !r.isPrivate) {
           live.push({
             code: r.code,
             host: r.players[0].name,
@@ -5579,6 +5580,7 @@ refreshRoomList();
       var oldPos = me.position;
       var faceForMod = rawFace;
       var rerollNotes = [];
+      var lastAnimatedFace = rawFace;
 
       // 별/파도: 18% 제안 → 플레이어가 재굴림 여부 선택
       spinCube(rawFace);
@@ -5596,6 +5598,7 @@ refreshRoomList();
         if (accept) {
           var newFace = 1 + Math.floor(Math.random() * 6);
           spinCube(newFace);
+          lastAnimatedFace = newFace;
           await new Promise(function (r) { setTimeout(r, 900); });
           faceForMod = newFace;
           rerollNotes.push((rerollKind === 'star' ? '⭐ 별' : '🌊 파도') + ' 재굴림 ' + rawFace + '→' + newFace);
@@ -5612,7 +5615,10 @@ refreshRoomList();
       // 나침반 유물: 7% 확률로 1~moveSteps 중 선택
       if (hasRelic(me, 'compass') && moveSteps >= 2 && Math.random() < 0.07) {
         try { SFX.special(); } catch (e) {}
-        spinCube(finalFace);
+        if (finalFace !== lastAnimatedFace) {
+          spinCube(finalFace);
+          lastAnimatedFace = finalFace;
+        }
         await new Promise(function (r) { setTimeout(r, 900); });
         var chosen = await openPathChoice(oldPos, moveSteps);
         if (chosen != null && chosen >= 1 && chosen <= moveSteps) {
@@ -5621,8 +5627,10 @@ refreshRoomList();
         }
       }
 
-      // 최종 눈 표시 (재굴림 이미 애니 했을 수 있음)
-      spinCube(finalFace);
+      // 최종 눈 표시 (이미 같은 눈으로 애니메이션 했다면 다시 돌리지 않음 — 중복 회전 방지)
+      if (finalFace !== lastAnimatedFace) {
+        spinCube(finalFace);
+      }
 
       fresh.pendingRoll = {
         playerId: myPlayerId,
