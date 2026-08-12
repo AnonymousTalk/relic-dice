@@ -1029,6 +1029,11 @@
     .ld-game-body > .ld-board-col { order: 2; width: 100%; }
     .ld-game-body > .ld-roster    { order: 3; width: 100%; }
     .ld-game-body > .ld-chat      { order: 4; width: 100%; max-height: none; }
+    /* v1.0.1.1: on mobile, JS moves #ldLogPanel (최근 기록) to be a direct
+       child of .ld-game-body so it lands at the very bottom, below the
+       board/roster/chat. This rule only matches it in that moved state —
+       it has no effect while it's still nested inside .ld-main-col (PC). */
+    .ld-game-body > .ld-log       { order: 5; width: 100%; margin-top: 0; }
 
     /* ---- Dice + board: keep full size, just recenter ---- */
     .ld-dice-mini-stage { padding: 2px 0 8px; }
@@ -1409,7 +1414,7 @@
               <button class="ld-btn ld-btn-primary" id="btnRoll" style="margin-bottom:0;flex:1;">주사위 굴리기</button>
             </div>
 
-            <div class="ld-log">
+            <div class="ld-log" id="ldLogPanel">
               <div class="ld-log-title">최근 기록</div>
               <div id="gameLog"><div class="ld-log-empty">아직 굴린 기록이 없습니다</div></div>
             </div>
@@ -2531,6 +2536,28 @@
     announceText: document.getElementById('announceText'),
     announceSub: document.getElementById('announceSub')
   };
+
+  /* v1.0.1.1: 모바일 웹(≤640px)에서만 "최근 기록" 패널을 게임 화면 맨 밑으로
+     이동. PC 웹 UI/레이아웃은 그대로 유지 (DOM을 원래 자리로 되돌려 놓음). */
+  (function setupMobileLogReflow() {
+    var logPanel = document.getElementById('ldLogPanel');
+    var gameBody = document.querySelector('.ld-game-body');
+    var mainCol = document.querySelector('.ld-main-col');
+    var gameError = document.getElementById('gameError');
+    if (!logPanel || !gameBody || !mainCol || !gameError) return;
+    var mq = window.matchMedia('(max-width: 640px)');
+    function applyLayout() {
+      if (mq.matches) {
+        if (logPanel.parentNode !== gameBody) gameBody.appendChild(logPanel);
+      } else {
+        if (logPanel.parentNode !== mainCol) mainCol.insertBefore(logPanel, gameError);
+      }
+    }
+    applyLayout();
+    if (mq.addEventListener) mq.addEventListener('change', applyLayout);
+    else if (mq.addListener) mq.addListener(applyLayout);
+    window.addEventListener('orientationchange', applyLayout);
+  })();
 
   function showScreen(name) {
     [els.screenHome, els.screenAugment, els.screenLobby, els.screenGame].forEach(function (s) {
