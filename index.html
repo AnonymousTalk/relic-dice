@@ -1073,17 +1073,20 @@
     .ld-board-relic-row { font-size: 11px; padding: 6px 8px; }
     #boardRelicToggle { font-size: 12px; }
 
-    /* ---- Roster: horizontal scroll strip instead of a wide column ---- */
+    /* ---- Roster: grid of 3 per row instead of one long vertical list ---- */
     .ld-roster {
-      display: flex; flex-direction: row; gap: 6px;
-      overflow-x: auto; overflow-y: hidden;
+      display: flex; flex-direction: column; gap: 6px;
       padding: 2px 2px 4px;
-      -webkit-overflow-scrolling: touch;
     }
-    .ld-roster-title { flex: 0 0 auto; writing-mode: initial; font-size: 9px; align-self: center; padding-right: 2px; }
-    .ld-roster-card { flex: 0 0 auto; min-width: 66px; padding: 6px 6px; }
+    .ld-roster-title { writing-mode: initial; font-size: 10px; text-align: center; }
+    #gameRoster {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .ld-roster-card { min-width: 0; padding: 6px 4px; }
     .ld-roster-dot { width: 16px; height: 16px; margin: 0 auto 4px; }
-    .ld-roster-name { font-size: 10px; max-width: 58px; }
+    .ld-roster-name { font-size: 10px; max-width: 100%; }
     .ld-roster-pos { font-size: 9px; margin-top: 1px; }
     .ld-roster-aug-icon { font-size: 11px; margin-top: 3px; }
 
