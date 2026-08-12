@@ -950,15 +950,19 @@
   .ld-paused-banner.show { display: block; }
 
 
+  #btnForceRefresh.spinning { animation: ld-refresh-spin 0.5s linear; }
+  @keyframes ld-refresh-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
   .ld-privacy-row {
     display: flex; gap: 8px; margin: 10px 0 4px;
-    position: relative; z-index: 5;
   }
   .ld-privacy-row button {
     flex: 1; padding: 10px 8px; border-radius: 12px; cursor: pointer;
     border: 1px solid rgba(165,160,201,0.3); background: rgba(255,255,255,0.04);
     color: var(--text-dim); font-size: 13px; font-weight: 700;
-    pointer-events: auto; user-select: none;
   }
   .ld-privacy-row button.active {
     border-color: var(--purple2); color: #fff;
@@ -1128,7 +1132,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.3.0</span></div>
+      <div class="ld-version">패치 <span>v1.0.3.1</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -1297,7 +1301,10 @@
               <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:6px;" id="itemPendingWait"></div>
             </div>
 
-            <button class="ld-btn ld-btn-primary" id="btnRoll" style="margin-bottom:10px;">주사위 굴리기</button>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+              <button class="ld-btn ld-btn-primary" id="btnRoll" style="margin-bottom:0;flex:1;">주사위 굴리기</button>
+              <button class="ld-btn ld-btn-outline" id="btnForceRefresh" title="새로고침" style="width:auto;padding:0 16px;flex-shrink:0;font-size:18px;">🔄</button>
+            </div>
 
             <div class="ld-log">
               <div class="ld-log-title">최근 기록</div>
@@ -1341,7 +1348,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.3.0';
+  var GAME_VERSION = '1.0.0.19';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -2318,12 +2325,6 @@
     var list = lobby.rooms || [];
     var host = room.players && room.players[0] ? room.players[0].name : '호스트';
     list = list.filter(function (r) { return r && r.code !== room.code; });
-    // 비공개 방은 목록에 올리지 않음 (코드 입장만)
-    if (room.isPrivate) {
-      lobby.rooms = list;
-      await saveLobby(lobby);
-      return;
-    }
     if (room.status === 'waiting' && room.players && room.players.length > 0) {
       list.unshift({
         code: room.code,
@@ -2331,7 +2332,7 @@
         players: room.players.length,
         status: room.status,
         mode: room.gameMode || 'solo',
-        isPrivate: false,
+        isPrivate: !!room.isPrivate,
         updatedAt: Date.now()
       });
     }
@@ -2379,6 +2380,8 @@
     roomList: document.getElementById('roomList'),
     btnRefreshRooms: document.getElementById('btnRefreshRooms'),
     btnConfirmCreate: document.getElementById('btnConfirmCreate'),
+    btnPrivacyPublic: document.getElementById('btnPrivacyPublic'),
+    btnPrivacyPrivate: document.getElementById('btnPrivacyPrivate'),
     joinCode: document.getElementById('joinCode'),
     btnConfirmJoin: document.getElementById('btnConfirmJoin'),
     homeError: document.getElementById('homeError'),
@@ -2409,6 +2412,7 @@
     cubeMini: document.getElementById('cubeMini'),
     turnBanner: document.getElementById('turnBanner'),
     btnRoll: document.getElementById('btnRoll'),
+    btnForceRefresh: document.getElementById('btnForceRefresh'),
     boardGrid: document.getElementById('boardGrid'),
     boardCenter: document.getElementById('boardCenter'),
     boardLegend: document.getElementById('boardLegend'),
@@ -2518,13 +2522,14 @@
       var checks = await Promise.all(rooms.map(function (info) { return getRoom(info.code); }));
       var live = [];
       checks.forEach(function (r) {
-        if (r && r.status === 'waiting' && !r.isPrivate && r.players && r.players.length > 0 && r.players.length < 8) {
+        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8) {
           live.push({
             code: r.code,
             host: r.players[0].name,
             players: r.players.length,
             status: r.status,
             mode: r.gameMode || 'solo',
+            isPrivate: !!r.isPrivate,
             updatedAt: Date.now()
           });
         }
@@ -2544,9 +2549,11 @@
         var card = document.createElement('button');
         card.type = 'button';
         card.className = 'ld-room-card';
+        var lockTag = info.isPrivate ? '🔒 ' : '🌐 ';
+        var metaText = info.players + '/8명 · ' + (info.isPrivate ? '비공개' : '공개') + ' · 대기 중';
         card.innerHTML =
-          '<div><div class="title">' + escapeHtml(info.host) + '의 방 · <span style="color:var(--gold)">' + escapeHtml(info.code) + '</span></div>' +
-          '<div class="meta">' + info.players + '/8명 · 공개 · 대기 중</div></div>' +
+          '<div><div class="title">' + lockTag + escapeHtml(info.host) + '의 방</div>' +
+          '<div class="meta">' + metaText + '</div></div>' +
           '<span class="ld-btn ld-btn-primary" style="width:auto;padding:8px 12px;font-size:12px;">입장</span>';
         card.onclick = function () { joinRoomByCode(info.code); };
         els.roomList.appendChild(card);
@@ -2558,47 +2565,19 @@
   if (els.btnRefreshRooms) els.btnRefreshRooms.onclick = function () { refreshRoomList(); };
 refreshRoomList();
 
-
-  // 공개/비공개 방 선택
   window.__createPrivate = false;
-  (function initPrivacyToggle() {
-    var pub = document.getElementById('btnPrivacyPublic');
-    var priv = document.getElementById('btnPrivacyPrivate');
-    var hint = document.getElementById('privacyHint');
-    function setPriv(on) {
-      window.__createPrivate = !!on;
-      if (pub) {
-        if (on) pub.classList.remove('active');
-        else pub.classList.add('active');
-      }
-      if (priv) {
-        if (on) priv.classList.add('active');
-        else priv.classList.remove('active');
-      }
-      if (hint) {
-        hint.textContent = on
-          ? '비공개 방은 목록에 안 보입니다. 방 코드를 알려줘야 입장할 수 있어요.'
-          : '공개 방은 목록에 표시됩니다. 비공개는 코드로만 입장합니다.';
-      }
-    }
-    if (pub) {
-      pub.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        setPriv(false);
-        try { SFX.click(); } catch (err) {}
-      });
-    }
-    if (priv) {
-      priv.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        setPriv(true);
-        try { SFX.click(); } catch (err) {}
-      });
-    }
-    setPriv(false);
-  })();
+  if (els.btnPrivacyPublic && els.btnPrivacyPrivate) {
+    els.btnPrivacyPublic.onclick = function () {
+      window.__createPrivate = false;
+      els.btnPrivacyPublic.classList.add('active');
+      els.btnPrivacyPrivate.classList.remove('active');
+    };
+    els.btnPrivacyPrivate.onclick = function () {
+      window.__createPrivate = true;
+      els.btnPrivacyPrivate.classList.add('active');
+      els.btnPrivacyPublic.classList.remove('active');
+    };
+  }
 
   els.btnConfirmCreate.onclick = async function () {
     var nickname = (els.homeNickname.value || '').trim();
@@ -2726,12 +2705,21 @@ refreshRoomList();
       privTag.style.cssText = 'text-align:center;font-size:12px;margin:0 0 8px;font-weight:700;';
       els.lobbyCode.parentNode.insertBefore(privTag, els.lobbyCode.nextSibling);
     }
+    var hostMe = isHost(room);
     if (privTag) {
       privTag.textContent = room.isPrivate ? '🔒 비공개 방 · 코드로만 입장' : '🌐 공개 방';
       privTag.style.color = room.isPrivate ? 'var(--gold)' : 'var(--cyan)';
+      if (hostMe) {
+        privTag.style.cursor = 'pointer';
+        privTag.title = '클릭하여 ' + (room.isPrivate ? '공개' : '비공개') + '(으)로 전환';
+        privTag.onclick = function () { hostTogglePrivacy(); };
+      } else {
+        privTag.style.cursor = '';
+        privTag.title = '';
+        privTag.onclick = null;
+      }
     }
     els.lobbyPlayers.innerHTML = '';
-    var hostMe = isHost(room);
     var mode = room.gameMode || 'solo';
     room.players.forEach(function (p, idx) {
       var row = document.createElement('div');
@@ -2788,6 +2776,24 @@ refreshRoomList();
       };
       timerRow.appendChild(timerSel);
       els.lobbyHostControls.appendChild(timerRow);
+
+      var privRow = document.createElement('div');
+      privRow.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
+      var pubBtn = document.createElement('button');
+      pubBtn.type = 'button';
+      pubBtn.className = 'ld-btn ' + (!room.isPrivate ? 'ld-btn-primary' : 'ld-btn-outline');
+      pubBtn.style.flex = '1';
+      pubBtn.textContent = '🌐 공개 방';
+      pubBtn.onclick = function () { if (room.isPrivate) hostTogglePrivacy(); };
+      var privBtn = document.createElement('button');
+      privBtn.type = 'button';
+      privBtn.className = 'ld-btn ' + (room.isPrivate ? 'ld-btn-primary' : 'ld-btn-outline');
+      privBtn.style.flex = '1';
+      privBtn.textContent = '🔒 비공개 방';
+      privBtn.onclick = function () { if (!room.isPrivate) hostTogglePrivacy(); };
+      privRow.appendChild(pubBtn);
+      privRow.appendChild(privBtn);
+      els.lobbyHostControls.appendChild(privRow);
 
       var modeRow = document.createElement('div');
       modeRow.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
@@ -2858,6 +2864,20 @@ refreshRoomList();
       renderLobby(room);
     } catch (e) {
       if (els.lobbyError) els.lobbyError.textContent = '모드 변경 실패';
+    }
+  }
+
+  async function hostTogglePrivacy() {
+    if (!myRoomCode) return;
+    try {
+      var room = await getRoom(myRoomCode);
+      if (!room || !isHost(room)) return;
+      room.isPrivate = !room.isPrivate;
+      await saveRoom(room);
+      lastRoomSnapshot = room;
+      renderLobby(room);
+    } catch (e) {
+      if (els.lobbyError) els.lobbyError.textContent = '공개 설정 변경 실패';
     }
   }
 
@@ -5421,6 +5441,36 @@ refreshRoomList();
     }
   };
 
+  if (els.btnForceRefresh) {
+    els.btnForceRefresh.onclick = async function () {
+      if (!myRoomCode) return;
+      els.btnForceRefresh.disabled = true;
+      els.btnForceRefresh.classList.add('spinning');
+      try {
+        var freshRoom = await getRoom(myRoomCode);
+        if (freshRoom) {
+          freshRoom = normalizeRoom(freshRoom);
+          rolling = false;
+          remoteAnimating = false;
+          lastRoomSnapshot = freshRoom;
+          if (els.screenGame.classList.contains('active')) {
+            placeTokensInstant(freshRoom);
+            renderGame(freshRoom);
+          } else if (els.screenLobby.classList.contains('active')) {
+            renderLobby(freshRoom);
+          } else if (els.screenAugment.classList.contains('active')) {
+            renderAugmentUI(freshRoom);
+          }
+        }
+      } catch (e) {
+        console.warn('force refresh fail', e);
+      } finally {
+        els.btnForceRefresh.disabled = false;
+        setTimeout(function () { els.btnForceRefresh.classList.remove('spinning'); }, 400);
+      }
+    };
+  }
+
   els.btnRoll.onclick = async function () {
     // rolling 플래그 고착 방지 (15초 이상이면 강제 해제)
     if (rolling) {
@@ -5972,7 +6022,7 @@ refreshRoomList();
 
   async function pollTick() {
     if (!myRoomCode) return;
-    if (pollBusy && !window.__forceRoom) return;
+    if (pollBusy && !window.__forceRoom) { pollMissed = true; return; }
     pollBusy = true;
     try {
       var room = window.__forceRoom || await getRoom(myRoomCode);
@@ -6102,10 +6152,17 @@ refreshRoomList();
       remoteAnimating = false;
     } finally {
       pollBusy = false;
+      if (pollMissed) {
+        pollMissed = false;
+        // 처리 중에 놓친 업데이트가 있으면 즉시 한 번 더 확인 (턴 갱신 유실 방지)
+        window.__forceRoom = null;
+        pollTick();
+      }
     }
   }
 
   var pollBusy = false;
+  var pollMissed = false;
   function handleRoomSnapshot(room) {
     if (!room || !myRoomCode) return;
     window.__forceRoom = room;
