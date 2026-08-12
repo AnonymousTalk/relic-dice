@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>유물 주사위 - Multiplayer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <style>
@@ -48,11 +51,29 @@
     box-shadow: 0 0 40px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
+  .ld-title-wrap {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin: 0 0 4px;
+  }
+  .ld-title-icon {
+    font-size: 22px;
+    filter: drop-shadow(0 0 6px rgba(251,191,36,0.7));
+    animation: ld-title-spin 5s linear infinite;
+  }
+  .ld-title-icon.right { animation-direction: reverse; }
+  @keyframes ld-title-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
   .ld-title {
-    font-size: 26px; font-weight: 800; text-align: center; margin: 0 0 4px;
-    background: linear-gradient(90deg, var(--purple2), var(--cyan));
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    letter-spacing: 0.5px;
+    font-family: 'Black Han Sans', 'Segoe UI', 'Pretendard', system-ui, -apple-system, sans-serif;
+    font-size: 30px; font-weight: 400; text-align: center; margin: 0;
+    color: #ffffff;
+    letter-spacing: 1px;
+    text-shadow:
+      0 0 6px rgba(251,191,36,0.9),
+      0 0 14px rgba(139,92,246,0.8),
+      0 2px 2px rgba(10,10,31,0.6);
   }
   .ld-subtitle { text-align: center; font-size: 13px; color: var(--text-dim); margin: 0 0 22px; }
 
@@ -897,9 +918,13 @@
           <div class="ld-error" id="adminMsg" style="min-height:14px;"></div>
         </div>
       </div>
-      <h1 class="ld-title">유물 주사위</h1>
+      <div class="ld-title-wrap">
+        <span class="ld-title-icon">🎲</span>
+        <h1 class="ld-title">유물 주사위</h1>
+        <span class="ld-title-icon right">🎲</span>
+      </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.0.19</span></div>
+      <div class="ld-version">패치 <span>v1.0.0.20</span></div>
       <div class="ld-sound-row" id="soundRow">
         <span>🔊</span>
         <input type="range" id="sfxVolume" min="0" max="100" value="70" title="효과음 볼륨" />
