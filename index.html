@@ -553,6 +553,11 @@
   }
   .ld-chat-line { margin-bottom: 5px; word-break: break-word; }
   .ld-chat-line .who { color: var(--cyan); font-weight: 700; }
+  .ld-chat-line .ld-chat-img {
+    display: block; margin-top: 4px; max-width: 100%; max-height: 140px;
+    border-radius: 8px; border: 1px solid rgba(139,92,246,0.3);
+    cursor: pointer; object-fit: contain; background: rgba(0,0,0,0.2);
+  }
   .ld-chat-input {
     width: 100%; padding: 6px; border-radius: 8px; border: 1px solid rgba(165,160,201,0.25);
     background: rgba(255,255,255,0.05); color: var(--text-main); font-size: 11px;
@@ -1037,6 +1042,24 @@
       </div>
     </div>
   </div>
+  <div class="ld-modal" id="privateJoinModal" aria-hidden="true">
+    <div class="ld-modal-card" style="max-width:360px;">
+      <div class="ld-modal-head">
+        <h3>🔒 비공개 방 입장</h3>
+        <button type="button" class="ld-btn ld-btn-ghost" id="privateJoinClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
+      </div>
+      <div class="ld-modal-body">
+        <p class="ld-code-hint" id="privateJoinHost" style="margin:0 0 10px;text-align:center;">방 코드를 입력하세요</p>
+        <div class="ld-field-label" style="margin-top:0;">방 코드</div>
+        <input class="ld-input" id="privateJoinCode" type="text" maxlength="4" placeholder="예: A1B2" style="text-transform:uppercase;letter-spacing:3px;margin-top:6px;" autocomplete="off" />
+        <div class="ld-error" id="privateJoinError" style="min-height:16px;"></div>
+        <div style="display:flex;gap:10px;margin-top:12px;">
+          <button type="button" class="ld-btn ld-btn-primary" id="btnPrivateJoinConfirm" style="flex:1;padding:12px;font-size:14px;">입장</button>
+          <button type="button" class="ld-btn ld-btn-ghost" id="btnPrivateJoinCancel" style="flex:1;padding:12px;font-size:14px;">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="ld-modal" id="rerollChoiceModal" aria-hidden="true">
     <div class="ld-modal-card" style="max-width:400px;">
       <div class="ld-modal-head">
@@ -1132,7 +1155,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.3.3</span></div>
+      <div class="ld-version">패치 <span>v1.0.1.0</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -1156,7 +1179,7 @@
           <button type="button" class="active" data-privacy="public" id="btnPrivacyPublic">🌐 공개 방</button>
           <button type="button" data-privacy="private" id="btnPrivacyPrivate">🔒 비공개 방</button>
         </div>
-        <p class="ld-code-hint" id="privacyHint" style="margin:4px 0 8px;text-align:left;">공개 방은 목록에 표시됩니다. 비공개는 코드로만 입장합니다.</p>
+        <p class="ld-code-hint" id="privacyHint" style="margin:4px 0 8px;text-align:left;">공개·비공개 방 모두 목록에 표시됩니다. 비공개 방은 입장 시 코드 입력이 필요합니다.</p>
         <div class="ld-room-actions">
           <button class="ld-btn ld-btn-primary" id="btnConfirmCreate">방 만들기</button>
           <button class="ld-btn ld-btn-outline" id="btnRefreshRooms">목록 새로고침</button>
@@ -1215,7 +1238,7 @@
           <div class="ld-chat">
             <div class="ld-chat-title">채팅</div>
             <div class="ld-chat-log" id="chatLog"></div>
-            <input class="ld-chat-input" id="chatInput" maxlength="60" placeholder="메시지..." />
+            <input class="ld-chat-input" id="chatInput" maxlength="60" placeholder="메시지... (이미지 붙여넣기 가능)" />
             <div class="ld-react-bar" id="reactBar"></div>
             <div class="ld-quick-chat" id="quickChat"></div>
             <div class="ld-side-toggle" id="sideToggle">
@@ -1341,12 +1364,12 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.0.19';
+  var GAME_VERSION = '1.0.1.0';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
   var TEAM_NAMES = ['블루', '레드'];
-  var AVATARS = ['🦊', '🐱', '🐼', '🐯', '🐸', '🐧', '🦄', '🐲', '🐶', '🐰', '🦁', '🐨'];
+  var AVATARS = ['🦊', '🐱', '🐼', '🐯', '🐸', '🐧', '🦄', '🐲', '🐶', '🐰', '🦁', '🐨', '🐻', '🐷', '🐵', '🦉'];
   var BOARD_G = 9;
   var BOARD_SIZE = 4 * (BOARD_G - 1);
 
@@ -2515,8 +2538,8 @@
       var checks = await Promise.all(rooms.map(function (info) { return getRoom(info.code); }));
       var live = [];
       checks.forEach(function (r) {
-        // 비공개 방은 목록에 노출하지 않는다 (코드를 아는 사람만 입장 가능해야 함)
-        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8 && !r.isPrivate) {
+        // 공개·비공개 모두 목록에 표시 (비공개는 입장 시 코드 확인)
+        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8) {
           live.push({
             code: r.code,
             host: r.players[0].name,
@@ -2549,7 +2572,13 @@
           '<div><div class="title">' + lockTag + escapeHtml(info.host) + '의 방</div>' +
           '<div class="meta">' + metaText + '</div></div>' +
           '<span class="ld-btn ld-btn-primary" style="width:auto;padding:8px 12px;font-size:12px;">입장</span>';
-        card.onclick = function () { joinRoomByCode(info.code); };
+        card.onclick = function () {
+          if (info.isPrivate) {
+            openPrivateJoinModal(info);
+            return;
+          }
+          joinRoomByCode(info.code);
+        };
         els.roomList.appendChild(card);
       });
     } catch (e) {
@@ -2632,6 +2661,81 @@ refreshRoomList();
     }
   };
 
+  var pendingPrivateJoin = null;
+  function openPrivateJoinModal(info) {
+    pendingPrivateJoin = info || null;
+    var modal = document.getElementById('privateJoinModal');
+    var input = document.getElementById('privateJoinCode');
+    var err = document.getElementById('privateJoinError');
+    var host = document.getElementById('privateJoinHost');
+    if (!modal) return;
+    if (host) {
+      host.textContent = info && info.host
+        ? ('🔒 ' + info.host + '의 비공개 방 — 코드를 입력하세요')
+        : '비공개 방 코드를 입력하세요';
+    }
+    if (err) err.textContent = '';
+    if (input) {
+      input.value = '';
+      setTimeout(function () { try { input.focus(); input.select(); } catch (e) {} }, 50);
+    }
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    try { SFX.click(); } catch (e) {}
+  }
+  function closePrivateJoinModal() {
+    var modal = document.getElementById('privateJoinModal');
+    if (modal) {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    pendingPrivateJoin = null;
+  }
+  function confirmPrivateJoin() {
+    var info = pendingPrivateJoin;
+    var input = document.getElementById('privateJoinCode');
+    var err = document.getElementById('privateJoinError');
+    if (!info) { closePrivateJoinModal(); return; }
+    var entered = (input && input.value ? input.value : '').trim().toUpperCase();
+    if (!entered) {
+      if (err) err.textContent = '방 코드를 입력해주세요';
+      return;
+    }
+    if (entered !== String(info.code).toUpperCase()) {
+      if (err) err.textContent = '방 코드가 올바르지 않습니다';
+      if (input) { try { input.focus(); input.select(); } catch (e) {} }
+      return;
+    }
+    if (err) err.textContent = '';
+    closePrivateJoinModal();
+    joinRoomByCode(info.code);
+  }
+  (function initPrivateJoinModal() {
+    var modal = document.getElementById('privateJoinModal');
+    var btnOk = document.getElementById('btnPrivateJoinConfirm');
+    var btnCancel = document.getElementById('btnPrivateJoinCancel');
+    var btnClose = document.getElementById('privateJoinClose');
+    var input = document.getElementById('privateJoinCode');
+    if (btnOk) btnOk.onclick = function () { confirmPrivateJoin(); };
+    if (btnCancel) btnCancel.onclick = function () { closePrivateJoinModal(); };
+    if (btnClose) btnClose.onclick = function () { closePrivateJoinModal(); };
+    if (modal) {
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) closePrivateJoinModal();
+      });
+    }
+    if (input) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          confirmPrivateJoin();
+        } else if (e.key === 'Escape') {
+          closePrivateJoinModal();
+        }
+      });
+    }
+  })();
+
   async function joinRoomByCode(code) {
     var nickname = (els.homeNickname.value || '').trim();
     code = (code || '').trim().toUpperCase();
@@ -2701,7 +2805,7 @@ refreshRoomList();
     }
     var hostMe = isHost(room);
     if (privTag) {
-      privTag.textContent = room.isPrivate ? '🔒 비공개 방 · 코드로만 입장' : '🌐 공개 방';
+      privTag.textContent = room.isPrivate ? '🔒 비공개 방 · 목록 입장 시 코드 필요' : '🌐 공개 방';
       privTag.style.color = room.isPrivate ? 'var(--gold)' : 'var(--cyan)';
       if (hostMe) {
         privTag.style.cursor = 'pointer';
@@ -6734,6 +6838,11 @@ refreshRoomList();
     for (var i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
     return COLORS[Math.abs(h) % COLORS.length];
   }
+  function isSafeChatImg(src) {
+    if (!src || typeof src !== 'string') return false;
+    if (src.length > 180000) return false;
+    return /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(src);
+  }
   function renderChat(room) {
     var log = document.getElementById('chatLog');
     if (!log) return;
@@ -6743,7 +6852,14 @@ refreshRoomList();
     }
     log.innerHTML = lines.slice(-40).map(function (c) {
       var col = chatNameColor(room, c.name, c.playerId, c.color);
-      return '<div class="ld-chat-line"><span class="who" style="color:' + col + '">' + escapeHtml(c.name) + '</span> ' + escapeHtml(c.text) + '</div>';
+      var body = '';
+      if (c.img && isSafeChatImg(c.img)) {
+        body = '<img class="ld-chat-img" src="' + c.img + '" alt="채팅 이미지" loading="lazy" />';
+        if (c.text && c.text !== '📷') body += '<div>' + escapeHtml(c.text) + '</div>';
+      } else {
+        body = escapeHtml(c.text || '');
+      }
+      return '<div class="ld-chat-line"><span class="who" style="color:' + col + '">' + escapeHtml(c.name) + '</span> ' + body + '</div>';
     }).join('');
     log.scrollTop = log.scrollHeight;
   }
@@ -6777,6 +6893,10 @@ refreshRoomList();
           ts: Date.now(),
           react: !!payload.react
         };
+        if (payload.img && isSafeChatImg(payload.img)) {
+          chatMsg.img = payload.img;
+          if (!chatMsg.text) chatMsg.text = '📷';
+        }
         // 채팅만 트랜잭션으로 먼저 기록 (전체 set 레이스 완화)
         try {
           await appendChatOnly(chatMsg);
@@ -6807,9 +6927,11 @@ refreshRoomList();
     chatSending = false;
     if (chatQueue.length) setTimeout(flushChatQueue, 80);
   }
-  function enqueueChat(text, isReact) {
+  function enqueueChat(text, isReact, imgData) {
     text = (text || '').trim();
-    if (!text || !myRoomCode || !myPlayerId) return;
+    var hasImg = !!(imgData && isSafeChatImg(imgData));
+    if ((!text && !hasImg) || !myRoomCode || !myPlayerId) return;
+    if (hasImg && !text) text = '📷';
     // 낙관적 UI
     var log = document.getElementById('chatLog');
     if (log && lastRoomSnapshot) {
@@ -6817,12 +6939,72 @@ refreshRoomList();
       var line = document.createElement('div');
       line.className = 'ld-chat-line';
       var col = me && me.color ? me.color : COLORS[0];
-      line.innerHTML = '<span class="who" style="color:' + col + '">' + escapeHtml(me ? me.name : '?') + '</span> ' + escapeHtml(text);
+      var body = hasImg
+        ? ('<img class="ld-chat-img" src="' + imgData + '" alt="채팅 이미지" />' + (text && text !== '📷' ? '<div>' + escapeHtml(text) + '</div>' : ''))
+        : escapeHtml(text);
+      line.innerHTML = '<span class="who" style="color:' + col + '">' + escapeHtml(me ? me.name : '?') + '</span> ' + body;
       log.appendChild(line);
       log.scrollTop = log.scrollHeight;
     }
-    chatQueue.push({ text: text, react: !!isReact });
+    var payload = { text: text, react: !!isReact };
+    if (hasImg) payload.img = imgData;
+    chatQueue.push(payload);
     flushChatQueue();
+  }
+  function compressChatImage(file, cb) {
+    try {
+      if (!file || !file.type || file.type.indexOf('image/') !== 0) {
+        if (els.gameError) els.gameError.textContent = '이미지 파일만 붙여넣을 수 있어요';
+        return;
+      }
+      // 원본 8MB 초과 거부
+      if (file.size > 8 * 1024 * 1024) {
+        if (els.gameError) els.gameError.textContent = '이미지가 너무 커요 (최대 8MB)';
+        return;
+      }
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var maxW = 320;
+          var maxH = 240;
+          var w = img.naturalWidth || img.width;
+          var h = img.naturalHeight || img.height;
+          var scale = Math.min(1, maxW / w, maxH / h);
+          var cw = Math.max(1, Math.round(w * scale));
+          var ch = Math.max(1, Math.round(h * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = cw;
+          canvas.height = ch;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, cw, ch);
+          var q = 0.62;
+          var data = canvas.toDataURL('image/jpeg', q);
+          // Firebase 부담 완화: ~100KB 이하로
+          while (data.length > 120000 && q > 0.35) {
+            q -= 0.08;
+            data = canvas.toDataURL('image/jpeg', q);
+          }
+          URL.revokeObjectURL(url);
+          if (data.length > 160000) {
+            if (els.gameError) els.gameError.textContent = '이미지를 더 줄이지 못했어요. 다른 이미지를 시도해주세요';
+            return;
+          }
+          if (els.gameError) els.gameError.textContent = '';
+          cb(data);
+        } catch (e1) {
+          try { URL.revokeObjectURL(url); } catch (e2) {}
+          if (els.gameError) els.gameError.textContent = '이미지 처리에 실패했어요';
+        }
+      };
+      img.onerror = function () {
+        try { URL.revokeObjectURL(url); } catch (e3) {}
+        if (els.gameError) els.gameError.textContent = '이미지를 불러오지 못했어요';
+      };
+      img.src = url;
+    } catch (e) {
+      if (els.gameError) els.gameError.textContent = '이미지 붙여넣기 실패';
+    }
   }
   var chatInput = document.getElementById('chatInput');
   if (chatInput) {
@@ -6833,6 +7015,30 @@ refreshRoomList();
       if (!msg) return;
       chatInput.value = '';
       enqueueChat(msg, false);
+    });
+    chatInput.addEventListener('paste', function (e) {
+      try {
+        var items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+        var file = null;
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].type && items[i].type.indexOf('image/') === 0) {
+            file = items[i].getAsFile();
+            break;
+          }
+        }
+        if (!file) return;
+        e.preventDefault();
+        if (!myRoomCode || !myPlayerId) {
+          if (els.gameError) els.gameError.textContent = '방에 입장한 뒤 이미지를 보낼 수 있어요';
+          return;
+        }
+        compressChatImage(file, function (dataUrl) {
+          enqueueChat('📷', false, dataUrl);
+        });
+      } catch (err) {
+        console.warn('chat paste', err);
+      }
     });
   }
   // 리액션 버튼
