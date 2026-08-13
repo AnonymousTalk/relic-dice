@@ -933,6 +933,32 @@
     padding: 16px;
   }
   .ld-modal.show { display: flex; }
+  /* 칸/선택 모달: 보드가 보이도록 오른쪽 배치 · 배경 흐림 약하게 */
+  #pathChoiceModal.ld-modal {
+    background: rgba(6,4,20,0.22);
+    justify-content: flex-end;
+    align-items: center;
+    padding: 16px 10px 16px 12px;
+    pointer-events: none;
+  }
+  #pathChoiceModal.ld-modal.show { display: flex; }
+  #pathChoiceModal .ld-modal-card {
+    pointer-events: auto;
+    width: min(300px, 72vw);
+    max-width: 300px;
+    max-height: min(72vh, 560px);
+    margin: 0;
+    margin-right: 4px;
+    margin-left: 0;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(139,92,246,0.35);
+  }
+  #pathChoiceModal #pathChoiceButtons {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    max-height: min(48vh, 360px); overflow-y: auto;
+  }
+  #pathChoiceModal #pathChoiceButtons .ld-btn {
+    width: auto; min-width: 52px; padding: 8px 10px; font-size: 12px;
+  }
   .ld-modal-close {
     border: none; background: rgba(255,255,255,0.08); color: var(--text-main);
     width: 32px; height: 32px; border-radius: 10px; font-size: 18px; cursor: pointer;
@@ -1560,7 +1586,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.3.8</span></div>
+      <div class="ld-version">패치 <span>v1.0.4.0</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -5093,6 +5119,60 @@ refreshRoomList();
         })(s);
       }
       modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+    });
+  }
+
+  /** 공통 칸 선택 모달 (드론/표식/해골/다리 등) — 보드가 보이도록 왼쪽 배치 */
+  function openCellPickModal(opts) {
+    opts = opts || {};
+    var title = opts.title || '칸 선택';
+    var hintText = opts.hint || '칸을 고르세요';
+    var allowSkip = opts.allowSkip !== false;
+    var skipLabel = opts.skipLabel || '취소';
+    var minCell = opts.minCell != null ? opts.minCell : 1;
+    var maxCell = opts.maxCell != null ? opts.maxCell : (BOARD_SIZE - 1);
+    var exclude = opts.exclude || [];
+    var room = opts.room || lastRoomSnapshot;
+    return new Promise(function (resolve) {
+      var modal = document.getElementById('pathChoiceModal');
+      var box = document.getElementById('pathChoiceButtons');
+      var hint = document.getElementById('pathChoiceHint');
+      var head = modal && modal.querySelector('h3');
+      if (!modal || !box) { resolve(null); return; }
+      if (head) head.textContent = title;
+      if (hint) hint.textContent = hintText;
+      box.innerHTML = '';
+      function finish(val) {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        resolve(val);
+      }
+      if (allowSkip) {
+        var skip = document.createElement('button');
+        skip.type = 'button';
+        skip.className = 'ld-btn ld-btn-ghost';
+        skip.style.width = '100%';
+        skip.textContent = skipLabel;
+        skip.onclick = function () { try { SFX.click(); } catch (e) {} finish(null); };
+        box.appendChild(skip);
+      }
+      for (var c = minCell; c <= maxCell; c++) {
+        if (exclude.indexOf(c) !== -1) continue;
+        (function (cell) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'ld-btn ld-btn-outline';
+          var sp = room && room.specials && (room.specials[cell] || room.specials[String(cell)]);
+          var icon = (sp && CELL_TYPES[sp]) ? (CELL_TYPES[sp].icon + ' ') : '';
+          b.textContent = icon + cell;
+          b.title = '칸 ' + cell;
+          b.onclick = function () { try { SFX.click(); } catch (e) {} finish(cell); };
+          box.appendChild(b);
+        })(c);
+      }
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
     });
   }
 
@@ -5334,50 +5414,13 @@ refreshRoomList();
 
   async function offerBridgeDest(room, fromPos, opts) {
     opts = opts || {};
-    var title = opts.title || '🌉 다리 — 목적지 선택';
-    var hintText = opts.hint || ('현재 칸 ' + fromPos + '에서 연결할 목적지를 고르세요 (중앙에 다리가 생깁니다)');
-    return new Promise(function (resolve) {
-      var modal = document.getElementById('pathChoiceModal');
-      var box = document.getElementById('pathChoiceButtons');
-      var hint = document.getElementById('pathChoiceHint');
-      var head = modal && modal.querySelector('h3');
-      if (!modal || !box) { resolve(null); return; }
-      if (head) head.textContent = title;
-      if (hint) hint.textContent = hintText;
-      box.innerHTML = '';
-      box.style.maxHeight = '240px';
-      box.style.overflowY = 'auto';
-      for (var c = 1; c < BOARD_SIZE; c++) {
-        if (c === (fromPos | 0)) continue;
-        (function (cell) {
-          var b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'ld-btn ld-btn-outline';
-          b.style.width = 'auto';
-          b.style.padding = '8px 12px';
-          var sp = (room.specials && (room.specials[cell] || room.specials[String(cell)])) || null;
-          var icon = sp && CELL_TYPES[sp] ? CELL_TYPES[sp].icon + ' ' : '';
-          b.textContent = icon + '칸 ' + cell;
-          b.onclick = function () {
-            modal.classList.remove('show');
-            modal.setAttribute('aria-hidden', 'true');
-            resolve(cell);
-          };
-          box.appendChild(b);
-        })(c);
-      }
-      var skip = document.createElement('button');
-      skip.type = 'button';
-      skip.className = 'ld-btn ld-btn-ghost';
-      skip.textContent = '취소';
-      skip.onclick = function () {
-        modal.classList.remove('show');
-        modal.setAttribute('aria-hidden', 'true');
-        resolve(null);
-      };
-      box.appendChild(skip);
-      modal.classList.add('show');
-      modal.setAttribute('aria-hidden', 'false');
+    return openCellPickModal({
+      title: opts.title || '🌉 다리 — 목적지 선택',
+      hint: opts.hint || ('현재 칸 ' + fromPos + '에서 연결할 목적지를 고르세요'),
+      allowSkip: true,
+      skipLabel: '취소',
+      exclude: [fromPos | 0],
+      room: room
     });
   }
 
@@ -7443,37 +7486,12 @@ refreshRoomList();
         me._droneOffer = false;
         me._droneCheckedThisTurn = true;
         try {
-          var droneCell = await new Promise(function (resolve) {
-            var modal = document.getElementById('pathChoiceModal');
-            var box = document.getElementById('pathChoiceButtons');
-            var hint = document.getElementById('pathChoiceHint');
-            var head = modal && modal.querySelector('h3');
-            if (!modal || !box) { resolve(null); return; }
-            if (head) head.textContent = '🛸 드론 설치 칸 선택';
-            if (hint) hint.textContent = '드론은 보드에 1개만 · 앞·뒤 1칸 도착 시 -1칸 · 패스 가능';
-            box.innerHTML = '';
-            var skip = document.createElement('button');
-            skip.type = 'button';
-            skip.className = 'ld-btn ld-btn-ghost';
-            skip.style.width = 'auto';
-            skip.style.padding = '8px 14px';
-            skip.textContent = '설치 안 함';
-            skip.onclick = function () { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); resolve(null); };
-            box.appendChild(skip);
-            for (var di = 1; di < BOARD_SIZE; di++) {
-              (function (cell) {
-                var b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'ld-btn ld-btn-outline';
-                b.style.width = 'auto';
-                b.style.padding = '8px 12px';
-                b.textContent = String(cell);
-                b.onclick = function () { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); resolve(cell); };
-                box.appendChild(b);
-              })(di);
-            }
-            modal.classList.add('show');
-            modal.setAttribute('aria-hidden', 'false');
+          var droneCell = await openCellPickModal({
+            title: '🛸 드론 설치 칸 선택',
+            hint: '드론은 보드에 1개만 · 앞·뒤 1칸 도착 시 -1칸 · 패스 가능',
+            allowSkip: true,
+            skipLabel: '설치 안 함',
+            room: fresh
           });
           if (droneCell != null && droneCell >= 1 && droneCell < BOARD_SIZE) {
             fresh.droneCell = droneCell;
@@ -10059,109 +10077,148 @@ function openCellBook() {
     });
   }
 
+  function normalizePickOptions(opts) {
+    if (!opts) return [];
+    if (Array.isArray(opts)) return opts.filter(Boolean);
+    return Object.keys(opts).sort(function (a, b) { return (a|0) - (b|0); }).map(function (k) { return opts[k]; }).filter(Boolean);
+  }
+  function closePathChoiceModal() {
+    var modal = document.getElementById('pathChoiceModal');
+    if (modal) {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  }
+  async function resolveItemBoxPick(chosenId) {
+    if (!chosenId) return;
+    if (window.__itemBoxResolving) return;
+    window.__itemBoxResolving = true;
+    closePathChoiceModal();
+    var useBox = document.getElementById('itemUseBox');
+    if (useBox) useBox.classList.remove('show');
+    try {
+      var fresh = null;
+      try { fresh = myRoomCode ? await getRoom(myRoomCode) : null; } catch (e1) {}
+      if (!fresh) fresh = lastRoomSnapshot;
+      if (!fresh) return;
+      // itemBoxPick이 동기화 전일 수 있으므로 로컬 스냅샷 폴백
+      if (!fresh.itemBoxPick && lastRoomSnapshot && lastRoomSnapshot.itemBoxPick) {
+        fresh.itemBoxPick = lastRoomSnapshot.itemBoxPick;
+      }
+      var me = (fresh.players || []).find(function (p) { return p.id === myPlayerId; });
+      if (!me) return;
+      me.items = playerItems(me);
+      // 이미 상자는 소모된 상태 · 선택 아이템 지급
+      if (me.items.indexOf(chosenId) === -1 && me.items.length < 3) {
+        me.items.push(chosenId);
+      } else if (me.items.length < 3) {
+        me.items.push(chosenId);
+      }
+      var it = getItemById(chosenId);
+      fresh.itemBoxPick = null;
+      fresh.announce = {
+        icon: '📦', title: '상자 개봉',
+        text: (me.name || '?') + ' → ' + (it ? it.icon + ' ' + it.name : chosenId),
+        sub: '', ts: Date.now()
+      };
+      lastRoomSnapshot = fresh;
+      try { await saveRoom(fresh); } catch (e2) { console.warn(e2); }
+      renderGame(fresh);
+      maybeShowAnnounce(fresh);
+    } catch (e) {
+      console.warn('item box pick', e);
+      if (els.gameError) els.gameError.textContent = '상자 선택 처리 실패 — 다시 시도해주세요';
+    } finally {
+      window.__itemBoxResolving = false;
+      window.__itemBoxPicking = false;
+    }
+  }
   function showItemBoxPick(room) {
     var pick = room && room.itemBoxPick;
     if (!pick || pick.playerId !== myPlayerId) return;
-    var box = document.getElementById('itemUseBox');
-    var title = document.getElementById('itemUseTitle');
-    var sel = document.getElementById('itemTarget');
-    var btnUse = document.getElementById('btnItemUse');
-    var btnCancel = document.getElementById('btnItemCancel');
-    if (!box || !title) return;
-    title.textContent = '📦 상자 — 하나를 고르세요';
-    if (sel) {
-      sel.innerHTML = '';
-      (pick.options || []).forEach(function (id) {
-        var it = getItemById(id);
-        var opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = it ? (it.icon + ' ' + it.name + ' — ' + it.desc) : id;
-        sel.appendChild(opt);
-      });
-      sel.style.display = '';
+    var options = normalizePickOptions(pick.options);
+    if (!options.length) {
+      options = [randomItemId(room, ['item_box']), randomItemId(room, ['item_box'])];
     }
-    box.classList.add('show');
-    window.__itemBoxPicking = true;
-    if (btnUse) {
-      btnUse.onclick = async function () {
-        if (!window.__itemBoxPicking) return;
-        var chosen = sel && sel.value;
-        try {
-          var fresh = await getRoom(myRoomCode);
-          if (!fresh || !fresh.itemBoxPick || fresh.itemBoxPick.playerId !== myPlayerId) return;
-          var me = fresh.players.find(function (p) { return p.id === myPlayerId; });
-          if (!me) return;
-          me.items = playerItems(me);
-          if (me.items.length < 3 && chosen) me.items.push(chosen);
-          var it = getItemById(chosen);
-          fresh.itemBoxPick = null;
-          fresh.announce = {
-            icon: '📦', title: '상자 개봉',
-            text: me.name + ' → ' + (it ? it.icon + ' ' + it.name : chosen),
-            sub: '', ts: Date.now()
-          };
-          await saveRoom(fresh);
-          lastRoomSnapshot = fresh;
-          renderGame(fresh);
-          maybeShowAnnounce(fresh);
-        } catch (e) {}
-        window.__itemBoxPicking = false;
-        box.classList.remove('show');
-        if (btnUse) btnUse.onclick = function () { useSelectedItem(); };
-      };
+    if (options.length === 1) {
+      options.push(randomItemId(room, ['item_box', options[0]]));
     }
-    if (btnCancel) {
-      btnCancel.onclick = function () {
-        window.__itemBoxPicking = false;
-        box.classList.remove('show');
-        if (btnUse) btnUse.onclick = function () { useSelectedItem(); };
-      };
+    if (options[0] === options[1]) {
+      options[1] = randomItemId(room, ['item_box', options[0]]);
     }
-  }
-
-  function showSkeletonCellPick(room) {
+    // 이미 같은 옵션으로 열려 있으면 유지
     var modal = document.getElementById('pathChoiceModal');
     var box = document.getElementById('pathChoiceButtons');
     var hint = document.getElementById('pathChoiceHint');
     var head = modal && modal.querySelector('h3');
-    if (!modal || !box) return;
-    if (head) head.textContent = '💀 해골 설치 칸 선택';
-    if (hint) hint.textContent = '해골은 보드에 1개만 존재합니다';
-    box.innerHTML = '';
-    for (var i = 1; i < BOARD_SIZE; i++) {
-      (function (cell) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'ld-btn ld-btn-outline';
-        b.style.width = 'auto';
-        b.style.padding = '8px 12px';
-        b.textContent = String(cell);
-        b.onclick = async function () {
-          try {
-            var fresh = await getRoom(myRoomCode);
-            if (!fresh || !fresh.pendingSkeleton || fresh.pendingSkeleton.playerId !== myPlayerId) return;
-            fresh.skeletonCell = cell;
-            fresh.pendingSkeleton = null;
-            var me = fresh.players.find(function (p) { return p.id === myPlayerId; });
-            fresh.announce = {
-              icon: '💀', title: '해골 설치',
-              text: (me ? me.name : '?') + ' → 칸 ' + cell,
-              sub: '밟으면 다음 이동이 뒤로',
-              ts: Date.now()
-            };
-            await saveRoom(fresh);
-            lastRoomSnapshot = fresh;
-            renderGame(fresh);
-            maybeShowAnnounce(fresh);
-          } catch (e) {}
-          modal.classList.remove('show');
-          modal.setAttribute('aria-hidden', 'true');
-        };
-        box.appendChild(b);
-      })(i);
+    if (!modal || !box) {
+      if (els.gameError) els.gameError.textContent = '상자 선택 창을 열 수 없습니다';
+      return;
     }
+    window.__itemBoxPicking = true;
+    if (head) head.textContent = '📦 상자 — 아이템 선택';
+    if (hint) hint.textContent = '아이템 칸에서 나온 2개 중 하나를 고르세요';
+    box.innerHTML = '';
+    options.forEach(function (id) {
+      var it = getItemById(id) || { icon: '🎁', name: String(id), desc: '' };
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ld-btn ld-btn-primary';
+      b.style.cssText = 'width:100%;padding:14px 14px;font-size:13px;text-align:left;line-height:1.4;margin:0;';
+      var name = (it.icon || '') + ' ' + (it.name || id);
+      var desc = it.desc || '';
+      b.textContent = '';
+      var t1 = document.createElement('div');
+      t1.style.cssText = 'font-size:16px;font-weight:800;';
+      t1.textContent = name;
+      var t2 = document.createElement('div');
+      t2.style.cssText = 'font-size:11px;font-weight:500;color:var(--text-dim);margin-top:4px;';
+      t2.textContent = desc;
+      b.appendChild(t1);
+      b.appendChild(t2);
+      b.onclick = function (ev) {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        try { SFX.click(); } catch (e) {}
+        resolveItemBoxPick(id);
+      };
+      box.appendChild(b);
+    });
+    var useBox = document.getElementById('itemUseBox');
+    if (useBox) useBox.classList.remove('show');
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function showSkeletonCellPick(room) {
+    if (!room || !room.pendingSkeleton || room.pendingSkeleton.playerId !== myPlayerId) return;
+    if (window.__skelPicking) return;
+    window.__skelPicking = true;
+    openCellPickModal({
+      title: '💀 해골 설치 칸 선택',
+      hint: '해골은 보드에 1개만 존재합니다 · 밟으면 다음 이동이 뒤로',
+      allowSkip: false,
+      room: room
+    }).then(async function (cell) {
+      window.__skelPicking = false;
+      if (cell == null) return;
+      try {
+        var fresh = await getRoom(myRoomCode);
+        if (!fresh || !fresh.pendingSkeleton || fresh.pendingSkeleton.playerId !== myPlayerId) return;
+        fresh.skeletonCell = cell;
+        fresh.pendingSkeleton = null;
+        var me = fresh.players.find(function (p) { return p.id === myPlayerId; });
+        fresh.announce = {
+          icon: '💀', title: '해골 설치',
+          text: (me ? me.name : '?') + ' → 칸 ' + cell,
+          sub: '밟으면 다음 이동이 뒤로',
+          ts: Date.now()
+        };
+        await saveRoom(fresh);
+        lastRoomSnapshot = fresh;
+        renderGame(fresh);
+        maybeShowAnnounce(fresh);
+      } catch (e) {}
+    });
   }
 
   function openItemUse(room, itemId, idx, asGift) {
@@ -10181,6 +10238,20 @@ function openCellBook() {
     }
     if (room.duel || room.relicChallenge || room.augmentPick || room.itemPending) {
       if (els.gameError) els.gameError.textContent = '대결/유물/증강/천사중재 중에는 사용할 수 없어요';
+      return;
+    }
+    // 상자: 대상 선택 없이 바로 개봉 모달
+    if (itemId === 'item_box' && !asGift) {
+      var selSelf = document.getElementById('itemTarget');
+      if (selSelf) {
+        selSelf.innerHTML = '';
+        var oSelf = document.createElement('option');
+        oSelf.value = myPlayerId;
+        oSelf.textContent = '나 자신';
+        selSelf.appendChild(oSelf);
+        selSelf.value = myPlayerId;
+      }
+      useSelectedItem();
       return;
     }
     title.textContent = asGift
@@ -10228,12 +10299,34 @@ function openCellBook() {
         sel.appendChild(opt);
       });
     } else if (it.target === 'cell') {
-      for (var ci = 1; ci < BOARD_SIZE; ci++) {
-        var opt = document.createElement('option');
-        opt.value = 'cell:' + ci;
-        opt.textContent = '칸 ' + ci;
-        sel.appendChild(opt);
-      }
+      // 표식 등: 드론과 같은 칸 선택 모달
+      selectedItemId = itemId;
+      window.__itemIdx = idx;
+      window.__itemAsGift = false;
+      openCellPickModal({
+        title: (it.icon || '📍') + ' ' + it.name + ' — 칸 선택',
+        hint: it.desc || '설치할 칸을 고르세요',
+        allowSkip: true,
+        skipLabel: '취소',
+        room: room
+      }).then(function (cell) {
+        if (cell == null) {
+          selectedItemId = null;
+          return;
+        }
+        // 가상 select 값 세팅 후 사용
+        var selEl = document.getElementById('itemTarget');
+        if (selEl) {
+          selEl.innerHTML = '';
+          var o = document.createElement('option');
+          o.value = 'cell:' + cell;
+          o.textContent = '칸 ' + cell;
+          selEl.appendChild(o);
+          selEl.value = 'cell:' + cell;
+        }
+        useSelectedItem();
+      });
+      return;
     } else {
       room.players.forEach(function (p) {
         if (p.id === myPlayerId) return;
@@ -10445,23 +10538,28 @@ function openCellBook() {
       var target = isCell ? me : room.players.find(function (p) { return p.id === tid; });
       if (!target && !isCell) return;
 
-      // 상자: 랜덤 2개 중 선택
+      // 상자: 아이템 칸 풀에서 랜덤 2개 → 모달에서 1개 선택
       if (itemId === 'item_box' && !window.__itemAsGift) {
         me.items.splice(at, 1);
         var optA = randomItemId(room, ['item_box']);
         var optB = randomItemId(room, ['item_box', optA]);
+        if (optA === optB) optB = randomItemId(room, ['item_box', optA]);
         room.itemBoxPick = { playerId: myPlayerId, options: [optA, optB], ts: Date.now() };
         room.announce = {
           icon: '📦', title: '상자!',
           text: me.name + ' — 아이템 2개 중 하나를 고르세요',
           sub: '', ts: Date.now()
         };
-        await saveRoom(room);
         lastRoomSnapshot = room;
+        selectedItemId = null;
+        var _ub = document.getElementById('itemUseBox');
+        if (_ub) _ub.classList.remove('show');
+        // 네트워크 전에 모달 먼저 표시 (선택 창이 안 뜨는 버그 방지)
+        showItemBoxPick(room);
+        try { await saveRoom(room); } catch (eBox) { console.warn(eBox); }
         renderGame(room);
         maybeShowAnnounce(room);
-        document.getElementById('itemUseBox').classList.remove('show');
-        selectedItemId = null;
+        // renderGame 후에도 모달 유지
         showItemBoxPick(room);
         return;
       }
@@ -10877,6 +10975,15 @@ function openCellBook() {
     updateWaitBar(room);
     if (isAdmin) refreshAdminTargets();
     try { updateCenterBridgeUI(room); } catch (e) {}
+    // 상자 선택 대기 중이면 모달 재표시 (동기화/리렌더 후에도 안 사라지게)
+    try {
+      if (room && room.itemBoxPick && room.itemBoxPick.playerId === myPlayerId) {
+        showItemBoxPick(room);
+      }
+      if (room && room.pendingSkeleton && room.pendingSkeleton.playerId === myPlayerId) {
+        showSkeletonCellPick(room);
+      }
+    } catch (ePick) {}
     if (room && (room.winnerId || room.winnerTeam != null)) {
       handleGameEnd(room);
     } else {
