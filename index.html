@@ -368,7 +368,7 @@
   .ld-tab {
     flex: 1; min-width: 76px; padding: 11px 12px; border-radius: 12px; border: 1px solid rgba(165,160,201,0.3);
     background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: 13px; font-weight: 800; cursor: pointer;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.3px; white-space: nowrap;
   }
   .ld-tab.active {
     background: linear-gradient(135deg, rgba(139,92,246,0.45), rgba(59,130,246,0.35));
@@ -744,6 +744,8 @@
     color: var(--text-main); font-size: 13px; font-weight: 800; cursor: pointer;
   }
   .ld-aug-book-btn:hover { background: rgba(139,92,246,0.28); border-color: var(--purple2); }
+  .ld-info-btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .ld-info-btn-row .ld-aug-book-btn { flex: 1; margin-bottom: 0; width: auto; }
   .ld-modal {
     display: none; position: fixed; inset: 0; z-index: 80;
     background: rgba(6,4,20,0.72); align-items: center; justify-content: center;
@@ -1190,6 +1192,21 @@
     </div>
   </div>
 
+  <div class="ld-modal" id="relicBookModal" aria-hidden="true">
+    <div class="ld-modal-card">
+      <div class="ld-modal-head">
+        <h3>💎 유물 도감</h3>
+        <button type="button" class="ld-btn ld-btn-ghost" id="relicBookClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
+      </div>
+      <div class="ld-modal-body">
+        <div class="ld-book-tools">
+          <input type="search" id="relicBookSearch" placeholder="유물 검색..." />
+        </div>
+        <div id="relicBookList"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="ld-cell-tip" id="cellTip">
     <div class="ld-cell-tip-icon" id="cellTipIcon">🎲</div>
     <div class="ld-cell-tip-title" id="cellTipTitle">칸 정보</div>
@@ -1267,6 +1284,11 @@
       </div>
 
       <div class="ld-screen active" id="screen-home">
+        <div class="ld-info-btn-row" id="homeInfoBtnRow">
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeAug">🧩 증강</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeSyn">🔗 시너지</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeRelic">💎 유물</button>
+        </div>
         <div class="ld-field-label" style="margin-top:0;">닉네임</div>
         <input class="ld-input" id="homeNickname" placeholder="예: 행운의주사위" maxlength="10" />
         <div class="ld-field-label">프로필</div>
@@ -1598,14 +1620,14 @@
     { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 재굴림 제안 (수락 시 다시 굴림)' },
     { id: 'herb', icon: '🌿', name: '허브 유물', desc: '휴식 칸 무시 · 스킵 턴 1회 자동 회복' },
     { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈에서 내가 굴리는 주사위 +1' },
-    { id: 'wind', icon: '💨', name: '바람 유물', desc: '방 공유: 전원 주사위 15% +3칸 · 누구든 한 바퀴 시 바퀴 카운트 +2 (증강 선택은 1회)' },
-    { id: 'crystal', icon: '💠', name: '수정 유물', desc: '일반 칸 착지 시 30% 확률 +1칸' },
-    { id: 'thunder', icon: '⚡', name: '번개 유물', desc: '짝수 눈이면 이동 +1' },
-    { id: 'compass', icon: '🧭', name: '나침반 유물', desc: '이동 시 7% 확률로 1~굴린칸 중 도착 칸 선택' },
-    { id: 'shadow', icon: '🌑', name: '그림자 유물', desc: '앞·뒤 2칸 이내 상대가 있으면 그 위치로 이동 (해당 칸 효과 발동)' },
-    { id: 'bloom', icon: '🌸', name: '꽃 유물', desc: '홀수 눈이면 이동 +1' },
-    { id: 'ore', icon: '⛏️', name: '광석 유물', desc: '아이템 칸 착지 시 20% 아이템 1개 추가' },
-    { id: 'demon', icon: '😈', name: '악마 유물', desc: '보유 중 모든 이동·특수 이동이 반대로 발동 (앞↔뒤)' },
+    { id: 'wind', icon: '💨', name: '바람 유물', desc: '방 공유: 전원 주사위 22% +3칸 · 누구든 한 바퀴 시 바퀴 카운트 +2 (증강 선택은 1회)' },
+    { id: 'crystal', icon: '💠', name: '수정 유물', desc: '일반 칸 착지 시 45% 확률로 근처 특수 칸으로 이동' },
+    { id: 'thunder', icon: '⚡', name: '번개 유물', desc: '짝수 눈이면 이동 +2' },
+    { id: 'compass', icon: '🧭', name: '나침반 유물', desc: '이동 시 8% 확률로 1~굴린칸 중 도착 칸 선택' },
+    { id: 'shadow', icon: '🌑', name: '그림자 유물', desc: '앞·뒤 3칸 이내 상대가 있으면 그 위치로 이동 (해당 칸 효과 발동)' },
+    { id: 'bloom', icon: '🌸', name: '꽃 유물', desc: '홀수 눈이면 이동 +2' },
+    { id: 'ore', icon: '⛏️', name: '광석 유물', desc: '유물 칸 착지 시 15% 확률로 바로 앞 유물 칸으로 한 번 더 이동 (그 칸 효과 재발동)' },
+    { id: 'demon', icon: '😈', name: '악마 유물', desc: '방 안에 보유자가 있으면 누구든 주사위를 굴릴 때마다 33% 확률로 모든 이동·특수 이동이 반대로 발동 (앞↔뒤)' },
     { id: 'angel', icon: '😇', name: '천사 유물', desc: '다른 플레이어의 아이템 사용을 거부 시도 가능 (타인 대상 포함) · 허용은 100%, 거부는 50% 확률로 성공 · 거부 성공 시 아이템 소멸' }
   ];
 
@@ -1644,6 +1666,34 @@
   function hasRelic(player, id) {
     return playerRelics(player).indexOf(id) !== -1;
   }
+  function demonRoomActive(room) {
+    if (!room || !room.players) return false;
+    return room.players.some(function (p) { return hasRelic(p, 'demon'); });
+  }
+  function findNearestSpecialCell(room, fromPos) {
+    if (!room) return null;
+    var specials = room.specials || {};
+    var maxD = Math.floor(BOARD_SIZE / 2);
+    for (var d = 1; d <= maxD; d++) {
+      var ahead = (fromPos + d) % BOARD_SIZE;
+      var aheadType = specials[ahead] != null ? specials[ahead] : specials[String(ahead)];
+      if (aheadType && CELL_TYPES[aheadType]) return ahead;
+      var behind = (fromPos - d + BOARD_SIZE) % BOARD_SIZE;
+      var behindType = specials[behind] != null ? specials[behind] : specials[String(behind)];
+      if (behindType && CELL_TYPES[behindType]) return behind;
+    }
+    return null;
+  }
+  function findNextCellOfType(room, fromPos, wantedType) {
+    if (!room) return null;
+    var specials = room.specials || {};
+    for (var d = 1; d < BOARD_SIZE; d++) {
+      var pos = (fromPos + d) % BOARD_SIZE;
+      var t = specials[pos] != null ? specials[pos] : specials[String(pos)];
+      if (t === wantedType) return pos;
+    }
+    return null;
+  }
   function playerRelics(p) {
     if (!p) return [];
     var r = p.relics;
@@ -1678,7 +1728,7 @@
     { id: 'speed', name: '신속', icon: '⚡' },
     { id: 'defend', name: '방어', icon: '🛡️' },
     { id: 'chaos', name: '혼돈', icon: '🌪️' },
-    { id: 'relic', name: '유물', icon: '💎' },
+    { id: 'relic', name: '고고학자', icon: '🏺' },
     { id: 'util', name: '유틸', icon: '🔧' },
     { id: 'battle', name: '전투', icon: '⚔️' },
     { id: 'support', name: '지원', icon: '🤝' },
@@ -1688,12 +1738,12 @@
 
   var AUGMENT_POOL = [
     // luck — 리스크/확률 이동 (이동 고정 보너스 시너지와 구분)
-    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1이면 이동 -1 · 6이면 이동 +1 (약 17%)', tag: '필드', chance: '17%' },
-    { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '3 또는 4일 때 15%로 +1칸 (전체 약 5%)', tag: '필드', chance: '5%' },
-    { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '2면 -1칸 · 5면 +1칸 (약 17%)', tag: '필드', chance: '17%' },
+    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1이면 이동 -1 · 6이면 이동 +1 (약 24%)', tag: '필드', chance: '24%' },
+    { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '3 또는 4일 때 36%로 +1칸 (전체 약 12%)', tag: '필드', chance: '12%' },
+    { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '2면 -1칸 · 5면 +1칸 (약 24%)', tag: '필드', chance: '24%' },
     { id: 'momentum', cat: 'luck', icon: '⚖️', name: '기세', desc: '이전 눈: 6→+1 · 5→0 · 4→0 · 3→-1 · 2→-1 · 1→-2', tag: '필드', chance: '항상' },
-    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 18% 확률 이동 +1', tag: '필드', chance: '18%' },
-    { id: 'jackpot', cat: 'luck', icon: '🎰', name: '잭팟', desc: '6이 나오면 18% 추가 턴', tag: '필드', chance: '6일 때 18%' },
+    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 25% 확률 이동 +1', tag: '필드', chance: '25%' },
+    { id: 'jackpot', cat: 'luck', icon: '🎰', name: '잭팟', desc: '6이 나오면 25% 추가 턴', tag: '필드', chance: '6일 때 25%' },
     // speed — 부스트/재굴림 특화
     { id: 'swift', cat: 'luck', icon: '⚡', name: '초보자', desc: '1이 나오면 재굴림 1회 (약 17%)', tag: '필드', chance: '17%' },
     { id: 'courier', cat: 'speed', icon: '📦', name: '특송', desc: '부스트 칸 착지 시 +5칸 (기본 3 대신)', tag: '필드', chance: '칸 의존' },
@@ -2005,9 +2055,9 @@
 
   // 시너지: 같은 카테고리 증강을 2개 이상 켜 두면 발동 (OFF 증강 제외)
   var SYNERGY_RULES = [
-    { cat: 'luck', need: 2, key: 'luckMoveChance', value: 0.10, icon: '🍀', name: '행운 시너지 II', desc: '10% 확률 모든 이동 +1칸' },
-    { cat: 'luck', need: 3, key: 'luckMoveChance2', value: 0.15, icon: '🍀', name: '행운 시너지 III', desc: '15% 확률 모든 이동 +2칸' },
-    { cat: 'luck', need: 4, key: 'luckMoveChance3', value: 0.30, icon: '🍀', name: '행운 시너지 IV', desc: '30% 확률 모든 이동 +2칸' },
+    { cat: 'luck', need: 2, key: 'luckMoveChance', value: 0.25, icon: '🍀', name: '행운 시너지 II', desc: '25% 확률 모든 이동 +1칸' },
+    { cat: 'luck', need: 3, key: 'luckMoveChance2', value: 0.60, icon: '🍀', name: '행운 시너지 III', desc: '60% 확률 모든 이동 +2칸' },
+    { cat: 'luck', need: 4, key: 'luckMoveChance3', value: 0.80, icon: '🍀', name: '행운 시너지 IV', desc: '80% 확률 모든 이동 +2칸' },
     { cat: 'speed', need: 2, key: 'boostExtra', value: 1, icon: '⚡', name: '신속 시너지 II', desc: '부스트 칸 +1칸' },
     { cat: 'speed', need: 3, key: 'boostExtra', value: 2, icon: '⚡', name: '신속 시너지 III', desc: '부스트 칸 +2칸' },
     { cat: 'speed', need: 4, key: 'speedAgain', value: 0.12, icon: '⚡', name: '신속 시너지 IV', desc: '12% 확률 추가 턴' },
@@ -2017,9 +2067,9 @@
     { cat: 'chaos', need: 2, key: 'chaosChance', value: 0.08, icon: '🌪️', name: '혼돈 시너지 II', desc: '혼돈 워프 확률 +8%' },
     { cat: 'chaos', need: 3, key: 'chaosChance', value: 0.15, icon: '🌪️', name: '혼돈 시너지 III', desc: '혼돈 워프 확률 +15%' },
     { cat: 'chaos', need: 4, key: 'chaosGift', value: 1, icon: '🌪️', name: '혼돈 시너지 IV', desc: '일반 칸 8% 선물 효과' },
-    { cat: 'relic', need: 2, key: 'giftBonus', value: 1, icon: '💎', name: '유물 시너지 II', desc: '선물 이동 +1' },
-    { cat: 'relic', need: 3, key: 'relicLuck', value: 0.12, icon: '💎', name: '유물 시너지 III', desc: '유물 성공 시 12% 추가 유물' },
-    { cat: 'relic', need: 4, key: 'relicStealPath', value: 0.15, icon: '💎', name: '유물 시너지 IV', desc: '유물 성공 시 15% 추가 유물 선택 후 강탈 칸 이동' },
+    { cat: 'relic', need: 2, key: 'giftBonus', value: 1, icon: '🏺', name: '고고학자 시너지 II', desc: '선물 이동 +1' },
+    { cat: 'relic', need: 3, key: 'relicLuck', value: 0.12, icon: '🏺', name: '고고학자 시너지 III', desc: '유물 성공 시 12% 추가 유물' },
+    { cat: 'relic', need: 4, key: 'relicStealPath', value: 0.15, icon: '🏺', name: '고고학자 시너지 IV', desc: '유물 성공 시 15% 추가 유물 선택 후 강탈 칸 이동' },
     { cat: 'util', need: 2, key: 'comboExtra', value: 1, icon: '🔧', name: '유틸 시너지 II', desc: '콤보/특수 후 +1칸' },
     { cat: 'util', need: 3, key: 'utilWarp', value: 1, icon: '🔧', name: '유틸 시너지 III', desc: '워프 후 +1칸' },
     { cat: 'util', need: 4, key: 'utilDice', value: 1, icon: '🔧', name: '유틸 시너지 IV', desc: '2→3 변환' },
@@ -4094,7 +4144,7 @@ refreshRoomList();
         ch.goStealAfter = goSteal;
         room.relicChallenge = ch;
         room.announce = {
-          icon: '💎', title: '유물 시너지 IV!',
+          icon: '🏺', title: '고고학자 시너지 IV!',
           text: me.name + ' 추가 유물 선택',
           sub: goSteal ? '선택 후 강탈 칸으로 이동합니다' : '',
           ts: Date.now()
@@ -4441,8 +4491,8 @@ refreshRoomList();
       notes.push('거울: ' + face + ' → ' + move + '칸');
     }
 
-    // 행운: 1 → -1, 6 → +1 (50% 발동 → 약 17%)
-    if (hasAug(player, 'lucky') && Math.random() < 0.5) {
+    // 행운: 1 → -1, 6 → +1 (72% 발동 → 약 24%)
+    if (hasAug(player, 'lucky') && Math.random() < 0.72) {
       if (face === 1) {
         move = Math.max(1, move - 1);
         notes.push('행운: -1');
@@ -4452,14 +4502,14 @@ refreshRoomList();
       }
     }
 
-    // 네잎클로버: 3·4일 때 30% → +1 (전체 ~10%)
-    if (hasAug(player, 'clover') && (face === 3 || face === 4) && Math.random() < 0.15) {
+    // 네잎클로버: 3·4일 때 36% → +1 (전체 ~12%)
+    if (hasAug(player, 'clover') && (face === 3 || face === 4) && Math.random() < 0.36) {
       move = move + 1;
       notes.push('네잎클로버: +1칸');
     }
 
-    // 대박: 2 → -1, 5 → +1 (50% 발동 → 약 17%)
-    if (hasAug(player, 'fortune') && Math.random() < 0.5) {
+    // 대박: 2 → -1, 5 → +1 (72% 발동 → 약 24%)
+    if (hasAug(player, 'fortune') && Math.random() < 0.72) {
       if (face === 2) {
         move = Math.max(1, move - 1);
         notes.push('대박: -1칸');
@@ -4486,7 +4536,7 @@ refreshRoomList();
     }
 
     // 우연 25%
-    if (hasAug(player, 'serendipity') && Math.random() < 0.18) {
+    if (hasAug(player, 'serendipity') && Math.random() < 0.25) {
       move += 1;
       notes.push('우연: +1');
     }
@@ -4534,7 +4584,7 @@ refreshRoomList();
     }
 
     var extraTurn = false;
-    if (hasAug(player, 'jackpot') && face === 6 && Math.random() < 0.18) {
+    if (hasAug(player, 'jackpot') && face === 6 && Math.random() < 0.25) {
       extraTurn = true;
       notes.push('잭팟: 추가 턴');
     }
@@ -4607,12 +4657,12 @@ refreshRoomList();
       notes.push('☀️ 태양 +1칸');
     }
     if (hasRelic(player, 'thunder') && face % 2 === 0) {
-      move += 1;
-      notes.push('⚡ 번개 +1');
+      move += 2;
+      notes.push('⚡ 번개 +2');
     }
     if (hasRelic(player, 'bloom') && face % 2 === 1) {
-      move += 1;
-      notes.push('🌸 꽃 +1');
+      move += 2;
+      notes.push('🌸 꽃 +2');
     }
     // 바람 유물: 방에 보유자가 있으면 모든 플레이어 주사위에 20% +3
     var windInRoom = false;
@@ -4621,19 +4671,19 @@ refreshRoomList();
     } else if (hasRelic(player, 'wind')) {
       windInRoom = true;
     }
-    if (windInRoom && Math.random() < 0.15) {
+    if (windInRoom && Math.random() < 0.22) {
       move += 3;
       notes.push('💨 바람 +3 (전체)');
     }
 
-    // 그림자 유물: 현재 위치 기준 앞·뒤 2칸 이내 상대 → 그 위치로 이동
+    // 그림자 유물: 현재 위치 기준 앞·뒤 3칸 이내 상대 → 그 위치로 이동
     if (hasRelic(player, 'shadow') && room && room.players) {
       var curPos = player.position | 0;
       var shadowTarget = null;
       var shadowDist = 99;
       room.players.forEach(function (p) {
         if (!p || p.id === player.id) return;
-        for (var d = 1; d <= 2; d++) {
+        for (var d = 1; d <= 3; d++) {
           var ahead = (curPos + d) % BOARD_SIZE;
           var behind = (curPos - d + BOARD_SIZE) % BOARD_SIZE;
           if (p.position === ahead || p.position === behind) {
@@ -4658,10 +4708,12 @@ refreshRoomList();
       notes.push('🧿 저주: 다음 상대 이동=' + face);
     }
 
-    // 악마 유물: 이동 방향 반전 (보유 중)
-    if (hasRelic(player, 'demon') && move !== 0) {
+    // 악마 유물: 방 안에 보유자가 있으면 굴릴 때마다 33% 확률로 이동 반전
+    var demonFlip = demonRoomActive(room) && Math.random() < 0.33;
+    player._demonFlip = demonFlip;
+    if (demonFlip && move !== 0) {
       move = -move;
-      notes.push('😈 악마: 이동 반전');
+      notes.push('😈 악마: 33% 발동 — 이동 반전');
     }
 
     // 길치: 이동 후 50% 원위치 (호출측에서 fromPos 저장)
@@ -4678,7 +4730,7 @@ refreshRoomList();
     if (move === 0 && !hasAug(player, 'glitchstep')) {
       // keep 0 for leap cap
     } else if (move === 0) {
-      move = hasRelic(player, 'demon') ? -1 : 1;
+      move = player._demonFlip ? -1 : 1;
     }
     return { face: face, move: move, notes: notes, extraTurn: extraTurn };
   }
@@ -4778,11 +4830,16 @@ refreshRoomList();
         result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🌪️시너지 IV 선물 +' + cg;
         result.announce = true;
       }
-      if (!chain && hasRelic(player, 'crystal') && Math.random() < 0.30) {
-        result.pos = (result.pos + 1) % BOARD_SIZE;
-        result.extraSteps = (result.extraSteps || 0) + 1;
-        result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '💠 수정 +1';
-        result.announce = true;
+      if (!chain && hasRelic(player, 'crystal') && Math.random() < 0.45) {
+        var crystalTarget = findNearestSpecialCell(room, result.pos);
+        if (crystalTarget != null) {
+          var crystalDelta = (crystalTarget - result.pos + BOARD_SIZE) % BOARD_SIZE;
+          if (crystalDelta > BOARD_SIZE / 2) crystalDelta -= BOARD_SIZE;
+          result.pos = crystalTarget;
+          result.extraSteps = (result.extraSteps || 0) + crystalDelta;
+          result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '💠 수정 → 근처 특수 칸 이동';
+          result.announce = true;
+        }
       }
       // 수집가: 아이템 최대 보유 시 +1
       if (hasAug(player, 'collector')) {
@@ -4844,7 +4901,7 @@ refreshRoomList();
       // 연쇄 부스트: 효과 2회 = 이동량 2배 순차
       if (hasAug(player, 'chainboost')) b = b * 2;
       b += synB.boostExtra;
-      if (hasRelic(player, 'demon')) {
+      if (player._demonFlip) {
         result.pos = (landPos - b + BOARD_SIZE) % BOARD_SIZE;
         result.extraSteps = -b;
         result.effectText = '😈 악마 부스트 -' + b;
@@ -4887,7 +4944,7 @@ refreshRoomList();
       if (hasAug(player, 'guardian')) back = 1;
       if (hasRelic(player, 'moon')) back = Math.max(0, back - 2);
       back = Math.max(0, back - (synD.defendCut || 0));
-      if (hasRelic(player, 'demon')) {
+      if (player._demonFlip) {
         result.pos = (landPos + back) % BOARD_SIZE;
         result.extraSteps = back;
         result.effectText = '😈 악마 함정 +' + back;
@@ -5145,6 +5202,15 @@ refreshRoomList();
       result.effectIcon = '💎';
       result.effectTitle = '유물';
       result.announce = true;
+      if (hasRelic(player, 'ore') && Math.random() < 0.15) {
+        var oreNext = findNextCellOfType(room, landPos, 'relic');
+        if (oreNext != null) {
+          var oreDelta = (oreNext - landPos + BOARD_SIZE) % BOARD_SIZE;
+          result.pos = oreNext;
+          result.extraSteps = (result.extraSteps || 0) + oreDelta;
+          result.effectText += ' · ⛏️광석: 다음 유물 칸으로 한 번 더 이동!';
+        }
+      }
       if (hasAug(player, 'prospector') && Math.random() < 0.10) {
         player.items = playerItems(player);
         if (player.items.length < 3) {
@@ -5190,11 +5256,6 @@ refreshRoomList();
           player.items.push(itH.id);
           result.effectText += ' · 📦사재기 +' + itH.icon;
         }
-        if (hasRelic(player, 'ore') && Math.random() < 0.20 && player.items.length < itemCap) {
-          var it2 = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
-          player.items.push(it2.id);
-          result.effectText += ' · ⛏️광석 +' + it2.icon;
-        }
       } else {
         result.effectText = '🎒 아이템 칸 (소지 한도 ' + itemCap + '개)';
       }
@@ -5236,7 +5297,7 @@ refreshRoomList();
     }
 
     // 악마 유물: 특수칸으로 인한 추가 이동 방향 반전 (부스트/함정은 이미 처리됐을 수 있음)
-    if (hasRelic(player, 'demon') && result.extraSteps && result.extraSteps !== 0) {
+    if (player._demonFlip && result.extraSteps && result.extraSteps !== 0) {
       // 부스트/함정은 위에서 이미 반전 표기됨 — 중복 반전 방지
       if (result.effectText && result.effectText.indexOf('악마') === -1) {
         var es = result.extraSteps;
@@ -5583,13 +5644,11 @@ refreshRoomList();
             }
           });
           if (protected) actualPunish = 0;
-          // 악마: 벌점도 반대로 → 앞으로 이동
-          if (hasRelic(loser, 'demon') && actualPunish > 0) {
-            // handled below with sign flip
-          }
+          // 악마: 방 안에 보유자가 있으면 벌점 굴림에도 33% 확률로 반대 적용 → 앞으로 이동
+          var demonPunishFlip = demonRoomActive(room) && Math.random() < 0.33;
           var from = loser.position;
           var punishSteps = -actualPunish;
-          if (hasRelic(loser, 'demon') && actualPunish > 0) {
+          if (demonPunishFlip && actualPunish > 0) {
             punishSteps = actualPunish; // 악마: 벌칙 반전 → 앞으로
           }
           if (actualPunish === 0) {
@@ -5848,8 +5907,8 @@ refreshRoomList();
       var moveSteps = mod.move;
       if (rerollNotes.length) mod.notes = rerollNotes.concat(mod.notes || []);
 
-      // 나침반 유물: 7% 확률로 1~moveSteps 중 선택
-      if (hasRelic(me, 'compass') && moveSteps >= 2 && Math.random() < 0.07) {
+      // 나침반 유물: 8% 확률로 1~moveSteps 중 선택
+      if (hasRelic(me, 'compass') && moveSteps >= 2 && Math.random() < 0.08) {
         try { SFX.special(); } catch (e) {}
         if (finalFace !== lastAnimatedFace) {
           spinCube(finalFace);
@@ -6523,9 +6582,13 @@ refreshRoomList();
   }
   (function initAugBook() {
     var btn = document.getElementById('btnAugBook');
+    var btnHomeAug = document.getElementById('btnAugBookHomeAug');
+    var btnHomeSyn = document.getElementById('btnAugBookHomeSyn');
     var close = document.getElementById('augBookClose');
     var modal = document.getElementById('augBookModal');
     if (btn) btn.onclick = openAugBook;
+    if (btnHomeAug) btnHomeAug.onclick = openAugBook;
+    if (btnHomeSyn) btnHomeSyn.onclick = openAugBook;
     if (close) close.onclick = closeAugBook;
     if (modal) {
       modal.addEventListener('click', function (e) {
@@ -6539,6 +6602,62 @@ refreshRoomList();
     if (qEl) qEl.oninput = rerender;
     if (mineEl) mineEl.onchange = rerender;
     if (onEl) onEl.onchange = rerender;
+  })();
+
+  // ---- 유물 도감 모달 (증강 도감과 별도) ----
+  function openRelicBook() {
+    var modal = document.getElementById('relicBookModal');
+    if (!modal) return;
+    renderRelicBook();
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    try { SFX.click(); } catch (e) {}
+  }
+  function closeRelicBook() {
+    var modal = document.getElementById('relicBookModal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  function renderRelicBook() {
+    var listEl = document.getElementById('relicBookList');
+    if (!listEl) return;
+    var qEl = document.getElementById('relicBookSearch');
+    var q = (qEl && qEl.value ? qEl.value : '').trim().toLowerCase();
+    listEl.innerHTML = '';
+    var shown = 0;
+    RELIC_TYPES.forEach(function (r) {
+      if (q) {
+        var hay = (r.name + ' ' + r.desc + ' ' + r.id).toLowerCase();
+        if (hay.indexOf(q) === -1) return;
+      }
+      var div = document.createElement('div');
+      div.className = 'ld-book-aug';
+      div.innerHTML =
+        '<div class="nm">' + r.icon + ' ' + escapeHtml(r.name) + '</div>' +
+        '<div class="ds">' + escapeHtml(r.desc || '') + '</div>';
+      listEl.appendChild(div);
+      shown++;
+    });
+    if (!shown) {
+      listEl.innerHTML = '<div class="ld-code-hint">검색 결과 없음</div>';
+    }
+  }
+  (function initRelicBook() {
+    var btnHomeRelic = document.getElementById('btnAugBookHomeRelic');
+    var close = document.getElementById('relicBookClose');
+    var modal = document.getElementById('relicBookModal');
+    if (btnHomeRelic) btnHomeRelic.onclick = openRelicBook;
+    if (close) close.onclick = closeRelicBook;
+    if (modal) {
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeRelicBook();
+      });
+    }
+    var qEl = document.getElementById('relicBookSearch');
+    if (qEl) qEl.oninput = function () {
+      if (document.getElementById('relicBookModal').classList.contains('show')) renderRelicBook();
+    };
   })();
 
 
