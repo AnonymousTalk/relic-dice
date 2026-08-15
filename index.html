@@ -1645,7 +1645,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.6.30</span></div>
+      <div class="ld-version">패치 <span>v1.0.6.31</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -2158,7 +2158,22 @@
     }
     return steps;
   }
+  /** 앞으로 이동할 때 본트랙에서 출발선(0번)을 지나간 횟수 (다리 경로 반영) */
+  function countForwardStartPasses(room, player, fromPos, moveSteps) {
+    if (!(moveSteps > 0)) return 0;
+    var list = enumerateMoveSteps(room, player, fromPos, moveSteps);
+    if (!list.length) {
+      return Math.floor((fromPos + moveSteps) / BOARD_SIZE);
+    }
+    var laps = 0;
+    for (var i = 0; i < list.length; i++) {
+      var st = list[i];
+      if (st && st.kind === 'main' && Number(st.pos) === 0) laps += 1;
+    }
+    return laps;
+  }
   function placeTokenAtStep(playerId, room, step) {
+
     var el = document.getElementById('token-' + playerId);
     if (!el || !step) return;
     var pos;
@@ -8926,6 +8941,12 @@ refreshRoomList();
           finally { window.__rollAwaitingModal = false; }
         }
       }
+      // 이동 전 다리 상태 스냅샷 (getRoom 후에도 경로·바퀴 판정에 사용)
+      var pathSnap = {
+        onBridge: !!(me.onBridge && me.bridgeIdx != null && me.bridgeIdx >= 0),
+        bridgeIdx: me.bridgeIdx,
+        bridgeFacing: me.bridgeFacing || 'main'
+      };
       var bridgePlan = computeBridgeAwareLanding(fresh, me, oldPos, moveSteps);
       // 다리/본트랙 모두 한 칸씩 이동 애니메이션
       if (bridgePlan.viaBridge || playerOnBridge(me) || (me.bridgeFacing === 'bridge')) {
@@ -8960,11 +8981,12 @@ refreshRoomList();
         moveSteps = 0;
         mod.notes.push('🔄 길치: 원위치');
       }
-      // 바퀴: 앞으로만 카운트 (악마 역이동은 바퀴 미부여)
+      // 바퀴: 실제 경로(다리 포함)에서 출발선(0) 통과 횟수 — 직선 oldPos+move 공식은 다리 지름길에서 누락됨
       var lapsGained = 0;
       if (moveSteps > 0) {
-        lapsGained = Math.floor((oldPos + moveSteps) / BOARD_SIZE);
+        lapsGained = countForwardStartPasses(fresh, pathSnap, oldPos, moveSteps);
       }
+      var diceLandPos = landPos;
       me.position = landPos;
       if (!me.onBridge) {
         var brLand2 = getActiveBridge(fresh);
@@ -9408,17 +9430,21 @@ refreshRoomList();
         break;
       }
 
-      // 특수칸 추가 이동으로 스타트 통과 시 증강 (자리 교체만으로 인한 위치 변화는 제외됨 — totalExtraForward/주사위 기준)
+      // 특수칸 추가 전진으로 출발선 통과 시 증강 (주사위 착지 칸에서 본트랙으로만 계산)
       if (totalExtraForward > 0) {
-        var crossed = Math.floor((oldPos + moveSteps + totalExtraForward) / BOARD_SIZE);
-        if (crossed > lapsGained) {
-          var prevPhys = lapsGained;
-          lapsGained = crossed;
-          var addMore = crossed - prevPhys;
+        var extraLaps = 0;
+        var ep = typeof diceLandPos === 'number' ? diceLandPos : landPos;
+        for (var ei = 0; ei < totalExtraForward; ei++) {
+          ep = (ep + 1) % BOARD_SIZE;
+          if (ep === 0) extraLaps += 1;
+        }
+        if (extraLaps > 0) {
+          var addMore = extraLaps;
           var windRoom2 = false;
           (fresh.players || []).forEach(function (p) { if (hasRelic(p, 'wind')) windRoom2 = true; });
           if (windRoom2) addMore *= 2;
           me.laps = (me.laps || 0) + addMore;
+          lapsGained += extraLaps;
         }
       }
       if (lapsGained > 0 && me.ghostMode) {
