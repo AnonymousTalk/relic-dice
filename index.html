@@ -1645,7 +1645,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.6.31</span></div>
+      <div class="ld-version">패치 <span>v1.0.6.33</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -2434,7 +2434,7 @@
     var def = getItemById(itemId);
     if (!def) return false;
     if (def.maxOne && player.items.indexOf(itemId) !== -1) return false;
-    if (player.items.length >= 3) return false;
+    // 스택·증강으로 얻는 특수 아이템은 3칸 제한을 초과해도 지급 (칸/랜덤 획득은 giveItemToPlayer가 3칸 유지)
     player.items.push(itemId);
     return true;
   }
@@ -5397,10 +5397,12 @@ refreshRoomList();
         stealSel.style.display = iAm ? 'block' : 'none';
         stealSel.innerHTML = '';
         var meSel = room.players.find(function (x) { return x.id === myPlayerId; });
+        var champOnly = ch.fromColosseum && Array.isArray(ch.champVictimIds) && ch.champVictimIds.length;
         room.players.forEach(function (p) {
           if (p.id === myPlayerId) return;
           if (room.gameMode === 'team' && meSel && sameTeam(meSel, p)) return;
           if (!playerRelics(p).length) return;
+          if (champOnly && ch.champVictimIds.indexOf(p.id) === -1) return;
           var opt = document.createElement('option');
           opt.value = p.id;
           opt.textContent = (p.avatar || '') + ' ' + p.name + ' (💎' + playerRelics(p).length + ')';
@@ -8096,10 +8098,18 @@ refreshRoomList();
         if (myPlayerId !== ch.playerId && myPlayerId !== ch.targetId) return;
         ch.rolls = ch.rolls || {};
         if (ch.rolls[myPlayerId] != null) return;
-        // 챔피언이면 3판2선승
+        // 3판2선승: 콜로세움 챔피언 버프를 가진 공격자만 (다른 플레이어 공유 금지)
         var atkP = room.players.find(function (p) { return p.id === ch.playerId; });
-        if (atkP && atkP.colosseumChamp && !ch.bestOf) {
+        var champAtk = !!(atkP && atkP.colosseumChamp === true && atkP.id === ch.playerId);
+        if (champAtk && (ch.fromColosseum || atkP.colosseumChamp === true) && !ch.bestOf) {
           ch.bestOf = 3; ch.winsNeed = 2; ch.score = ch.score || {};
+          ch.fromColosseum = true;
+        }
+        // 버프 없는 공격자면 3판2선승 플래그 강제 제거
+        if (!champAtk) {
+          ch.bestOf = null;
+          ch.winsNeed = null;
+          ch.fromColosseum = false;
         }
         try { SFX.duel(); } catch (e) {}
         var faceS = 1 + Math.floor(Math.random() * 6);
@@ -9076,7 +9086,7 @@ refreshRoomList();
       }
       // 저주 주사위 증강
       if (!glitchBack && hasAug(me, 'cursedice_aug') && Math.random() < cursePct(me, 0.03)) {
-        if (giveSpecialItem(me, 'curse_dice') || (playerItems(me).indexOf('curse_dice') === -1 && playerItems(me).length < 3 && (me.items = playerItems(me)).push('curse_dice'))) {
+        if (giveSpecialItem(me, 'curse_dice')) {
           mod.notes.push('☠️ 저주 주사위 획득');
         }
       }
@@ -9357,8 +9367,8 @@ refreshRoomList();
           extraTurn = true;
           mod.notes = (mod.notes || []).concat(['신속 IV 도착 추가 턴']);
         }
-        // 콜로세움의 챔피언: 앞뒤 5칸 유물 보유자 강탈
-        if (me.colosseumChamp && !fresh.relicChallenge && !fresh.duel) {
+        // 콜로세움의 챔피언: 버프 보유자 본인만 · 앞뒤 5칸 유물 보유자 강탈
+        if (me.colosseumChamp === true && me.id === myPlayerId && !fresh.relicChallenge && !fresh.duel) {
           var champVictims = (fresh.players || []).filter(function (p) {
             if (p.id === me.id) return false;
             if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
@@ -9370,6 +9380,8 @@ refreshRoomList();
             fresh.relicChallenge = {
               mode: 'steal', playerId: me.id, phase: 'selectTarget', targetId: null, rolls: {},
               bestOf: 3, winsNeed: 2, score: {},
+              fromColosseum: true,
+              champVictimIds: champVictims.map(function (v) { return v.id; }),
               pendingExtraTurn: extraTurn, ts: Date.now()
             };
             fresh.announce = {
@@ -12490,6 +12502,44 @@ function openCellBook() {
     }
     box.classList.add('show');
   }
+
+  function consumeItemCellTriggers(room, playerId) {
+    if (!room || !playerId) return '';
+    var me = (room.players || []).find(function (p) { return p.id === playerId; });
+    if (!me) return '';
+    var extra = '';
+    if (room._pendingStealFromItem === playerId) {
+      room._pendingStealFromItem = null;
+      var victims = (room.players || []).filter(function (p) {
+        if (p.id === playerId) return false;
+        if (room.gameMode === 'team' && sameTeam(me, p)) return false;
+        return playerRelics(p).length > 0;
+      });
+      if (victims.length) {
+        room.relicChallenge = {
+          mode: 'steal', playerId: playerId, phase: 'selectTarget', targetId: null, rolls: {},
+          pendingExtraTurn: false, pendingAugmentPick: false, pendingDuelWith: null, ts: Date.now()
+        };
+        extra += ' · 🏴‍☠️ 강탈 발동';
+      } else {
+        extra += ' · 강탈할 상대 없음';
+      }
+    }
+    if (room._pendingRelicFromItem === playerId) {
+      room._pendingRelicFromItem = null;
+      var ev = pickRelicEvent(room);
+      var fakeList = room.fakeRelicCells || [];
+      if (!Array.isArray(fakeList)) fakeList = [];
+      var isFake = fakeList.indexOf(me.position) !== -1;
+      room.relicChallenge = {
+        playerId: playerId, eventId: ev.id, target: ev.id, rolls: [], noAugment: true,
+        fakeRelic: isFake, pendingExtraTurn: false, pendingAugmentPick: false, pendingDuelWith: null, ts: Date.now()
+      };
+      extra += isFake ? ' · 🎭 가짜 유물 발동' : ' · 💎 유물 이벤트 발동';
+    }
+    return extra;
+  }
+
   function applyItemEffect(room, userId, targetId, itemId) {
     var me = room.players.find(function (p) { return p.id === userId; });
     var target = room.players.find(function (p) { return p.id === targetId; });
@@ -12839,6 +12889,7 @@ function openCellBook() {
         }
       });
       var msg = applyItemEffect(room, myPlayerId, tid, itemId);
+      msg += consumeItemCellTriggers(room, myPlayerId);
       // 사다리 → 요새 발리스타
       if (room._ladderFortressShot === myPlayerId) {
         room._ladderFortressShot = null;
@@ -12931,6 +12982,7 @@ function openCellBook() {
           // 거부 실패: 아이템 효과가 그대로 적용됨 (아이템은 이미 소모된 상태)
           var itFail = getItemById(pend.itemId);
           var msgFail = applyItemEffect(room, pend.userId, pend.targetId, pend.itemId);
+          msgFail += consumeItemCellTriggers(room, pend.userId);
           var userFail = room.players.find(function (p) { return p.id === pend.userId; });
           room.announce = {
             icon: '😇', title: '천사의 거부 실패!',
@@ -12966,6 +13018,7 @@ function openCellBook() {
 
       var it = getItemById(pend.itemId);
       var msg = applyItemEffect(room, pend.userId, pend.targetId, pend.itemId);
+      msg += consumeItemCellTriggers(room, pend.userId);
       var user2 = room.players.find(function (p) { return p.id === pend.userId; });
       room.announce = {
         icon: it ? it.icon : '🎒', title: '아이템: ' + (it ? it.name : pend.itemId),
