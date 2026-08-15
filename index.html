@@ -1645,7 +1645,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.6.27</span></div>
+      <div class="ld-version">패치 <span>v1.0.6.28</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -1708,6 +1708,13 @@
       <div class="ld-screen" id="screen-lobby">
         <div class="ld-code-display" id="lobbyCode">----</div>
         <div class="ld-code-hint">이 코드를 친구에게 공유하세요 (최대 8명 · 개인전/팀전)</div>
+        <div class="ld-info-btn-row" id="lobbyInfoBtnRow">
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyAug">🧩 증강&시너지</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyRelic">💎 유물</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyItem">🎒 아이템</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyCell">🗺️ 특수 칸</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyBuff">✨ 버프</button>
+        </div>
         <div class="ld-panel">
           <div class="ld-field-label" style="margin-top:0;">참가자</div>
           <div id="lobbyPlayers" style="margin-top:8px;"></div>
@@ -10140,10 +10147,12 @@ refreshRoomList();
   (function initAugBook() {
     var btn = document.getElementById('btnAugBook');
     var btnHomeAug = document.getElementById('btnAugBookHomeAug');
+    var btnLobbyAug = document.getElementById('btnAugBookLobbyAug');
     var close = document.getElementById('augBookClose');
     var modal = document.getElementById('augBookModal');
     if (btn) btn.onclick = openAugBook;
     if (btnHomeAug) btnHomeAug.onclick = openAugBook;
+    if (btnLobbyAug) btnLobbyAug.onclick = openAugBook;
     if (close) close.onclick = closeAugBook;
     if (modal) {
       modal.addEventListener('click', function (e) {
@@ -10200,9 +10209,11 @@ refreshRoomList();
   }
   (function initRelicBook() {
     var btnHomeRelic = document.getElementById('btnAugBookHomeRelic');
+    var btnLobbyRelic = document.getElementById('btnAugBookLobbyRelic');
     var close = document.getElementById('relicBookClose');
     var modal = document.getElementById('relicBookModal');
     if (btnHomeRelic) btnHomeRelic.onclick = openRelicBook;
+    if (btnLobbyRelic) btnLobbyRelic.onclick = openRelicBook;
     if (close) close.onclick = closeRelicBook;
     if (modal) {
       modal.addEventListener('click', function (e) {
@@ -10269,9 +10280,11 @@ refreshRoomList();
   }
   (function initItemBook() {
     var btnHomeItem = document.getElementById('btnAugBookHomeItem');
+    var btnLobbyItem = document.getElementById('btnAugBookLobbyItem');
     var close = document.getElementById('itemBookClose');
     var modal = document.getElementById('itemBookModal');
     if (btnHomeItem) btnHomeItem.onclick = openItemBook;
+    if (btnLobbyItem) btnLobbyItem.onclick = openItemBook;
     if (close) close.onclick = closeItemBook;
     if (modal) {
       modal.addEventListener('click', function (e) {
@@ -10599,9 +10612,11 @@ refreshRoomList();
   }
   (function initBuffBook() {
     var btn = document.getElementById('btnAugBookHomeBuff');
+    var btnLobbyBuff = document.getElementById('btnAugBookLobbyBuff');
     var close = document.getElementById('buffBookClose');
     var modal = document.getElementById('buffBookModal');
     if (btn) btn.onclick = openBuffBook;
+    if (btnLobbyBuff) btnLobbyBuff.onclick = openBuffBook;
     if (close) close.onclick = closeBuffBook;
     if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) closeBuffBook(); });
   })();
@@ -10688,9 +10703,11 @@ function openCellBook() {
   }
   (function initCellBook() {
     var btn = document.getElementById('btnAugBookHomeCell');
+    var btnLobbyCell = document.getElementById('btnAugBookLobbyCell');
     var close = document.getElementById('cellBookClose');
     var modal = document.getElementById('cellBookModal');
     if (btn) btn.onclick = openCellBook;
+    if (btnLobbyCell) btnLobbyCell.onclick = openCellBook;
     if (close) close.onclick = closeCellBook;
     if (modal) modal.addEventListener('click', function (e) {
       if (e.target === modal) closeCellBook();
