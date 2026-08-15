@@ -427,6 +427,8 @@
   .ld-log-text { color: var(--text-dim); }
   .ld-log-name { font-weight: 800; }
   .ld-log-move { color: var(--gold); font-weight: 800; margin-right: 3px; }
+  .ld-log-row-system { border-color: rgba(52,211,153,0.5); background: rgba(52,211,153,0.06); }
+  .ld-log-system-text { color: var(--green); font-weight: 700; }
   .ld-log-empty { text-align: center; color: var(--text-dim); font-size: 13px; padding: 10px 0; }
   .ld-log-open-btn { position: relative; }
   .ld-log-badge {
@@ -478,9 +480,9 @@
     border-color: var(--gold); background: rgba(251,191,36,0.16);
     box-shadow: 0 0 22px rgba(251,191,36,0.25);
   }
-  .ld-aug-card-title { font-size: 16px; font-weight: 800; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
+  .ld-aug-card-title { font-size: 16px; font-weight: 800; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; text-align: left; }
   .ld-aug-card-title span:first-child { font-size: 22px; }
-  .ld-aug-card-desc { font-size: 13px; color: #cfc8ef; line-height: 1.45; }
+  .ld-aug-card-desc { font-size: 13px; color: #cfc8ef; line-height: 1.45; text-align: left; }
   .ld-aug-card-tag {
     display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 700;
     padding: 3px 8px; border-radius: 6px; background: rgba(34,211,238,0.12);
@@ -964,7 +966,7 @@
 
   .ld-synergy-hint {
     font-size: 12px; color: var(--text-dim); line-height: 1.45; margin: 8px 0 0;
-    padding: 10px 12px; border-radius: 12px;
+    padding: 10px 12px; border-radius: 12px; text-align: left;
     background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25);
   }
   .ld-synergy-hint b { color: var(--gold); }
@@ -1050,16 +1052,33 @@
   .ld-syn-row {
     font-size: 12px; padding: 8px 10px; margin-bottom: 6px; border-radius: 10px;
     background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25);
-    line-height: 1.4; color: var(--text-main);
+    line-height: 1.4; color: var(--text-main); text-align: left;
   }
   .ld-syn-row b { color: var(--gold); }
+  .ld-syn-row-icon-line { display: flex; align-items: flex-start; gap: 8px; text-align: left; }
+  .ld-syn-group {
+    font-size: 12px; padding: 8px 10px; margin-bottom: 8px; border-radius: 10px;
+    background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25);
+    line-height: 1.4; color: var(--text-main); text-align: left;
+  }
+  .ld-syn-group b { color: var(--gold); }
+  .ld-syn-group .ld-syn-row-icon-line { margin-bottom: 6px; font-size: 13px; }
+  .ld-syn-group .ld-syn-row-icon-line > span:first-child { font-size: 15px; }
+  .ld-syn-group .ld-syn-tier { margin-left: 0; margin-top: 4px; text-align: left; }
   .ld-book-aug {
     padding: 10px 12px; margin-bottom: 8px; border-radius: 12px;
     background: rgba(255,255,255,0.04); border: 1px solid rgba(139,92,246,0.28);
+    text-align: left;
   }
   .ld-book-aug .nm { font-weight: 800; font-size: 13px; margin-bottom: 3px; }
   .ld-book-aug .ds { font-size: 12px; color: #cfc8ef; line-height: 1.35; }
   .ld-book-aug .tg { font-size: 10px; color: var(--cyan); margin-top: 4px; }
+  .ld-book-aug .nm { display: flex; align-items: center; gap: 8px; }
+  .ld-book-aug .ds,
+  .ld-book-aug .tg { margin-left: 34px; text-align: left; }
+  /* 증강 도감만 아이콘 아래 들여쓰기 없이 완전히 왼쪽 정렬 */
+  #augBookModal .ld-book-aug .ds,
+  #augBookModal .ld-book-aug .tg { margin-left: 0; }
 
 
   .ld-admin-aug-ban {
@@ -1130,7 +1149,7 @@
   }
   .ld-quick-btn:hover { border-color: var(--purple2); color: var(--text-main); }
   .ld-aug-card-syn {
-    margin-top: 8px; font-size: 11px; line-height: 1.4; color: var(--gold);
+    margin-top: 8px; font-size: 11px; line-height: 1.4; color: var(--gold); text-align: left;
     padding: 6px 8px; border-radius: 8px; background: rgba(251,191,36,0.1);
     border: 1px solid rgba(251,191,36,0.3);
   }
@@ -1179,8 +1198,16 @@
     background: rgba(240,171,252,0.1);
     border: 1px solid rgba(240,171,252,0.35);
     color: #f3f0ff;
+    display: flex; align-items: flex-start; gap: 8px;
   }
   .ld-board-relic-row b { color: #f0abfc; font-size: 13px; }
+  .ld-desc-icon {
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 26px; height: 26px; border-radius: 8px; font-size: 14px; line-height: 1;
+    background: rgba(255,255,255,0.06); border: 1.5px solid rgba(165,160,201,0.28);
+    margin-top: 1px;
+  }
+  .ld-desc-row-text { flex: 1; min-width: 0; }
   #boardRelicToggle {
     background: rgba(240,171,252,0.14);
     border-color: rgba(240,171,252,0.45);
@@ -1198,6 +1225,21 @@
   }
   #boardBuffList .ld-board-relic-row b { color: #fbbf24; }
   #boardItemList .ld-board-relic-row b { color: #34d399; }
+  #legendToggle {
+    background: rgba(240,171,252,0.14);
+    border-color: rgba(240,171,252,0.45);
+    color: #f0abfc; font-size: 13px;
+  }
+  #boardLegend.ld-board-relic-list {
+    background: rgba(20,14,42,0.92);
+    border: 1px solid rgba(240,171,252,0.45);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25), inset 0 0 20px rgba(240,171,252,0.06);
+  }
+  #boardLegend .ld-board-relic-row {
+    background: rgba(240,171,252,0.08);
+    border: 1px solid rgba(240,171,252,0.3);
+  }
+  #boardLegend .ld-board-relic-row b { color: #f0abfc; }
 
   .ld-side-panel .ld-relic-catalog {
     margin: 0; padding: 4px; justify-content: flex-start;
@@ -1525,6 +1567,9 @@
         <button type="button" class="ld-btn ld-btn-ghost" id="cellBookClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
       </div>
       <div class="ld-modal-body">
+        <div class="ld-book-tools">
+          <input type="search" id="cellBookSearch" placeholder="특수 칸 검색..." />
+        </div>
         <div id="cellBookList"></div>
       </div>
     </div>
@@ -1537,6 +1582,9 @@
         <button type="button" class="ld-btn ld-btn-ghost" id="buffBookClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
       </div>
       <div class="ld-modal-body">
+        <div class="ld-book-tools">
+          <input type="search" id="buffBookSearch" placeholder="버프·상태 검색..." />
+        </div>
         <div id="buffBookList"></div>
       </div>
     </div>
@@ -1699,7 +1747,7 @@
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeRelic">💎 유물</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeItem">🎒 아이템</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeCell">🗺️ 특수 칸</button>
-          <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeBuff">✨ 버프</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeBuff">✨ 버프&상태</button>
         </div>
         <div class="ld-field-label" style="margin-top:0;">닉네임</div>
         <input class="ld-input" id="homeNickname" placeholder="예: 행운의주사위" maxlength="10" />
@@ -1747,7 +1795,7 @@
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyRelic">💎 유물</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyItem">🎒 아이템</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyCell">🗺️ 특수 칸</button>
-          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyBuff">✨ 버프</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyBuff">✨ 버프&상태</button>
         </div>
         <div class="ld-panel">
           <div class="ld-field-label" style="margin-top:0;">참가자</div>
@@ -1880,10 +1928,10 @@
             <div class="ld-board-relic-wrap">
               <div class="ld-toggle-row">
                 <button type="button" class="ld-legend-toggle" id="boardItemToggle">🎒 아이템 설명 ▼</button>
-                <button type="button" class="ld-legend-toggle" id="legendToggle">📋 보드 범례 ▼</button>
+                <button type="button" class="ld-legend-toggle" id="legendToggle">🌟 특수 칸 설명 ▼</button>
               </div>
               <div class="ld-board-relic-list" id="boardItemList"></div>
-              <div class="ld-legend" id="boardLegend"></div>
+              <div class="ld-board-relic-list" id="boardLegend"></div>
             </div>
             <div class="ld-board-wrap">
               <div class="ld-board-grid" id="boardGrid">
@@ -1919,6 +1967,14 @@
   var AVATARS = ['🦊', '🐱', '🐼', '🦄', '🐲', '🐶', '🐰', '🦁', '🐷', '🐵', '🐙', '🦑', '🍀', '🦕', '🐘', '🦧', '🐻\u200d❄️', '🐊'];
   var BOARD_G = 9;
   var BOARD_SIZE = 4 * (BOARD_G - 1);
+  // 두 칸이 보드 순환 기준으로 같은 칸이거나 바로 앞/뒤 1칸 이내인지 (요새·집 도착 판정 확장용)
+  function isNearInstalledCell(cellA, cellB) {
+    if (cellA == null || cellA === '' || cellB == null || cellB === '') return false;
+    var a = Number(cellA) | 0, b = Number(cellB) | 0;
+    var d = Math.abs(a - b) % BOARD_SIZE;
+    d = Math.min(d, BOARD_SIZE - d);
+    return d <= 1;
+  }
 
   // ========== 보드 / 특수칸 / 증강 / 유물 데이터 ==========
   function buildBoardCells() {
@@ -2379,6 +2435,20 @@
     return k !== 'relic' && k !== 'steal';
   });
 
+  // 조건에 따라 나타나거나 발동하는 특수 칸 (기본 특수 칸 11종 제외 전부)
+  var CONDITIONAL_CELLS = [
+    { icon: '✨', label: '성역', desc: '2턴 유지 · 모든 칸 효과 미발동 · 동시에 1개만' },
+    { icon: '🏰', label: '성벽', desc: '지나가는 이동 1회 차단 후 소멸' },
+    { icon: '🏠', label: '집', desc: '도착·앞뒤 1칸 이내 시 아이템 1개 · 특수칸이면 둘 다 발동 · 1개만' },
+    { icon: '🏯', label: '요새', desc: '도착·앞뒤 1칸 이내 시 발리스타로 상대 -1~-3칸 선택 · 1개만' },
+    { icon: '🌉', label: '다리', desc: '중앙에서 출발칸→목적칸 이동 · 1개만(교체)' },
+    { icon: '💀', label: '해골', desc: '밟으면 다음 이동이 뒤로 · 보드에 1개만' },
+    { icon: '📍', label: '표식', desc: '2턴 함정 · 밟으면 휴식 1턴' },
+    { icon: '🚀', label: '임시 부스트', desc: '벽돌공 설치 · 보드에 1개 · 도착 시 부스트 효과 · 다음 설치 전까지 유지' },
+    { icon: '🪦', label: '묘비', desc: '플레이어 사망 시 그 자리에 생성 · 본인이 밟으면 부활(부활 버프 1턴) · 사망자는 1번 칸으로 이동' },
+    { icon: '💜', label: '무덤지대', desc: '묘지기 보유자가 처형 시 묘비 앞·뒤 1칸에 생성 · 보드에 1곳만 · 묘지기가 밟으면 묘비·무덤지대 제거 후 해당 플레이어 이동 칸 선택' }
+  ];
+
   function mulberry32(a) {
     return function () {
       var t = (a += 0x6D2B79F5);
@@ -2824,11 +2894,11 @@
     { id: 'curserelic', cat: 'curse', icon: '🖤', name: '저주 유물', desc: '2바퀴 달성 시 내 유물 1개가 저주됨 · 능력·승리 제외 · 보유 중 이동 -1', tag: '필드', chance: '2바퀴' },
     // build — 건설
     { id: 'bricklayer', cat: 'build', icon: '🧱', name: '벽돌공', desc: '일반 칸 착지 시 임시 부스트 설치 여부 선택 · 보드에 1개만 · 다른 칸에 설치 시 이전 것은 사라짐 · 다음 설치 전까지 유지', tag: '필드', chance: '선택' },
-    { id: 'architect', cat: 'build', icon: '🏗️', name: '건축가', desc: '이동 후 집 설치 여부 선택 · 집은 1개만 · 특수칸이면 특수+집 효과 · 집 도착 시 아이템 1개', tag: '필드', chance: '선택' },
+    { id: 'architect', cat: 'build', icon: '🏗️', name: '건축가', desc: '이동 후 집 설치 여부 선택 · 집은 1개만 · 특수칸이면 특수+집 효과 · 집 앞뒤 1칸 이내 도착 시 아이템 1개', tag: '필드', chance: '선택' },
     { id: 'rampart', cat: 'build', icon: '🏰', name: '성벽', desc: '일반 칸 착지 시 10% 확률로 성벽 설치 여부 선택 (뒤 칸) · 보드에 1개만 · 1회 차단 후 소멸', tag: '필드', chance: '10% 확률' },
     { id: 'bridge', cat: 'build', icon: '🌉', name: '다리', desc: '이동 후 10% 확률로 목적지 선택 → 분기 경로 생성 · 엔드포인트 옆에 중간 칸 · 방향 선택 · 1개만', tag: '필드', chance: '10% 확률' },
     { id: 'outpost', cat: 'build', icon: '🏕️', name: '초소', desc: '유물 칸 앞·뒤 2칸 안에 있으면 외부 요인으로 뒤로 밀리지 않음', tag: '필드', chance: '항상' },
-    { id: 'fortress', cat: 'build', icon: '🏯', name: '요새', desc: '이동 후 10% 확률로 요새 설치 여부 선택 · 1개만 · 요새 도착 시 발리스타로 대상 -1~-3칸 선택', tag: '필드', chance: '10% 확률' },
+    { id: 'fortress', cat: 'build', icon: '🏯', name: '요새', desc: '이동 후 10% 확률로 요새 설치 여부 선택 · 1개만 · 요새 앞뒤 1칸 이내 도착 시 발리스타로 대상 -1~-3칸 선택', tag: '필드', chance: '10% 확률' },
     // interfere — 간섭
     { id: 'static', cat: 'interfere', icon: '📶', name: '혼선', desc: '상대가 내게 아이템 사용 시 25% 확률로 실패 (+시너지)', tag: '필드', chance: '25% 확률' },
     { id: 'wiretap', cat: 'interfere', icon: '🎯', name: '조작 주사위', desc: '이동 시 2.5% 확률로 조작 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 1~6 원하는 눈 설정', tag: '필드', chance: '2.5% 확률' },
@@ -3333,11 +3403,13 @@
       map[name] = { name: name, icon: icon || '❔', desc: desc || '', cat: cat || '' };
     }
     try { Object.keys(CELL_TYPES).forEach(function (k) { var c = CELL_TYPES[k]; add(c.label, c.icon, c.desc, '특수 칸'); }); } catch (e) {}
+    try { CONDITIONAL_CELLS.forEach(function (c) { add(c.label, c.icon, c.desc, '조건 특수 칸'); }); } catch (e) {}
     try { ITEM_TYPES.forEach(function (it) { add(it.name, it.icon, it.desc, '아이템'); }); } catch (e) {}
     try { RELIC_TYPES.forEach(function (r) { add(r.name, r.icon, r.desc, '유물'); }); } catch (e) {}
     try { AUGMENT_POOL.forEach(function (a) { add(a.name, a.icon, a.desc, '증강'); }); } catch (e) {}
     try { SYNERGY_RULES.forEach(function (s) { add(s.name, s.icon, s.desc, '시너지'); }); } catch (e) {}
     try { GLOSSARY_STATUS_TERMS.forEach(function (s) { add(s.name, s.icon, s.desc, '상태'); }); } catch (e) {}
+    try { BUFF_GUIDE.forEach(function (b) { add(b.name, b.icon, b.desc, '버프·상태'); }); } catch (e) {}
     return map;
   }
   function getGlossaryMap() {
@@ -4592,6 +4664,12 @@ refreshRoomList();
         sub: '최대 ' + MAX_PLAYERS + '명 · 행운을 빕니다',
         ts: Date.now()
       };
+      room.log = [];
+      room.log.unshift({
+        name: '시스템', system: true, face: '🎮',
+        effectText: '게임이 시작되었습니다! 행운을 빕니다!',
+        ts: Date.now()
+      });
       await saveRoom(room);
       enterGame(room);
       maybeShowAnnounce(room);
@@ -4751,6 +4829,13 @@ refreshRoomList();
         sub: '보유 ' + me.augments.length + '개',
         ts: Date.now()
       };
+      room.log = room.log || [];
+      room.log.unshift({
+        name: me.name, playerId: me.id, face: a ? a.icon : '✨', newPos: me.position,
+        effectText: '✨ 증강 선택: ' + (a ? (a.icon + ' ' + a.name) : augId),
+        ts: Date.now()
+      });
+      room.log = room.log.slice(0, 60);
 
       // 증강 후 미뤄 둔 유물/강탈/대결
       if (after && after.type === 'steal') {
@@ -4846,6 +4931,8 @@ refreshRoomList();
       try {
         var room = await getRoom(code);
         if (room) {
+          var leavingPlayer = (room.players || []).find(function (p) { return p.id === pid; });
+          var leavingName = leavingPlayer ? leavingPlayer.name : '플레이어';
           removePlayerFromRoom(room, pid);
           if (!room.players.length) {
             room.status = 'closed';
@@ -4858,6 +4945,13 @@ refreshRoomList();
               sub: room.players.length + '명 남음',
               ts: Date.now()
             };
+            room.log = room.log || [];
+            room.log.unshift({
+              name: leavingName, system: true, face: '👋',
+              effectText: leavingName + '님이 게임을 나갔습니다',
+              ts: Date.now()
+            });
+            room.log = room.log.slice(0, 60);
           }
           await saveRoom(room);
         }
@@ -4960,15 +5054,18 @@ refreshRoomList();
     els.boardLegend.innerHTML = '';
     CELL_TYPE_KEYS.forEach(function (k) {
       var t = CELL_TYPES[k];
-      var item = document.createElement('span');
-      item.className = 'ld-legend-item';
-      item.textContent = t.icon + ' ' + t.label;
-      item.title = t.desc;
-      item.style.cursor = 'pointer';
-      item.onclick = function () {
-        showCellTip(k);
-      };
-      els.boardLegend.appendChild(item);
+      els.boardLegend.appendChild(makeDescRow(t.icon, t.label, t.desc, { iconColor: t.color }));
+    });
+    var condHeadRow = document.createElement('div');
+    condHeadRow.style.cssText = 'margin:10px 0 2px;text-align:center;';
+    condHeadRow.innerHTML = '<b style="color:var(--gold);">🌟 조건 특수 칸 — 특정 조건에서 나타나거나 발동하는 칸</b>';
+    els.boardLegend.appendChild(condHeadRow);
+    CONDITIONAL_CELLS.forEach(function (t) {
+      els.boardLegend.appendChild(makeDescRow(t.icon, t.label, t.desc, {
+        iconColor: '#fbbf24',
+        titleColor: 'var(--gold)',
+        rowStyle: 'border-color: rgba(251,191,36,0.45);'
+      }));
     });
   }
 
@@ -5018,9 +5115,9 @@ refreshRoomList();
       if (left > 0) addMark(k, '🏰', '성벽 (지나가는 이동 1회 차단)');
     });
     // 집 (🏠)
-    if (room.houseCell != null && room.houseCell !== '') addMark(room.houseCell, '🏠', '집 (도착 시 아이템 1개)');
+    if (room.houseCell != null && room.houseCell !== '') addMark(room.houseCell, '🏠', '집 (도착·앞뒤 1칸 이내 시 아이템 1개)');
     // 요새 (🏯)
-    if (room.fortressCell != null && room.fortressCell !== '') addMark(room.fortressCell, '🏯', '요새 (도착 시 발리스타 -3칸)');
+    if (room.fortressCell != null && room.fortressCell !== '') addMark(room.fortressCell, '🏯', '요새 (도착·앞뒤 1칸 이내 시 발리스타 -3칸)');
     // 묘비
     var tombs = room.tombstones || {};
     Object.keys(tombs).forEach(function (pid) {
@@ -6019,6 +6116,16 @@ refreshRoomList();
         var row = document.createElement('div');
         row.className = 'ld-log-row';
 
+        // 시스템 메시지(게임 시작·종료·퇴장 등): 얼굴/칸 표기 없이 문구만 표시
+        if (entry.system) {
+          row.classList.add('ld-log-row-system');
+          row.innerHTML =
+            '<div class="ld-log-face">' + (entry.face || '📣') + '</div>' +
+            '<span class="ld-log-text ld-log-system-text">' + escapeHtml(entry.effectText || '') + '</span>';
+          els.gameLog.appendChild(row);
+          return;
+        }
+
         // '획득: 🥷 훔치기' 처럼 줄바꿈되면 안 되는 구간은 공백을 줄바꿈 없는 공백(nbsp)으로 치환
         var effectRaw = entry.effectText || '';
         effectRaw = effectRaw.replace(/(획득:\s*)([^\s·]+(?:\s[^\s·]+)*)/g, function (m, p1, p2) {
@@ -6703,9 +6810,17 @@ refreshRoomList();
   function clearSleepStates(player, wokeReason) {
     if (!player) return false;
     var was = isAsleep(player);
+    var wasLight = (player.lightSleepTurns || 0) > 0;
+    var wasDeep = (player.deepSleepTurns || 0) > 0;
     player.lightSleepTurns = 0;
     player.deepSleepTurns = 0;
     player.napTurns = 0;
+    // 자명종 등으로 강제 기상해도 자연 기상과 동일하게 개운함·상쾌함 버프 적용
+    if (wasDeep) {
+      player.freshTurns = Math.max(player.freshTurns || 0, 3);
+    } else if (wasLight) {
+      player.refreshedTurns = Math.max(player.refreshedTurns || 0, 2);
+    }
     return was;
   }
   function tryDreamerExtraTurn(player) {
@@ -7434,7 +7549,8 @@ refreshRoomList();
       return result;
     }
     // 집: 아이템 1개 (+ 특수칸이면 아래에서 계속) — 다리 위에서는 본트랙 좌표가 우연히 겹쳐도 무시
-    if (!onBridgeNow && room.houseCell != null && (room.houseCell | 0) === (landPos | 0)) {
+    // 집이 설치된 칸 자체는 물론, 그 앞·뒤 1칸 이내에 도착해도 효과가 발동합니다.
+    if (!onBridgeNow && room.houseCell != null && room.houseCell !== '' && isNearInstalledCell(room.houseCell, landPos)) {
       if (room.buildLockOwner && room.buildLockOwner !== player.id) {
         result.effectText = '🔒 건설 시너지: 집 사용 잠금 중';
         result.announce = true;
@@ -7445,7 +7561,8 @@ refreshRoomList();
       }
     }
     // 요새: 발리스타 선택 예약 (착지한 플레이어가 다른 대상에게 발사) — 다리 위에서는 본트랙 좌표 우연 일치를 무시
-    if (!onBridgeNow && room.fortressCell != null && room.fortressCell !== '' && Number(room.fortressCell) === Number(landPos)) {
+    // 요새가 설치된 칸 자체는 물론, 그 앞·뒤 1칸 이내에 도착해도 효과가 발동합니다.
+    if (!onBridgeNow && room.fortressCell != null && room.fortressCell !== '' && isNearInstalledCell(room.fortressCell, landPos)) {
       if (room.buildLockOwner && room.buildLockOwner !== player.id) {
         result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '🔒 요새 잠금 중 (건설 시너지 IV)';
         result.announce = true;
@@ -8467,7 +8584,7 @@ refreshRoomList();
                 effectText: '🏴‍☠️ 강탈 성공 → ' + (srt ? srt.icon + srt.name : stolen) + ' (' + defender.name + ' 로부터)',
                 ts: Date.now()
               });
-              room.log = room.log.slice(0, 10);
+              room.log = room.log.slice(0, 60);
               if (hasAug(attacker, 'graverobber')) {
                 defender.skipTurns = (defender.skipTurns || 0) + 1;
                 room.announce.text += ' · 🪦도굴꾼 휴식';
@@ -8565,7 +8682,7 @@ refreshRoomList();
         };
         room.log = room.log || [];
         room.log.unshift({ name: me.name, playerId: me.id, face: sum, newPos: me.position, effectText: '💎 유물 성공 ' + sum, ts: Date.now() });
-        room.log = room.log.slice(0, 10);
+        room.log = room.log.slice(0, 60);
         await saveRoom(room);
         lastRoomSnapshot = room;
         renderGame(room);
@@ -8583,7 +8700,7 @@ refreshRoomList();
       };
       room.log = room.log || [];
       room.log.unshift({ name: me ? me.name : '?', playerId: me ? me.id : null, face: sum, newPos: me ? me.position : 0, effectText: '💎 유물 실패 ' + sum, ts: Date.now() });
-      room.log = room.log.slice(0, 10);
+      room.log = room.log.slice(0, 60);
 
       var extraTurn = !!ch.pendingExtraTurn;
       var needPick = !!ch.pendingAugmentPick;
@@ -8812,7 +8929,7 @@ refreshRoomList();
           effectText: '⚔️ ' + (loser ? loser.name : '?') + ' -' + punish,
           ts: Date.now()
         });
-        room.log = room.log.slice(0, 10);
+        room.log = room.log.slice(0, 60);
 
         await saveRoom(room);
         lastRoomSnapshot = room;
@@ -8923,6 +9040,13 @@ refreshRoomList();
           sub: '수동 턴 넘김',
           ts: Date.now()
         };
+        fresh.log = fresh.log || [];
+        fresh.log.unshift({
+          name: me.name, playerId: me.id, face: (me.deepSleepTurns || 0) > 0 ? '💤' : '😑', newPos: me.position,
+          effectText: ((me.deepSleepTurns || 0) > 0 ? '💤 깊은 잠' : '😑 얕은 잠') + ' — 턴 넘김',
+          ts: Date.now()
+        });
+        fresh.log = fresh.log.slice(0, 60);
         advanceTurn(fresh, false);
         fresh.pendingRoll = null;
         await saveRoom(fresh);
@@ -8941,10 +9065,24 @@ refreshRoomList();
             fresh.announce = {
               icon: '🌿', title: '허브 회복', text: me.name + ' — 휴식 턴 무시', sub: '', ts: Date.now()
             };
+            fresh.log = fresh.log || [];
+            fresh.log.unshift({
+              name: me.name, playerId: me.id, face: '🌿', newPos: me.position,
+              effectText: '🌿 허브 회복 — 휴식 턴 무시',
+              ts: Date.now()
+            });
+            fresh.log = fresh.log.slice(0, 60);
             await saveRoom(fresh);
             lastRoomSnapshot = fresh;
             // fall through to roll
           } else {
+            fresh.log = fresh.log || [];
+            fresh.log.unshift({
+              name: me.name, playerId: me.id, face: '🔒', newPos: me.position,
+              effectText: '🔒 휴식/스킵 — 턴 넘김 (남은 ' + me.skipTurns + '턴)',
+              ts: Date.now()
+            });
+            fresh.log = fresh.log.slice(0, 60);
             advanceTurn(fresh, false);
             fresh.pendingRoll = null;
             await saveRoom(fresh);
@@ -8956,6 +9094,13 @@ refreshRoomList();
           me.skipTurns -= 1;
           me._herbUsedThisSkip = false;
           tickDurationBuffsOnAction(me);
+          fresh.log = fresh.log || [];
+          fresh.log.unshift({
+            name: me.name, playerId: me.id, face: '🔒', newPos: me.position,
+            effectText: '🔒 휴식/스킵 — 턴 넘김 (남은 ' + me.skipTurns + '턴)',
+            ts: Date.now()
+          });
+          fresh.log = fresh.log.slice(0, 60);
           advanceTurn(fresh, false);
           fresh.pendingRoll = null;
           await saveRoom(fresh);
@@ -9519,10 +9664,10 @@ refreshRoomList();
           }
         }
       }
-      // 요새 발리스타: 실제로 요새 칸에 도착했을 때만 (설치 직후·스왑 등과 구분)
+      // 요새 발리스타: 실제로 요새 칸(설치 위치 및 앞·뒤 1칸 이내)에 도착했을 때만 (설치 직후·스왑 등과 구분)
       var fortCellNow = fresh.fortressCell;
       var onFortressNow = fortCellNow != null && fortCellNow !== '' &&
-        Number(fortCellNow) === Number(me.position != null ? me.position : landPos);
+        isNearInstalledCell(fortCellNow, me.position != null ? me.position : landPos);
       if (effect._fortressShot && onFortressNow) {
         try { SFX.special(); } catch (e) {}
         showAnnounce('🏯', '요새 발리스타!', me.name + ' — 대상을 선택하세요', '칸 ' + (me.position != null ? me.position : landPos));
@@ -10175,7 +10320,7 @@ refreshRoomList();
         effectText: effectNotes.join(' · ') + (startedDuel ? ' · ⚔️대결!' : ''),
         ts: Date.now()
       });
-      fresh.log = fresh.log.slice(0, 10);
+      fresh.log = fresh.log.slice(0, 60);
       fresh.pendingRoll = null;
 
       await saveRoom(fresh);
@@ -10249,6 +10394,8 @@ refreshRoomList();
       fbDb.ref(roomPath(code)).once('value').then(function (snap) {
         var room = snap.val();
         if (!room) return;
+        var leavingPlayer2 = (room.players || []).find(function (p) { return p.id === pid; });
+        var leavingName2 = leavingPlayer2 ? leavingPlayer2.name : '플레이어';
         removePlayerFromRoom(room, pid);
         if (!room.players || !room.players.length) {
           room.status = 'closed';
@@ -10261,6 +10408,14 @@ refreshRoomList();
           sub: room.players.length + '명 남음',
           ts: Date.now()
         };
+        room.log = room.log || [];
+        if (!Array.isArray(room.log)) room.log = Object.keys(room.log).map(function (k) { return room.log[k]; });
+        room.log.unshift({
+          name: leavingName2, system: true, face: '👋',
+          effectText: leavingName2 + '님이 게임을 나갔습니다',
+          ts: Date.now()
+        });
+        room.log = room.log.slice(0, 60);
         return fbDb.ref(roomPath(code)).set(room);
       }).catch(function () {});
     } catch (e) {}
@@ -10499,10 +10654,11 @@ refreshRoomList();
     AUGMENT_CATEGORIES.forEach(function (c) {
       var rules = byCat[c.id] || [];
       if (!rules.length) return;
-      var lines = rules.map(function (r) {
-        return r.need + '개 → <b>' + r.name + '</b>: ' + r.desc;
-      }).join('<br/>');
-      synEl.innerHTML += '<div class="ld-syn-row">' + c.icon + ' <b>' + c.name + '</b><br/>' + lines + '</div>';
+      var groupHtml = '<div class="ld-syn-row-icon-line"><span>' + c.icon + '</span><b>' + escapeHtml(c.name) + '</b></div>';
+      rules.forEach(function (r) {
+        groupHtml += '<div class="ld-syn-tier">' + r.need + '개 → <b>' + escapeHtml(r.name) + '</b>: ' + escapeHtml(r.desc) + '</div>';
+      });
+      synEl.innerHTML += '<div class="ld-syn-group">' + groupHtml + '</div>';
     });
 
     tabsEl.innerHTML = '';
@@ -10543,10 +10699,10 @@ refreshRoomList();
       div.className = 'ld-book-aug';
       if (banned) div.style.opacity = '0.45';
       div.innerHTML =
-        '<div class="nm">' + a.icon + ' ' + escapeHtml(a.name) +
+        '<div class="nm"><span class="ld-desc-icon">' + a.icon + '</span><span>' + escapeHtml(a.name) +
           (mine ? ' <span style="color:var(--cyan);font-size:11px;">[보유]</span>' : '') +
           (mine && off ? ' <span style="color:var(--red);font-size:11px;">OFF</span>' : '') +
-          (banned ? ' <span style="color:var(--red);font-size:11px;">[비활성]</span>' : '') + '</div>' +
+          (banned ? ' <span style="color:var(--red);font-size:11px;">[비활성]</span>' : '') + '</span></div>' +
         '<div class="ds">' + escapeHtml(a.desc) + '</div>' +
         '<div class="tg">' + escapeHtml(a.tag || '필드') +
           (a.chance ? ' · 발동 ' + escapeHtml(a.chance) : '') +
@@ -10612,7 +10768,7 @@ refreshRoomList();
       var div = document.createElement('div');
       div.className = 'ld-book-aug';
       div.innerHTML =
-        '<div class="nm">' + r.icon + ' ' + escapeHtml(r.name) + '</div>' +
+        '<div class="nm"><span class="ld-desc-icon">' + r.icon + '</span><span>' + escapeHtml(r.name) + '</span></div>' +
         '<div class="ds">' + escapeHtml(r.desc || '') + '</div>';
       listEl.appendChild(div);
       shown++;
@@ -10682,7 +10838,7 @@ refreshRoomList();
       div.className = 'ld-book-aug';
       var tgt = it.target === 'enemy' ? '상대 대상' : (it.target === 'self' ? '자신 대상' : (it.target === 'any' ? '본인/상대' : ''));
       div.innerHTML =
-        '<div class="nm">' + (it.specialOnly ? '⭐ ' : '') + it.icon + ' ' + escapeHtml(it.name) + '</div>' +
+        '<div class="nm"><span class="ld-desc-icon">' + it.icon + '</span><span>' + (it.specialOnly ? '⭐ ' : '') + escapeHtml(it.name) + '</span></div>' +
         '<div class="ds">' + escapeHtml(it.desc || '') + '</div>' +
         (tgt ? '<div class="tg">' + tgt + '</div>' : '');
       if (it.specialOnly) div.style.cssText = 'border:1px solid rgba(251,191,36,0.45);border-radius:10px;';
@@ -10721,15 +10877,14 @@ refreshRoomList();
       if (it.specialOnly && !specialHead) {
         var h = document.createElement('div');
         h.className = 'ld-board-relic-row';
-        h.innerHTML = '<b style="color:var(--gold);">⭐ 특별 아이템 — 아이템·선물 칸 미등장 · 칸 3개 초과 보유 가능</b>';
+        h.innerHTML = '<span class="ld-desc-icon" style="border-color:var(--gold);background:rgba(251,191,36,0.13);color:var(--gold);">⭐</span><span class="ld-desc-row-text"><b style="color:var(--gold);">특별 아이템</b> — 아이템·선물 칸 미등장 · 칸 3개 초과 보유 가능</span>';
         list.appendChild(h);
         specialHead = true;
       }
-      var row = document.createElement('div');
-      row.className = 'ld-board-relic-row';
       var tgt = it.target === 'enemy' ? ' (상대)' : (it.target === 'self' ? ' (자신)' : (it.target === 'any' ? ' (본인/상대)' : ''));
-      row.innerHTML = '<b>' + (it.specialOnly ? '⭐ ' : '') + it.icon + ' ' + escapeHtml(it.name) + '</b> — ' + escapeHtml(it.desc || '') + escapeHtml(tgt);
-      if (it.specialOnly) row.style.cssText = 'border:1px solid rgba(251,191,36,0.4);border-radius:8px;';
+      var row = makeDescRow(it.icon, (it.specialOnly ? '⭐ ' : '') + it.name, (it.desc || '') + tgt, {
+        rowStyle: it.specialOnly ? 'border:1px solid rgba(251,191,36,0.4);border-radius:8px;' : ''
+      });
       list.appendChild(row);
     });
     list.dataset.ready = '1';
@@ -11007,18 +11162,33 @@ refreshRoomList();
   ];
   function openBuffBook() {
     var modal = document.getElementById('buffBookModal');
-    var list = document.getElementById('buffBookList');
-    if (!modal || !list) return;
-    list.innerHTML = '';
-    BUFF_GUIDE.forEach(function (t) {
-      var div = document.createElement('div');
-      div.className = 'ld-book-aug';
-      div.innerHTML = '<div class="nm">' + t.icon + ' ' + escapeHtml(t.name) + '</div><div class="ds" style="white-space:pre-line;">' + escapeHtml(t.desc) + '</div>';
-      list.appendChild(div);
-    });
+    if (!modal) return;
+    renderBuffBook();
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
     try { SFX.click(); } catch (e) {}
+  }
+  function renderBuffBook() {
+    var list = document.getElementById('buffBookList');
+    if (!list) return;
+    var qEl = document.getElementById('buffBookSearch');
+    var q = (qEl && qEl.value ? qEl.value : '').trim().toLowerCase();
+    list.innerHTML = '';
+    var shown = 0;
+    BUFF_GUIDE.forEach(function (t) {
+      if (q) {
+        var hay = (t.name + ' ' + t.desc).toLowerCase();
+        if (hay.indexOf(q) === -1) return;
+      }
+      var div = document.createElement('div');
+      div.className = 'ld-book-aug';
+      div.innerHTML = '<div class="nm"><span class="ld-desc-icon">' + t.icon + '</span><span>' + escapeHtml(t.name) + '</span></div><div class="ds" style="white-space:pre-line;">' + escapeHtml(t.desc) + '</div>';
+      list.appendChild(div);
+      shown++;
+    });
+    if (!shown) {
+      list.innerHTML = '<div class="ld-code-hint">검색 결과 없음</div>';
+    }
   }
   function closeBuffBook() {
     var modal = document.getElementById('buffBookModal');
@@ -11035,6 +11205,10 @@ refreshRoomList();
     if (btnLobbyBuff) btnLobbyBuff.onclick = openBuffBook;
     if (close) close.onclick = closeBuffBook;
     if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) closeBuffBook(); });
+    var qEl = document.getElementById('buffBookSearch');
+    if (qEl) qEl.oninput = function () {
+      if (document.getElementById('buffBookModal').classList.contains('show')) renderBuffBook();
+    };
   })();
 
   function renderBoardBuffGuide() {
@@ -11043,10 +11217,8 @@ refreshRoomList();
     if (list.dataset.ready === 'buff-v10') return;
     list.innerHTML = '';
     BUFF_GUIDE.forEach(function (t) {
-      var row = document.createElement('div');
-      row.className = 'ld-board-relic-row';
+      var row = makeDescRow(t.icon, t.name, t.desc);
       row.style.whiteSpace = 'pre-line';
-      row.innerHTML = '<b>' + t.icon + ' ' + escapeHtml(t.name) + '</b> — ' + escapeHtml(t.desc || '');
       list.appendChild(row);
     });
     list.dataset.ready = 'buff-v10';
@@ -11075,41 +11247,55 @@ refreshRoomList();
 function openCellBook() {
     var modal = document.getElementById('cellBookModal');
     if (!modal) return;
-    var list = document.getElementById('cellBookList');
-    if (list) {
-      list.innerHTML = '';
-      Object.keys(CELL_TYPES).forEach(function (k) {
-        var t = CELL_TYPES[k];
-        var div = document.createElement('div');
-        div.className = 'ld-book-aug';
-        div.innerHTML = '<div class="nm">' + t.icon + ' ' + escapeHtml(t.label) + '</div>' +
-          '<div class="ds">' + escapeHtml(t.desc || '') + '</div>';
-        list.appendChild(div);
-      });
-      // 동적 특수
-      var extra = [
-        { icon: '✨', label: '성역', desc: '2턴 유지 · 모든 칸 효과 미발동 · 동시에 1개만' },
-        { icon: '🏰', label: '성벽', desc: '지나가는 이동 1회 차단 후 소멸' },
-        { icon: '🏠', label: '집', desc: '도착 시 아이템 1개 · 특수칸이면 둘 다 발동 · 1개만' },
-        { icon: '🏯', label: '요새', desc: '도착 시 발리스타로 상대 -1~-3칸 선택 · 1개만' },
-        { icon: '🌉', label: '다리', desc: '중앙에서 출발칸→목적칸 이동 · 1개만(교체)' },
-        { icon: '💀', label: '해골', desc: '밟으면 다음 이동이 뒤로 · 보드에 1개만' },
-        { icon: '📍', label: '표식', desc: '2턴 함정 · 밟으면 휴식 1턴' },
-        { icon: '🚀', label: '임시 부스트', desc: '벽돌공 설치 · 보드에 1개 · 도착 시 부스트 효과 · 다음 설치 전까지 유지' },
-        { icon: '🪦', label: '묘비', desc: '플레이어 사망 시 그 자리에 생성 · 본인이 밟으면 부활(부활 버프 1턴) · 사망자는 1번 칸으로 이동' },
-        { icon: '💜', label: '무덤지대', desc: '묘지기 보유자가 처형 시 묘비 앞·뒤 1칸에 생성 · 보드에 1곳만 · 묘지기가 밟으면 묘비·무덤지대 제거 후 해당 플레이어 이동 칸 선택' }
-      ];
-      extra.forEach(function (t) {
-        var div = document.createElement('div');
-        div.className = 'ld-book-aug';
-        div.innerHTML = '<div class="nm">' + t.icon + ' ' + escapeHtml(t.label) + '</div>' +
-          '<div class="ds">' + escapeHtml(t.desc) + '</div>';
-        list.appendChild(div);
-      });
-    }
+    renderCellBook();
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
     try { SFX.click(); } catch (e) {}
+  }
+  function renderCellBook() {
+    var list = document.getElementById('cellBookList');
+    if (!list) return;
+    var qEl = document.getElementById('cellBookSearch');
+    var q = (qEl && qEl.value ? qEl.value : '').trim().toLowerCase();
+    list.innerHTML = '';
+    var shown = 0;
+    Object.keys(CELL_TYPES).forEach(function (k) {
+      var t = CELL_TYPES[k];
+      if (q) {
+        var hay = (t.label + ' ' + (t.desc || '')).toLowerCase();
+        if (hay.indexOf(q) === -1) return;
+      }
+      var div = document.createElement('div');
+      div.className = 'ld-book-aug';
+      div.innerHTML = '<div class="nm"><span class="ld-desc-icon">' + t.icon + '</span><span>' + escapeHtml(t.label) + '</span></div>' +
+        '<div class="ds">' + escapeHtml(t.desc || '') + '</div>';
+      list.appendChild(div);
+      shown++;
+    });
+    // 조건 특수 칸 (특정 조건에서만 나타나거나 발동하는 칸) — 특별 아이템처럼 구분 표시
+    var condMatches = CONDITIONAL_CELLS.filter(function (t) {
+      if (!q) return true;
+      var hay = (t.label + ' ' + (t.desc || '')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    if (condMatches.length) {
+      var condHead = document.createElement('div');
+      condHead.style.cssText = 'margin:14px 0 8px;text-align:center;';
+      condHead.innerHTML = '<b style="color:var(--gold);">🌟 조건 특수 칸 — 특정 조건에서 나타나거나 발동하는 칸</b>';
+      list.appendChild(condHead);
+      condMatches.forEach(function (t) {
+        var div = document.createElement('div');
+        div.className = 'ld-book-aug';
+        div.style.cssText = 'border:1px solid rgba(251,191,36,0.45);border-radius:10px;';
+        div.innerHTML = '<div class="nm"><span class="ld-desc-icon">' + t.icon + '</span><span>🌟 ' + escapeHtml(t.label) + '</span></div>' +
+          '<div class="ds">' + escapeHtml(t.desc) + '</div>';
+        list.appendChild(div);
+        shown++;
+      });
+    }
+    if (!shown) {
+      list.innerHTML = '<div class="ld-code-hint">검색 결과 없음</div>';
+    }
   }
   function closeCellBook() {
     var modal = document.getElementById('cellBookModal');
@@ -11128,6 +11314,10 @@ function openCellBook() {
     if (modal) modal.addEventListener('click', function (e) {
       if (e.target === modal) closeCellBook();
     });
+    var qEl = document.getElementById('cellBookSearch');
+    if (qEl) qEl.oninput = function () {
+      if (document.getElementById('cellBookModal').classList.contains('show')) renderCellBook();
+    };
   })();
 
 (function initLegendToggle() {
@@ -11139,7 +11329,7 @@ function openCellBook() {
     function apply() {
       if (open) leg.classList.remove('collapsed');
       else leg.classList.add('collapsed');
-      btn.textContent = open ? '📋 보드 범례 ▼' : '📋 보드 범례 ▶';
+      btn.textContent = open ? '🌟 특수 칸 설명 ▼' : '🌟 특수 칸 설명 ▶';
     }
     apply();
     btn.onclick = function () {
@@ -12300,6 +12490,13 @@ function openCellBook() {
         sub: sec + '초 제한' + (hasAug(cp, 'leisure') ? ' (여유 +10)' : ''),
         ts: Date.now()
       };
+      fresh.log = fresh.log || [];
+      fresh.log.unshift({
+        name: cp.name, playerId: cp.id, face: '⏰', newPos: cp.position,
+        effectText: '⏰ 시간 초과 — 턴 스킵',
+        ts: Date.now()
+      });
+      fresh.log = fresh.log.slice(0, 60);
       await saveRoom(fresh);
       lastRoomSnapshot = fresh;
       if (els.screenGame && els.screenGame.classList.contains('active')) {
@@ -12340,6 +12537,13 @@ function openCellBook() {
           fresh.announce = {
             icon: '🌿', title: '허브 회복', text: me.name + ' — 휴식 턴 무시', sub: '', ts: Date.now()
           };
+          fresh.log = fresh.log || [];
+          fresh.log.unshift({
+            name: me.name, playerId: me.id, face: '🌿', newPos: me.position,
+            effectText: '🌿 허브 회복 — 휴식 턴 무시',
+            ts: Date.now()
+          });
+          fresh.log = fresh.log.slice(0, 60);
           await saveRoom(fresh);
           lastRoomSnapshot = fresh;
           renderGame(fresh);
@@ -12357,6 +12561,13 @@ function openCellBook() {
           sub: '자동으로 다음 플레이어 차례',
           ts: Date.now()
         };
+        fresh.log = fresh.log || [];
+        fresh.log.unshift({
+          name: me.name, playerId: me.id, face: me.heresyJudged ? '⚖️' : '🔒', newPos: me.position,
+          effectText: (me.heresyJudged ? '⚖️ 이단 판정 휴식' : '🔒 휴식/스킵') + ' — 자동 턴 넘김 (남은 ' + me.skipTurns + '턴)',
+          ts: Date.now()
+        });
+        fresh.log = fresh.log.slice(0, 60);
         advanceTurn(fresh, false);
       } else {
         return;
@@ -12536,7 +12747,7 @@ function openCellBook() {
         effectText: '💀 저주받은 영혼 → ' + (drt ? drt.icon + drt.name : destroyId) + ' 존재 파괴',
         ts: Date.now()
       });
-      fresh.log = fresh.log.slice(0, 10);
+      fresh.log = fresh.log.slice(0, 60);
       lastRoomSnapshot = fresh;
       await saveRoom(fresh);
       renderGame(fresh);
@@ -13281,7 +13492,7 @@ function openCellBook() {
       };
       room.log = room.log || [];
       room.log.unshift({ name: me.name, playerId: me.id, face: '🎒', newPos: me.position, effectText: msg, ts: Date.now() });
-      room.log = room.log.slice(0, 10);
+      room.log = room.log.slice(0, 60);
 
       await saveRoom(room);
       lastRoomSnapshot = room;
@@ -13334,7 +13545,7 @@ function openCellBook() {
           };
           room.log = room.log || [];
           room.log.unshift({ name: '천사', face: '😇', newPos: 0, effectText: pend.itemName + ' 거부 성공 · 아이템 소멸', ts: Date.now() });
-          room.log = room.log.slice(0, 10);
+          room.log = room.log.slice(0, 60);
           room.itemPending = null;
           await saveRoom(room);
           lastRoomSnapshot = room;
@@ -13356,7 +13567,7 @@ function openCellBook() {
           };
           room.log = room.log || [];
           room.log.unshift({ name: pend.userName || '?', playerId: pend.userId, face: '🎒', newPos: userFail ? userFail.position : 0, effectText: msgFail + ' (거부 실패)', ts: Date.now() });
-          room.log = room.log.slice(0, 10);
+          room.log = room.log.slice(0, 60);
           room.itemPending = null;
           await saveRoom(room);
           lastRoomSnapshot = room;
@@ -13393,7 +13604,7 @@ function openCellBook() {
       };
       room.log = room.log || [];
       room.log.unshift({ name: pend.userName || '?', playerId: pend.userId, face: '🎒', newPos: user2 ? user2.position : 0, effectText: msg, ts: Date.now() });
-      room.log = room.log.slice(0, 10);
+      room.log = room.log.slice(0, 60);
       room.itemPending = null;
       await saveRoom(room);
       lastRoomSnapshot = room;
@@ -13481,10 +13692,7 @@ function openCellBook() {
     if (!list || list.dataset.ready === '1') return;
     list.innerHTML = '';
     RELIC_TYPES.forEach(function (r) {
-      var row = document.createElement('div');
-      row.className = 'ld-board-relic-row';
-      row.innerHTML = '<b>' + r.icon + ' ' + escapeHtml(r.name) + '</b> — ' + escapeHtml(r.desc || '');
-      list.appendChild(row);
+      list.appendChild(makeDescRow(r.icon, r.name, r.desc));
     });
     list.dataset.ready = '1';
   }
@@ -13863,6 +14071,22 @@ function openCellBook() {
     var div = document.createElement('div');
     div.textContent = str == null ? '' : String(str);
     return div.innerHTML;
+  }
+
+  // 설명 목록(유물/버프/아이템/특수 칸)용 공통 아이콘 박스 + 설명 행 생성
+  function makeDescRow(icon, title, desc, opts) {
+    opts = opts || {};
+    var row = document.createElement('div');
+    row.className = 'ld-board-relic-row';
+    if (opts.rowStyle) row.style.cssText = opts.rowStyle;
+    var iconStyle = opts.iconColor
+      ? ' style="border-color:' + opts.iconColor + ';background:' + opts.iconColor + '22;color:' + opts.iconColor + ';"'
+      : '';
+    var titleColor = opts.titleColor ? ' style="color:' + opts.titleColor + ';"' : '';
+    row.innerHTML =
+      '<span class="ld-desc-icon"' + iconStyle + '>' + (icon || '') + '</span>' +
+      '<span class="ld-desc-row-text"><b' + titleColor + '>' + escapeHtml(title || '') + '</b> — ' + escapeHtml(desc || '') + '</span>';
+    return row;
   }
 })();
 </script>
