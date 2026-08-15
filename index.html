@@ -349,6 +349,11 @@
     border-width: 2.5px !important;
     box-shadow: 0 0 10px rgba(251,191,36,0.55), inset 0 0 8px rgba(251,191,36,0.18);
   }
+  .ld-cell.ld-cell-graveyard {
+    border-color: #a855f7 !important;
+    border-width: 2.5px !important;
+    box-shadow: 0 0 10px rgba(168,85,247,0.55), inset 0 0 8px rgba(168,85,247,0.18);
+  }
   .ld-cell-icon { font-size: 14px; line-height: 1; }
   .ld-cell-badge {
     position: absolute;
@@ -1640,7 +1645,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.6.15</span></div>
+      <div class="ld-version">패치 <span>v1.0.6.27</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -2375,7 +2380,7 @@
     /* —— 특수 주사위 (아이템 칸·선물 칸에서 등장하지 않음 · 증강/시너지로만 획득) —— */
     { id: 'curse_dice', icon: '☠️', name: '저주 주사위', desc: '본인/상대 사용 가능 · 대상의 다음 이동이 굴린 만큼 뒤로 이동 · 최대 1개 · 아이템 칸·선물 칸에서 등장하지 않음', target: 'any', specialOnly: true, maxOne: true, group: 'dice' },
     { id: 'loaded_dice', icon: '🎯', name: '조작 주사위', desc: '1~6 원하는 눈으로 이동 주사위 설정 · 최대 1개 · 아이템 칸·선물 칸에서 등장하지 않음', target: 'self', specialOnly: true, maxOne: true, group: 'dice' },
-    { id: 'lucky_dice', icon: '🍀', name: '행운 주사위', desc: '사용 시 이동 주사위 4~6 확률 50% 상승 · 최대 1개 · 아이템 칸·선물 칸에서 등장하지 않음', target: 'self', specialOnly: true, maxOne: true, group: 'dice' },
+    { id: 'lucky_dice', icon: '🍀', name: '행운 주사위', desc: '사용 시 이동 주사위 4~6이 나올 확률 50% 상승 · 최대 1개 · 아이템 칸·선물 칸에서 등장하지 않음', target: 'self', specialOnly: true, maxOne: true, group: 'dice' },
     { id: 'advanced_dice', icon: '🔋', name: '첨단 주사위', desc: '다음 이동을 7~12로 굴림 · 최대 1개 · 아이템 칸·선물 칸에서 등장하지 않음', target: 'self', specialOnly: true, maxOne: true, group: 'dice' },
     { id: 'chaos_dice', icon: '🌪️', name: '혼돈 주사위', desc: '사용 시 랜덤 칸으로 이동 · 최대 1개 · 아이템 칸·선물 칸에서 등장하지 않음', target: 'self', specialOnly: true, maxOne: true, group: 'dice' },
     { id: 'arch_dice', icon: '🏺', name: '고고학 주사위', desc: '1~3칸 중 원하는 칸으로 지정 이동 · 최대 1개 · 아이템 칸·선물 칸에서 등장하지 않음', target: 'self', specialOnly: true, maxOne: true, group: 'dice' },
@@ -2478,19 +2483,20 @@
   var RELIC_TYPES = [
     { id: 'sun', icon: '☀️', name: '태양 유물', desc: '이동 +1칸 (항상)' },
     { id: 'moon', icon: '🌙', name: '달 유물', desc: '함정 피해 -2 · 대결·강탈 방어 주사위 +1 · 대결 패배 벌칙 -2' },
-    { id: 'star', icon: '⭐', name: '별 유물', desc: '1~3이 나오면 18% 재굴림 제안 (수락 시 다시 굴림)' },
-    { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 재굴림 제안 (수락 시 다시 굴림)' },
+    { id: 'star', icon: '⭐', name: '별 유물', desc: '1~3이 나오면 18% 확률로 재굴림 제안 (수락 시 다시 굴림)' },
+    { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 확률로 재굴림 제안 (수락 시 다시 굴림)' },
     { id: 'herb', icon: '🌿', name: '허브 유물', desc: '휴식 칸 무시 · 스킵 턴 1회 자동 회복' },
     { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈에서 내가 굴리는 주사위 +1' },
-    { id: 'wind', icon: '💨', name: '바람 유물', desc: '방 공유: 전원 주사위 22% +3칸 · 누구든 한 바퀴 시 바퀴 카운트 +2 (증강 선택은 1회)' },
+    { id: 'wind', icon: '💨', name: '바람 유물', desc: '방 공유: 전원 주사위 22% 확률로 +3칸 · 누구든 한 바퀴 시 바퀴 카운트 +2 (증강 선택은 1회)' },
     { id: 'crystal', icon: '💠', name: '수정 유물', desc: '일반 칸 착지 시 45% 확률로 근처 특수 칸으로 이동' },
     { id: 'thunder', icon: '⚡', name: '번개 유물', desc: '짝수 눈이면 이동 +2' },
     { id: 'bloom', icon: '🌸', name: '꽃 유물', desc: '홀수 눈이면 이동 +2' },
     { id: 'compass', icon: '🧭', name: '나침반 유물', desc: '이동 시 8% 확률로 1~굴린칸 중 도착 칸 선택' },
     { id: 'shadow', icon: '🌑', name: '그림자 유물', desc: '앞·뒤 3칸 이내 상대가 있으면 그 위치로 이동 (해당 칸 효과 발동)' },
     { id: 'ore', icon: '⛏️', name: '광석 유물', desc: '유물 칸 착지 시 15% 확률로 바로 앞 유물 칸으로 한 번 더 이동 (그 칸 효과 재발동)' },
-    { id: 'demon', icon: '😈', name: '악마 유물', desc: '방 안에 보유자가 있으면 누구든 주사위를 굴릴 때마다 33% 확률로 모든 이동·특수 이동이 반대로 발동 (앞↔뒤)' },
-    { id: 'angel', icon: '😇', name: '천사 유물', desc: '다른 플레이어의 아이템 사용을 거부 시도 가능 (타인 대상 포함) · 허용은 100%, 거부는 50% 확률로 성공 · 거부 성공 시 아이템 소멸' }
+    { id: 'demon', icon: '😈', name: '악마 유물', desc: '방 안에 보유자가 있으면 누구든 주사위를 굴릴 때마다 20% 확률로 모든 이동·특수 이동이 반대로 발동 (앞↔뒤)' },
+    { id: 'angel', icon: '😇', name: '천사 유물', desc: '다른 플레이어의 아이템 사용을 거부 시도 가능 (타인 대상 포함) · 허용은 100%, 거부는 20% 확률로 성공 · 거부 성공 시 아이템 소멸' },
+    { id: 'rock', icon: '🪨', name: '암석 유물', desc: '보유 중 모든 증강 및 유물 확률 +3%' }
   ];
 
   // 유물 칸 이벤트 3종 (랜덤 1개)
@@ -2548,7 +2554,11 @@
   // 유물 발동 확률 (+ 유틸 시너지 allAugBonus)
   function relicPct(player, base) {
     var syn = synergyBonus(player);
-    return Math.min(0.95, (base || 0) + (syn.allAugBonus || 0));
+    var rock = (player && hasRelic(player, 'rock')) ? 0.03 : 0;
+    return Math.min(0.95, (base || 0) + (syn.allAugBonus || 0) + rock);
+  }
+  function rockBonus(player) {
+    return (player && hasRelic(player, 'rock')) ? 0.03 : 0;
   }
   function playerRelicsForWin(p) {
     var r = playerRelics(p);
@@ -2635,59 +2645,62 @@
     { id: 'interfere', name: '간섭', icon: '📡' },
     { id: 'restful', name: '휴식', icon: '😴' },
     { id: 'tech', name: '하이테크', icon: '🤖' },
-    { id: 'purify', name: '정화', icon: '✨' }
+    { id: 'purify', name: '정화', icon: '✨' },
+    { id: 'life_death', name: '삶과 죽음', icon: '☯️' }
   ];
 
+  // 텍스트 규칙: % 발동 능력 설명에는 항상 "% 확률로" 를 쓴다. (예: 20% 확률로 …)
+  // 중복 금지: "확률로 확률로" 가 되지 않게 작성. 확률 상승은 "확률 N% 상승" 유지.
   var AUGMENT_POOL = [
     // luck — 리스크/확률 이동 (이동 고정 보너스 시너지와 구분)
-    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1이면 이동 -1 · 6이면 이동 +1 (약 24%)', tag: '필드', chance: '24%' },
-    { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '3 또는 4일 때 36%로 +1칸 (전체 약 12%)', tag: '필드', chance: '12%' },
-    { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '2면 -1칸 · 5면 +1칸 (약 24%)', tag: '필드', chance: '24%' },
+    { id: 'lucky', cat: 'luck', icon: '🍀', name: '행운', desc: '1이면 이동 -1 · 6이면 이동 +1 (약 24%)', tag: '필드', chance: '24% 확률' },
+    { id: 'clover', cat: 'luck', icon: '☘️', name: '네잎클로버', desc: '3 또는 4일 때 36%로 +1칸 (전체 약 12%)', tag: '필드', chance: '12% 확률' },
+    { id: 'fortune', cat: 'luck', icon: '💰', name: '대박', desc: '2면 -1칸 · 5면 +1칸 (약 24%)', tag: '필드', chance: '24% 확률' },
     { id: 'momentum', cat: 'luck', icon: '⚖️', name: '기세', desc: '이전 눈: 6→+1 · 5→0 · 4→0 · 3→-1 · 2→-1 · 1→-2', tag: '필드', chance: '항상' },
-    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 25% 확률 이동 +1', tag: '필드', chance: '25%' },
-    { id: 'jackpot', cat: 'luck', icon: '🎰', name: '잭팟', desc: '6이 나오면 25% 추가 턴', tag: '필드', chance: '6일 때 25%' },
-    { id: 'luckydice', cat: 'luck', icon: '🍀', name: '행운 주사위', desc: '이동 시 3% 행운 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 4~6 확률 50% 상승', tag: '필드', chance: '3%' },
+    { id: 'serendipity', cat: 'luck', icon: '✨', name: '우연', desc: '굴림 후 25% 확률로 이동 +1', tag: '필드', chance: '25% 확률' },
+    { id: 'jackpot', cat: 'luck', icon: '🎰', name: '잭팟', desc: '6이 나오면 25% 확률로 추가 턴', tag: '필드', chance: '6일 때 25%' },
+    { id: 'luckydice', cat: 'luck', icon: '🍀', name: '행운 주사위', desc: '이동 시 3% 확률로 행운 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 4~6이 나올 확률 50% 상승', tag: '필드', chance: '3% 확률' },
     // speed — 부스트/재굴림 특화
-    { id: 'swift', cat: 'luck', icon: '⚡', name: '초보자', desc: '1이 나오면 재굴림 1회 (약 17%)', tag: '필드', chance: '17%' },
+    { id: 'swift', cat: 'luck', icon: '⚡', name: '초보자', desc: '1이 나오면 재굴림 1회 (약 17%)', tag: '필드', chance: '17% 확률' },
     { id: 'courier', cat: 'speed', icon: '📦', name: '특송', desc: '부스트 칸 착지 시 +5칸 (기본 3 대신)', tag: '필드', chance: '칸 의존' },
     { id: 'chainboost', cat: 'speed', icon: '🔗', name: '연쇄 부스트', desc: '부스트 효과 2회 발동', tag: '필드', chance: '칸 의존' },
     { id: 'turbo', cat: 'speed', icon: '🏎️', name: '터보', desc: '부스트 착지 시 부스트 이동 대신 추가 턴', tag: '필드', chance: '항상' },
-    { id: 'dualthrust', cat: 'speed', icon: '🚀', name: '2단 추진', desc: '부스트 이동 후 75% 확률 추가 턴', tag: '필드', chance: '75%' },
-    { id: 'sprint', cat: 'speed', icon: '🏃', name: '질주', desc: '4 이상이면 50% 확률 휴식 1턴 또는 이동 +2', tag: '필드', chance: '50%' },
-    { id: 'slipstream', cat: 'speed', icon: '🌀', name: '슬립스트림', desc: '3 이하면 50% 확률 휴식 1턴 또는 이동 +2', tag: '필드', chance: '50%' },
+    { id: 'dualthrust', cat: 'speed', icon: '🚀', name: '2단 추진', desc: '부스트 이동 후 75% 확률로 추가 턴', tag: '필드', chance: '75% 확률' },
+    { id: 'sprint', cat: 'speed', icon: '🏃', name: '질주', desc: '4 이상이면 50% 확률로 휴식 1턴 또는 이동 +2', tag: '필드', chance: '50% 확률' },
+    { id: 'slipstream', cat: 'speed', icon: '🌀', name: '슬립스트림', desc: '3 이하면 50% 확률로 휴식 1턴 또는 이동 +2', tag: '필드', chance: '50% 확률' },
     // defend — 함정/휴식만
     { id: 'guardian', cat: 'defend', icon: '🛡️', name: '수호', desc: '함정 피해 1로 고정', tag: '필드', chance: '칸 의존' },
     { id: 'iron', cat: 'defend', icon: '🪨', name: '철벽', desc: '대결 패배 벌칙 1칸으로 고정', tag: '전투', chance: '전투 시' },
     { id: 'reflect', cat: 'defend', icon: '🪞', name: '반사', desc: '워프 칸 효과 무시', tag: '필드', chance: '칸 의존' },
     { id: 'anchor', cat: 'defend', icon: '⚓', name: '닻', desc: '교체 칸 효과 무시', tag: '필드', chance: '칸 의존' },
-    { id: 'evasion', cat: 'defend', icon: '💨', name: '회피', desc: '함정 칸 25% 완전 무시', tag: '필드', chance: '25%' },
+    { id: 'evasion', cat: 'defend', icon: '💨', name: '회피', desc: '함정 칸 25% 확률로 완전 무시', tag: '필드', chance: '25% 확률' },
     // chaos
-    { id: 'mirror', cat: 'chaos', icon: '🔮', name: '거울', desc: '홀수 눈이면 (7-눈)칸 이동 · 약 50%', tag: '필드', chance: '50%' },
-    { id: 'chaos', cat: 'chaos', icon: '🌪️', name: '혼돈', desc: '일반 칸 10%(+시너지) 랜덤 워프', tag: '필드', chance: '10%' },
-    { id: 'glitch', cat: 'chaos', icon: '👾', name: '글리치', desc: '일반 칸 5% 보드 전체 특수칸 뒤섞기', tag: '필드', chance: '5%' },
-    { id: 'wildcard', cat: 'chaos', icon: '🎴', name: '와일드', desc: '특수칸 25% 다른 특수 효과로 변경', tag: '필드', chance: '25%' },
+    { id: 'mirror', cat: 'chaos', icon: '🔮', name: '거울', desc: '홀수 눈이면 (7-눈)칸 이동 · 약 50%', tag: '필드', chance: '50% 확률' },
+    { id: 'chaos', cat: 'chaos', icon: '🌪️', name: '혼돈', desc: '일반 칸 10%(+시너지) 랜덤 워프', tag: '필드', chance: '10% 확률' },
+    { id: 'glitch', cat: 'chaos', icon: '👾', name: '글리치', desc: '일반 칸 5% 확률로 보드 전체 특수칸 뒤섞기', tag: '필드', chance: '5% 확률' },
+    { id: 'wildcard', cat: 'chaos', icon: '🎴', name: '와일드', desc: '특수칸 25% 확률로 다른 특수 효과로 변경', tag: '필드', chance: '25% 확률' },
     { id: 'jester', cat: 'chaos', icon: '🤡', name: '광대', desc: '교체 칸에서 전원 위치 한 칸 회전', tag: '필드', chance: '칸 의존' },
     { id: 'vampire', cat: 'chaos', icon: '🧛', name: '흡혈', desc: '착지 칸에 상대가 있으면 +2칸', tag: '필드', chance: '상황' },
-    { id: 'rift', cat: 'chaos', icon: '🕳️', name: '균열', desc: '특수칸 착지 시 15% 랜덤 워프', tag: '필드', chance: '15%' },
-    { id: 'chaosdice_aug', cat: 'chaos', icon: '🎲', name: '혼돈 주사위', desc: '이동 시 3% 혼돈 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 랜덤 칸 이동', tag: '필드', chance: '3%' },
+    { id: 'rift', cat: 'chaos', icon: '🕳️', name: '균열', desc: '특수칸 착지 시 15% 확률로 랜덤 워프', tag: '필드', chance: '15% 확률' },
+    { id: 'chaosdice_aug', cat: 'chaos', icon: '🎲', name: '혼돈 주사위', desc: '이동 시 3% 확률로 혼돈 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 랜덤 칸 이동', tag: '필드', chance: '3% 확률' },
     // relic — 유물/선물/아이템 칸
     { id: 'collector', cat: 'relic', icon: '🧰', name: '수집가', desc: '아이템 최대 보유 시 착지마다 무조건 +1칸', tag: '필드', chance: '상황' },
-    { id: 'doublerelic', cat: 'relic', icon: '💎', name: '이중 유물', desc: '유물 획득 시 7% 추가 1개', tag: '필드', chance: '7%' },
-    { id: 'doublegift', cat: 'relic', icon: '🎀', name: '더블 선물', desc: '선물 효과 1회 발동 시 65% 확률로 효과 1회 추가 발동', tag: '필드', chance: '65%' },
-    { id: 'prospector', cat: 'relic', icon: '⛏️', name: '탐사자', desc: '유물/강탈/아이템 칸 착지 시 10% 유물·강탈 이동 아이템 획득', tag: '필드', chance: '10%' },
+    { id: 'doublerelic', cat: 'relic', icon: '💎', name: '이중 유물', desc: '유물 획득 시 7% 확률로 추가 1개', tag: '필드', chance: '7% 확률' },
+    { id: 'doublegift', cat: 'relic', icon: '🎀', name: '더블 선물', desc: '선물 효과 1회 발동 시 65% 확률로 효과 1회 추가 발동', tag: '필드', chance: '65% 확률' },
+    { id: 'prospector', cat: 'relic', icon: '⛏️', name: '탐사자', desc: '유물/강탈/아이템 칸 착지 시 10% 확률로 유물·강탈 이동 아이템 획득', tag: '필드', chance: '10% 확률' },
     { id: 'hoarder', cat: 'relic', icon: '📦', name: '사재기', desc: '아이템 획득 시 랜덤 아이템 1개 추가', tag: '필드', chance: '항상' },
     // util
     { id: 'loaded', cat: 'util', icon: '🧠', name: '건망증', desc: '주사위 눈 1↔6 · 2↔5로 변경', tag: '필드', chance: '항상' },
-    { id: 'thief', cat: 'util', icon: '🦝', name: '도둑', desc: '훔치기 사용 시 훔친 아이템 + 랜덤 아이템 1개 추가', tag: '필드', chance: '아이템' },
+    { id: 'thief', cat: 'util', icon: '🦝', name: '도둑', desc: '훔치기 사용 시 훔친 아이템 + 랜덤 아이템 1개 추가 · 턴 시작 시 50% 확률로 훔치기 아이템 획득', tag: '필드', chance: '아이템·50%' },
     { id: 'timebend', cat: 'util', icon: '⏳', name: '시공', desc: '특수 칸 도착 시 효과 무시(유물 칸 제외) · 본인 추가 턴', tag: '필드', chance: '칸 의존' },
-    { id: 'phantom', cat: 'util', icon: '👻', name: '유령', desc: '턴 시작 시 유령 여부 선택 · 유령 상태면 모든 특수칸·공격·배틀·디버프 무시(유물 포함) · 다음 사람 턴에 해제', tag: '필드', chance: '선택' },
+    { id: 'phantom', cat: 'util', icon: '👻', name: '유령', desc: '턴 시작 시 유령 여부 선택 · 유령 상태면 본인 증강 미발동 · 특수칸·증강 설치 칸 효과·공격·배틀·디버프 무시(유물 포함) · 다음 사람 턴에 해제 · 유령 중 증강 선택 불가', tag: '필드', chance: '선택' },
     { id: 'combo', cat: 'util', icon: '✨', name: '콤보', desc: '이전 턴과 같은 눈이 나오면 그 눈만큼 추가 이동', tag: '필드', chance: '상황' },
     // battle
     { id: 'duelist', cat: 'battle', icon: '⚔️', name: '결투사', desc: '대결·강탈 주사위 +1', tag: '전투', chance: '전투 시' },
     { id: 'bully', cat: 'battle', icon: '💪', name: '강압', desc: '대결 벌칙 주사위 +1', tag: '전투', chance: '전투 시' },
     { id: 'intimidate', cat: 'battle', icon: '😤', name: '위압', desc: '대결 패배 시 벌칙 -1', tag: '전투', chance: '전투 시' },
     { id: 'challenger', cat: 'battle', icon: '🏅', name: '도전자', desc: '대결 시 상대보다 뒤면 주사위 +1', tag: '전투', chance: '전투 시' },
-    { id: 'duelmaster', cat: 'battle', icon: '🗡️', name: '결투의 달인', desc: '대결 승리 시 25% 추가 턴', tag: '전투', chance: '25%' },
+    { id: 'duelmaster', cat: 'battle', icon: '🗡️', name: '결투의 달인', desc: '대결 승리 시 25% 확률로 추가 턴', tag: '전투', chance: '25% 확률' },
     { id: 'counter', cat: 'battle', icon: '↩️', name: '반격', desc: '대결 패배 시 승자 -3칸', tag: '전투', chance: '전투 시' },
     // support
     { id: 'share', cat: 'support', icon: '🎁', name: '나눔', desc: '선물 칸 시 가장 뒤 동료/상대 1명 +2칸', tag: '필드', chance: '칸 의존' },
@@ -2697,64 +2710,72 @@
     { id: 'beneficiary', cat: 'support', icon: '🎀', name: '수혜자', desc: '다른 플레이어가 아이템을 획득하면 나도 아이템 1개 획득', tag: '필드', chance: '상황' },
     { id: 'protector', cat: 'support', icon: '🛡️', name: '보호자', desc: '앞·뒤 4칸 이내 대결에서 패배 벌칙 무효', tag: '전투', chance: '전투 시' },
     // leap (신규) — 큰 이동/도약만
-    { id: 'hop', cat: 'leap', icon: '🐇', name: '홉', desc: '3이 나오면 1~3칸 중 랜덤 이동', tag: '필드', chance: '17%' },
-    { id: 'vault', cat: 'leap', icon: '🚀', name: '도약', desc: '6이 나오면 4~6칸 중 랜덤 이동', tag: '필드', chance: '17%' },
+    { id: 'hop', cat: 'leap', icon: '🐇', name: '홉', desc: '3이 나오면 1~3칸 중 랜덤 이동', tag: '필드', chance: '17% 확률' },
+    { id: 'vault', cat: 'leap', icon: '🚀', name: '도약', desc: '6이 나오면 4~6칸 중 랜덤 이동', tag: '필드', chance: '17% 확률' },
     { id: 'bound', cat: 'leap', icon: '🦘', name: '바운드', desc: '휴식에서 깨어날 때 이동 +1 예약', tag: '필드', chance: '칸 의존' },
     { id: 'pounce', cat: 'leap', icon: '🐆', name: '급습', desc: '앞 2칸 안 상대로 이동 (그 칸 효과 미발동)', tag: '필드', chance: '상황' },
-    { id: 'longstride', cat: 'leap', icon: '👣', name: '성큼', desc: '이동 2 이하면 50% 확률 3칸 이동', tag: '필드', chance: '50%' },
+    { id: 'longstride', cat: 'leap', icon: '👣', name: '성큼', desc: '이동 2 이하면 50% 확률로 3칸 이동', tag: '필드', chance: '50% 확률' },
     // curse (신규) — 상대 디버프만
     { id: 'hex', cat: 'curse', icon: '🔮', name: '헥스', desc: '착지 칸 상대가 있으면 그 상대 -2칸', tag: '필드', chance: '상황' },
     { id: 'jinx', cat: 'curse', icon: '🌀', name: '징크스', desc: '대결 시 상대 주사위 -1', tag: '전투', chance: '전투 시' },
     { id: 'weaken', cat: 'curse', icon: '📉', name: '약화', desc: '함정 밟을 때 가장 앞 상대 -2칸', tag: '필드', chance: '칸 의존' },
     { id: 'snare', cat: 'curse', icon: '🕸️', name: '올가미', desc: '스킵 칸 착지 시 가장 가까운 상대에게 휴식 1턴', tag: '필드', chance: '칸 의존' },
-    { id: 'omen', cat: 'curse', icon: '👁️', name: '흉조', desc: '내가 1이 나오면 다음 상대 첫 이동 -1 예약', tag: '필드', chance: '17%' },
-    { id: 'glitchstep', cat: 'leap', icon: '🔄', name: '길치', desc: '이동 후 50% 확률 이동 전 위치로 되돌아감', tag: '필드', chance: '50%' },
+    { id: 'omen', cat: 'curse', icon: '👁️', name: '흉조', desc: '내가 1이 나오면 다음 상대 첫 이동 -1 예약', tag: '필드', chance: '17% 확률' },
+    { id: 'glitchstep', cat: 'leap', icon: '🔄', name: '길치', desc: '이동 후 50% 확률로 이동 전 위치로 되돌아감', tag: '필드', chance: '50% 확률' },
     { id: 'dimtraveler', cat: 'util', icon: '🌌', name: '차원여행자', desc: '워프·교체 시 아이템 1개 획득', tag: '필드', chance: '칸 의존' },
-    { id: 'magi', cat: 'defend', icon: '✨', name: '매지', desc: '상대 아이템 사용 시 20% 반사(무효)', tag: '필드', chance: '20%' },
+    { id: 'magi', cat: 'defend', icon: '✨', name: '매지', desc: '상대 아이템 사용 시 20% 확률로 반사(무효)', tag: '필드', chance: '20% 확률' },
     { id: 'graverobber', cat: 'relic', icon: '🪦', name: '도굴꾼', desc: '유물 강탈 성공 시 상대 휴식 1턴', tag: '전투', chance: '강탈 시' },
-    { id: 'cursebind', cat: 'curse', icon: '🧿', name: '저주', desc: '20% 확률로 다음 상대 첫 이동이 내 주사위 눈과 동일', tag: '필드', chance: '20%' },
-    { id: 'necromancer', cat: 'curse', icon: '💀', name: '네크로맨서', desc: '주사위 굴림 시 10% 원하는 칸에 해골 임시 설치 (보드에 1개만) · 해골 칸 착지 시 다음 이동이 뒤로', tag: '필드', chance: '10%' },
-    { id: 'cursedice_aug', cat: 'curse', icon: '☠️', name: '저주 주사위', desc: '이동 시 3% 저주 주사위 획득 (최대 1 · 아이템 칸·선물 칸에서 등장하지 않음) · 본인/상대 사용 시 다음 이동이 뒤로', tag: '필드', chance: '3%' },
+    { id: 'cursebind', cat: 'curse', icon: '🧿', name: '저주', desc: '20% 확률로 다음 상대 첫 이동이 내 주사위 눈과 동일', tag: '필드', chance: '20% 확률' },
+    { id: 'necromancer', cat: 'curse', icon: '💀', name: '네크로맨서', desc: '주사위 굴림 시 10% 확률로 원하는 칸에 해골 임시 설치 (보드에 1개만) · 해골 칸 착지 시 다음 이동이 뒤로', tag: '필드', chance: '10% 확률' },
+    { id: 'cursedice_aug', cat: 'curse', icon: '☠️', name: '저주 주사위', desc: '이동 시 3% 확률로 저주 주사위 획득 (최대 1 · 아이템 칸·선물 칸에서 등장하지 않음) · 본인/상대 사용 시 다음 이동이 뒤로', tag: '필드', chance: '3% 확률' },
     { id: 'fakerelic', cat: 'relic', icon: '🎭', name: '가짜 유물', desc: '획득 후 2바퀴마다: 첫 발동 시 유물 칸 1곳을 가짜로 · 이후 2바퀴마다 위치 변경 여부 선택 · 가짜 칸은 게임 중 1곳만 · 가짜 유물은 효과·승리 미포함', tag: '필드', chance: '2바퀴' },
-    { id: 'archdice_aug', cat: 'relic', icon: '🎲', name: '고고학 주사위', desc: '이동 시 3% 고고학 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 1~3칸 지정 이동', tag: '필드', chance: '3%' },
+    { id: 'archdice_aug', cat: 'relic', icon: '🎲', name: '고고학 주사위', desc: '이동 시 3% 확률로 고고학 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 1~3칸 지정 이동', tag: '필드', chance: '3% 확률' },
     { id: 'curserelic', cat: 'curse', icon: '🖤', name: '저주 유물', desc: '2바퀴 달성 시 내 유물 1개가 저주됨 · 능력·승리 제외 · 보유 중 이동 -1', tag: '필드', chance: '2바퀴' },
     // build — 건설
     { id: 'bricklayer', cat: 'build', icon: '🧱', name: '벽돌공', desc: '일반 칸 착지 시 임시 부스트 설치 여부 선택 · 보드에 1개만 · 다른 칸에 설치 시 이전 것은 사라짐 · 다음 설치 전까지 유지', tag: '필드', chance: '선택' },
     { id: 'architect', cat: 'build', icon: '🏗️', name: '건축가', desc: '이동 후 집 설치 여부 선택 · 집은 1개만 · 특수칸이면 특수+집 효과 · 집 도착 시 아이템 1개', tag: '필드', chance: '선택' },
-    { id: 'rampart', cat: 'build', icon: '🏰', name: '성벽', desc: '일반 칸 착지 시 10% 성벽 설치 여부 선택 (뒤 칸) · 보드에 1개만 · 1회 차단 후 소멸', tag: '필드', chance: '10%' },
-    { id: 'bridge', cat: 'build', icon: '🌉', name: '다리', desc: '이동 후 10% 목적지 선택 → 분기 경로 생성 · 엔드포인트 옆에 중간 칸 · 방향 선택 · 1개만', tag: '필드', chance: '10%' },
+    { id: 'rampart', cat: 'build', icon: '🏰', name: '성벽', desc: '일반 칸 착지 시 10% 확률로 성벽 설치 여부 선택 (뒤 칸) · 보드에 1개만 · 1회 차단 후 소멸', tag: '필드', chance: '10% 확률' },
+    { id: 'bridge', cat: 'build', icon: '🌉', name: '다리', desc: '이동 후 10% 확률로 목적지 선택 → 분기 경로 생성 · 엔드포인트 옆에 중간 칸 · 방향 선택 · 1개만', tag: '필드', chance: '10% 확률' },
     { id: 'outpost', cat: 'build', icon: '🏕️', name: '초소', desc: '유물 칸 앞·뒤 2칸 안에 있으면 외부 요인으로 뒤로 밀리지 않음', tag: '필드', chance: '항상' },
-    { id: 'fortress', cat: 'build', icon: '🏯', name: '요새', desc: '이동 후 10% 요새 설치 여부 선택 · 1개만 · 요새 도착 시 발리스타로 대상 -1~-3칸 선택', tag: '필드', chance: '10%' },
+    { id: 'fortress', cat: 'build', icon: '🏯', name: '요새', desc: '이동 후 10% 확률로 요새 설치 여부 선택 · 1개만 · 요새 도착 시 발리스타로 대상 -1~-3칸 선택', tag: '필드', chance: '10% 확률' },
     // interfere — 간섭
-    { id: 'static', cat: 'interfere', icon: '📶', name: '혼선', desc: '상대가 내게 아이템 사용 시 25% 실패 (+시너지)', tag: '필드', chance: '25%' },
-    { id: 'wiretap', cat: 'interfere', icon: '🎯', name: '조작 주사위', desc: '이동 시 2.5% 조작 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 1~6 원하는 눈 설정', tag: '필드', chance: '2.5%' },
-    { id: 'saboteur', cat: 'interfere', icon: '🛠️', name: '방해꾼', desc: '대결·강탈·벌칙 주사위 굴림 시 10% 그 눈에 -1', tag: '전투', chance: '10%' },
-    { id: 'jammer', cat: 'interfere', icon: '📵', name: '혼란', desc: '이동 시 5% 확률로 1턴간 모두 교란 상태(모든 칸 안 보임 · 특수 칸 효과는 유지)', tag: '필드', chance: '5%' },
+    { id: 'static', cat: 'interfere', icon: '📶', name: '혼선', desc: '상대가 내게 아이템 사용 시 25% 확률로 실패 (+시너지)', tag: '필드', chance: '25% 확률' },
+    { id: 'wiretap', cat: 'interfere', icon: '🎯', name: '조작 주사위', desc: '이동 시 2.5% 확률로 조작 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 1~6 원하는 눈 설정', tag: '필드', chance: '2.5% 확률' },
+    { id: 'saboteur', cat: 'interfere', icon: '🛠️', name: '방해꾼', desc: '대결·강탈·벌칙 주사위 굴림 시 10% 확률로 그 눈에 -1', tag: '전투', chance: '10% 확률' },
+    { id: 'jammer', cat: 'interfere', icon: '📵', name: '혼란', desc: '이동 시 5% 확률로 1턴간 모두 교란 상태(모든 칸 안 보임 · 특수 칸 효과는 유지)', tag: '필드', chance: '5% 확률' },
     { id: 'swaptrap', cat: 'interfere', icon: '🔀', name: '스왑트랩', desc: '교체 칸 착지 시 원하는 상대와 교체', tag: '필드', chance: '칸 의존' },
-    { id: 'seal', cat: 'interfere', icon: '🔒', name: '봉인', desc: '착지 칸 앞·뒤 1칸에 상대가 있으면 20% 그 상대 다음 아이템 1회 봉인', tag: '필드', chance: '20%' },
+    { id: 'seal', cat: 'interfere', icon: '🔒', name: '봉인', desc: '착지 칸 앞·뒤 1칸에 상대가 있으면 20% 확률로 그 상대 다음 아이템 1회 봉인', tag: '필드', chance: '20% 확률' },
     // restful — 휴식
     { id: 'meditate', cat: 'restful', icon: '🧘', name: '명상', desc: '휴식 시 명상 스택 +1 · 3스택 시 해탈(2턴, 이단 제외 디버프 면역) · 해탈 중 이단→이단자 · 해탈 재획득 시 이단자 해제', tag: '필드', chance: '휴식' },
-    { id: 'nap', cat: 'restful', icon: '😴', name: '낮잠', desc: '턴 시작 80% 낮잠 스택 · 휴식 칸에서도 +1 · 5스택마다 잠(얕은·깊은 잠 확률 영구 +1%, 중첩) · 이후에도 재누적', tag: '필드', chance: '80%' },
+    { id: 'nap', cat: 'restful', icon: '😴', name: '낮잠', desc: '턴 시작 80% 확률로 낮잠 스택 · 휴식 칸에서도 +1 · 5스택마다 잠(얕은·깊은 잠 확률 영구 +1%, 중첩) · 이후에도 재누적', tag: '필드', chance: '80% 확률' },
     { id: 'recover', cat: 'restful', icon: '💚', name: '회복', desc: '3번째 내 턴마다 보호막 +1', tag: '필드', chance: '3턴' },
     { id: 'leisure', cat: 'restful', icon: '☕', name: '여유와 조급', desc: '내 턴 타이머 +10초 · 다른 보유자 1명당 상대(및 서로) 턴 타이머 -5초 (중첩)', tag: '필드', chance: '항상' },
-    { id: 'waitup', cat: 'restful', icon: '🪑', name: '대기', desc: '일반 칸 착지 시 10% 다음 이동 +3 예약', tag: '필드', chance: '10%' },
-    { id: 'dreamer', cat: 'restful', icon: '🌙', name: '몽상가', desc: '수면(얕은·깊은 잠)·휴식에서 깨어날 때 20% 추가 턴', tag: '필드', chance: '20%' },
-    { id: 'sleepdual', cat: 'restful', icon: '😴', name: '얕은 잠 · 깊은 잠', desc: '얕은 잠: 턴 시작 10% → 1턴 수면 → 개운함 2회(1.4배) / 깊은 잠: 턴 시작 10% → 2턴 수면 → 상쾌함 3회(1.7배)', tag: '필드', chance: '각 10%' },
-    { id: 'alarm_aug', cat: 'restful', icon: '⏰', name: '자명종', desc: '턴 시작 2% 자명종 아이템 획득 (최대 1 · 아이템/선물 칸 미등장)', tag: '필드', chance: '2%' },
+    { id: 'waitup', cat: 'restful', icon: '🪑', name: '대기', desc: '일반 칸 착지 시 10% 확률로 다음 이동 +3 예약', tag: '필드', chance: '10% 확률' },
+    { id: 'dreamer', cat: 'restful', icon: '🌙', name: '몽상가', desc: '수면(얕은·깊은 잠)·휴식에서 깨어날 때 20% 확률로 추가 턴', tag: '필드', chance: '20% 확률' },
+    { id: 'sleepdual', cat: 'restful', icon: '😴', name: '얕은 잠 · 깊은 잠', desc: '얕은 잠: 턴 시작 10% 확률로 → 1턴 수면 → 개운함 2회(1.4배) / 깊은 잠: 턴 시작 10% 확률로 → 2턴 수면 → 상쾌함 3회(1.7배)', tag: '필드', chance: '각 10%' },
+    { id: 'alarm_aug', cat: 'restful', icon: '⏰', name: '자명종', desc: '턴 시작 2% 확률로 자명종 아이템 획득 (최대 1 · 아이템/선물 칸 미등장)', tag: '필드', chance: '2% 확률' },
     // tech — 하이테크
-    { id: 'scanner', cat: 'tech', icon: '📡', name: '스캐너', desc: '이동 후 50% 유물 탐색 → 채굴 → 세척 → 복원 → 획득 (각 단계 50% 성공 시 다음)', tag: '필드', chance: '50%×5' },
-    { id: 'drone', cat: 'tech', icon: '🛸', name: '드론', desc: '내 턴 시작 시 20% 칸 선택해 드론 설치 (보드 1개) · 드론 칸 앞·뒤 1칸 도착 시 -1칸 · 새 드론 설치 시 교체', tag: '필드', chance: '20%' },
-    { id: 'hack', cat: 'tech', icon: '💻', name: '해킹', desc: '모든 플레이어 아이템 사용 시 5% 다른 아이템으로 치환되어 사용', tag: '필드', chance: '5%' },
-    { id: 'boosterpack', cat: 'tech', icon: '🔋', name: '첨단 주사위', desc: '이동 시 3.5% 첨단 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 7~12 굴림', tag: '필드', chance: '3.5%' },
-    { id: 'telemod', cat: 'tech', icon: '📶', name: '텔레포트 모듈', desc: '아무 칸 도착 시 10% 포탈 오픈 → 다른 칸 이동 (도착 칸 특수 효과 미발동)', tag: '필드', chance: '10%' },
-    { id: 'overclock', cat: 'tech', icon: '⚡', name: '오버클럭', desc: '주사위 굴릴 때마다 20% 과열 스택 · 6스택 시 오버클럭(1턴, 이동 12~18) → 종료 후 언더클럭(1턴, 1~2만)', tag: '필드', chance: '20%' },
+    { id: 'scanner', cat: 'tech', icon: '📡', name: '스캐너', desc: '이동 후 50% 확률로 유물 탐색 → 채굴 → 세척 → 복원 → 획득 (각 단계 50% 확률로 성공 시 다음)', tag: '필드', chance: '50%×5' },
+    { id: 'drone', cat: 'tech', icon: '🛸', name: '드론', desc: '내 턴 시작 시 20% 확률로 칸 선택해 드론 설치 (보드 1개) · 드론 칸 앞·뒤 1칸 도착 시 -1칸 · 새 드론 설치 시 교체', tag: '필드', chance: '20% 확률' },
+    { id: 'hack', cat: 'tech', icon: '💻', name: '해킹', desc: '모든 플레이어 아이템 사용 시 5% 확률로 다른 아이템으로 치환되어 사용', tag: '필드', chance: '5% 확률' },
+    { id: 'boosterpack', cat: 'tech', icon: '🔋', name: '첨단 주사위', desc: '이동 시 3.5% 확률로 첨단 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 7~12 굴림', tag: '필드', chance: '3.5% 확률' },
+    { id: 'telemod', cat: 'tech', icon: '📶', name: '텔레포트 모듈', desc: '아무 칸 도착 시 10% 확률로 포탈 오픈 → 다른 칸 이동 (도착 칸 특수 효과 미발동)', tag: '필드', chance: '10% 확률' },
+    { id: 'overclock', cat: 'tech', icon: '⚡', name: '오버클럭', desc: '주사위 굴릴 때마다 20% 확률로 과열 스택 · 6스택 시 오버클럭(1턴, 이동 12~18) → 종료 후 언더클럭(1턴, 1~2만)', tag: '필드', chance: '20% 확률' },
     // purify — 정화
     { id: 'reliccleanse', cat: 'purify', icon: '🕊️', name: '유물 정화', desc: '저주 유물 보유 중 6바퀴 달성 시 신화 유물로 정화 (효과 2배)', tag: '필드', chance: '6바퀴' },
     { id: 'holywater', cat: 'purify', icon: '💧', name: '회개', desc: '속죄 보유 시에만 적용 · 이동 +2칸 (속죄 -1과 합치면 순 +1)', tag: '필드', chance: '속죄 필요' },
-    { id: 'sanctify', cat: 'purify', icon: '✝️', name: '신성', desc: '저주 계열 상대 디버프(헥스 등) 50% 무시', tag: '필드', chance: '50%' },
+    { id: 'sanctify', cat: 'purify', icon: '✝️', name: '신성', desc: '저주 계열 상대 디버프(헥스 등) 50% 확률로 무시', tag: '필드', chance: '50% 확률' },
     { id: 'baptism', cat: 'purify', icon: '🚶', name: '성지순례', desc: '성역을 지나간 플레이어 수 × 7% 확률로 다음 이동 1.5배', tag: '필드', chance: '성역' },
     { id: 'atonement', cat: 'purify', icon: '🙏', name: '속죄', desc: '항상 이동 -1칸', tag: '필드', chance: '항상' },
-    { id: 'radiance', cat: 'purify', icon: '👩‍🎤', name: '성녀', desc: '이동 후 30% 앞·뒤 2칸이 성역(2턴) · 성역에선 효과 미발동 · 다른 성역이 있으면 새 성역 생성 안 됨', tag: '필드', chance: '30%' }
+
+    // life_death — 삶과 죽음
+    { id: 'grim_reaper', cat: 'life_death', icon: '💀', name: '그림 리퍼', desc: '턴 시작 시 그림 리퍼 변신 여부 선택 · 변신 중 다른 플레이어 칸 도착 시 죽임(묘비 생성·1번 칸 이동) · 처치 실패 시 갈망 스택 · 처형 성공 시 갈망 초기화 · 4스택 시 4턴 사용 불가', tag: '필드', chance: '선택' },
+    { id: 'gravedigger', cat: 'life_death', icon: '🪦', name: '묘지기', desc: '묘비 생성 시 앞·뒤 1칸을 무덤지대로 변경 · 보드에 무덤지대 1곳만 · 무덤지대 도착 시 묘비·무덤지대 제거 후 해당 플레이어 이동 칸 선택', tag: '필드', chance: '필드' },
+    { id: 'life_aug', cat: 'life_death', icon: '🌱', name: '생', desc: '턴 시작 시 10% 확률로 삶의 이유 버프 획득 (최대 5스택)', tag: '필드', chance: '10% 확률' },
+    { id: 'death_aug', cat: 'life_death', icon: '☠️', name: '사', desc: '턴 시작 시 10% 확률로 죽음 이후 버프 획득 (최대 5스택)', tag: '필드', chance: '10% 확률' },
+    { id: 'transcend', cat: 'life_death', icon: '🕊️', name: '초월', desc: '증강 선택으로 획득 불가 · 삶의 이유 5스택 + 죽음 이후 5스택 시 자동 획득 · 죽음 면역 · 항상 이동 +2 · 30% 확률로 공격 방어', tag: '필드', chance: '자동', noPick: true },
+    { id: 'phoenix', cat: 'life_death', icon: '🔥', name: '불사조', desc: '죽어도 묘비를 만들지 않고 그 자리에서 즉시 부활', tag: '필드', chance: '패시브' },
+    { id: 'radiance', cat: 'purify', icon: '👩‍🎤', name: '성녀', desc: '이동 후 30% 확률로 앞·뒤 2칸이 성역(2턴) · 성역에선 효과 미발동 · 다른 성역이 있으면 새 성역 생성 안 됨', tag: '필드', chance: '30% 확률' }
   ];
 
   function hasAug(player, id) {
@@ -2772,6 +2793,131 @@
     if (Array.isArray(list)) return list.indexOf(id) !== -1;
     return Object.keys(list).some(function (k) { return list[k] === id; });
   }
+
+  // ---- 삶과 죽음: 죽음/묘비/부활/교황/마녀 ----
+  function isDeathImmune(player) {
+    if (!player) return false;
+    if (player.salvationTurns > 0) return true;
+    if (hasAug(player, 'transcend')) return true;
+    if (player.isPope) return true;
+    return false;
+  }
+  function killPlayer(room, victim, killer, opts) {
+    opts = opts || {};
+    if (!room || !victim) return { ok: false, reason: 'none' };
+    if (isDeathImmune(victim)) return { ok: false, reason: 'immune' };
+    if (victim.ghostMode) return { ok: false, reason: 'ghost' };
+    // 불사조: 그 자리 부활, 묘비 없음
+    if (hasAug(victim, 'phoenix')) {
+      victim.revivedBuffTurns = 1;
+      victim.deathState = false;
+      return { ok: true, phoenix: true };
+    }
+    var deathPos = Number(victim.position) || 0;
+    room.tombstones = room.tombstones || {};
+    room.tombstones[victim.id] = { cell: deathPos, ownerId: victim.id, ownerName: victim.name || '?', ts: Date.now() };
+    // 묘지기: 무덤지대 (앞뒤 1칸, 보드에 1곳만)
+    if (killer && hasAug(killer, 'gravedigger') && !room.graveyard) {
+      var a = (deathPos - 1 + BOARD_SIZE) % BOARD_SIZE;
+      var b = (deathPos + 1) % BOARD_SIZE;
+      room.graveyard = { cells: [a, b], tombOwnerId: victim.id, tombCell: deathPos };
+    }
+    victim.position = 1; // 1번 칸
+    victim.onBridge = false;
+    try { clearPlayerBridgeState(victim); } catch (e) {}
+    victim.deathState = true;
+    victim.ghostMode = false;
+    // 교황 중재 대기 (마녀가 막을 수 있음)
+    var pope = (room.players || []).find(function (p) { return p && p.isPope && p.id !== victim.id; });
+    if (pope && !opts.skipPope) {
+      room.pendingPopeRevive = { victimId: victim.id, popeId: pope.id, ts: Date.now() };
+    }
+    return { ok: true, deathPos: deathPos };
+  }
+  function applyTombstoneStep(room, player) {
+    if (!room || !player) return false;
+    var tombs = room.tombstones || {};
+    var myTomb = tombs[player.id];
+    if (!myTomb) return false;
+    if (Number(myTomb.cell) !== Number(player.position)) return false;
+    // 부활 상태 1턴
+    player.revivedBuffTurns = 1;
+    player.deathState = false;
+    delete tombs[player.id];
+    room.tombstones = tombs;
+    // 무덤지대 정리 (내 묘비 기준)
+    if (room.graveyard && room.graveyard.tombOwnerId === player.id) {
+      room.graveyard = null;
+    }
+    return true;
+  }
+  function tickLifeDeathBuffs(player, room) {
+    if (!player) return;
+    if (player.revivedBuffTurns > 0) {
+      player.revivedBuffTurns--;
+      if (player.revivedBuffTurns <= 0) {
+        player.revivedBuffTurns = 0;
+        player.resurrectorBuff = true;
+        player.resurrectorTurnsLeft = 10; // 10턴 내 교황/마녀 아니면 인간
+      }
+    }
+    if (player.salvationTurns > 0) player.salvationTurns--;
+    if (player.grimLockTurns > 0) player.grimLockTurns--;
+    if (player.resurrectorBuff && !player.isPope && !player.isWitch) {
+      player.resurrectorTurnsLeft = (player.resurrectorTurnsLeft || 10) - 1;
+      if (player.resurrectorTurnsLeft <= 0) {
+        player.resurrectorBuff = false;
+        // 인간 증강: 표시용 플래그
+        player.humanAug = true;
+        player.augments = playerAugs(player);
+        if (player.augments.indexOf('human_aug') === -1) {
+          // soft flag only
+        }
+      }
+    }
+    // 생/사 스택
+    if (hasAug(player, 'life_aug') && Math.random() < 0.10) {
+      player.lifeReasonStacks = Math.min(5, (player.lifeReasonStacks || 0) + 1);
+    }
+    if (hasAug(player, 'death_aug') && Math.random() < 0.10) {
+      player.afterDeathStacks = Math.min(5, (player.afterDeathStacks || 0) + 1);
+    }
+    // 초월 자동 획득
+    if ((player.lifeReasonStacks || 0) >= 5 && (player.afterDeathStacks || 0) >= 5) {
+      player.augments = playerAugs(player);
+      if (player.augments.indexOf('transcend') === -1) {
+        player.augments.push('transcend');
+      }
+    }
+    // 그림 리퍼 제안
+    if (hasAug(player, 'grim_reaper') && !(player.grimLockTurns > 0)) {
+      player._grimOffer = true;
+    } else {
+      player._grimOffer = false;
+    }
+  }
+  function ldProcChanceFor(player) {
+    var n = (categoryCounts(player).life_death || 0);
+    if (n >= 5) return 0.15;
+    if (n >= 4) return 0.13;
+    if (n >= 3) return 0.12;
+    if (n >= 2) return 0.11;
+    return 0;
+  }
+  function popePurifyBonus(player, room) {
+    if (!player || !player.isPope || !room) return 0;
+    var n = 0;
+    (room.players || []).forEach(function (p) {
+      if (p && p.worshipBuff) n++;
+    });
+    return n * 0.025;
+  }
+  function witchCurseBonus(player) {
+    if (!player || !player.isWitch) return 0;
+    return (player.witchBlockCount || 0) * 0.025;
+  }
+
+
   function isAugDisabled(player, id) {
     if (!player || !player.augDisabled) return false;
     var disabled = player.augDisabled;
@@ -3001,34 +3147,34 @@
 
   // 시너지: 같은 카테고리 증강을 2개 이상 켜 두면 발동 (OFF 증강 제외)
   var SYNERGY_RULES = [
-    { cat: 'luck', need: 2, key: 'luckMoveChance', value: 0.25, icon: '🍀', name: '행운 시너지 II', desc: '25% 확률 모든 이동 +1칸 · 턴 시작 2% 행운 버프' },
-    { cat: 'luck', need: 3, key: 'luckMoveChance2', value: 0.45, icon: '🍀', name: '행운 시너지 III', desc: '45% 확률 모든 이동 +2칸 · 턴 시작 5% 행운 버프' },
-    { cat: 'luck', need: 4, key: 'luckMoveChance3', value: 0.65, icon: '🍀', name: '행운 시너지 IV', desc: '65% 확률 모든 이동 +2칸 · 턴 시작 7% 행운 버프 · 7스택 시 행운 확률 영구 +1%' },
-    { cat: 'luck', need: 5, key: 'luckMoveChance4', value: 0.85, icon: '🍀', name: '행운 시너지 V', desc: '85% 확률 모든 이동 +2칸 · 턴 시작 7.7% 행운 버프 · 7스택 시 행운 확률 영구 +1.7%' },
-    { cat: 'speed', need: 2, key: 'speedExtraTurn4', value: 0.10, icon: '⚡', name: '신속 시너지 II', desc: '4칸 이상 이동 시 10% 추가 턴' },
-    { cat: 'speed', need: 3, key: 'speedExtraTurn3', value: 0.10, icon: '⚡', name: '신속 시너지 III', desc: '3칸 이상 이동 시 10% 추가 턴' },
-    { cat: 'speed', need: 4, key: 'speedLandExtra', value: 0.15, icon: '⚡', name: '신속 시너지 IV', desc: '칸 도착 후 15% 확률 추가 턴' },
-    { cat: 'speed', need: 5, key: 'speedLandExtra', value: 0.22, icon: '⚡', name: '신속 시너지 V', desc: '칸 도착 후 22% 확률 추가 턴' },
-    { cat: 'defend', need: 2, key: 'defendImmune', value: 0.07, icon: '🛡️', name: '방어 시너지 II', desc: '함정·스킵·휴식 7% 완전 무시' },
-    { cat: 'defend', need: 3, key: 'defendImmune', value: 0.15, icon: '🛡️', name: '방어 시너지 III', desc: '함정·스킵·휴식 15% 완전 무시' },
-    { cat: 'defend', need: 4, key: 'defendImmune', value: 0.30, icon: '🛡️', name: '방어 시너지 IV', desc: '함정·스킵·휴식 30% 완전 무시' },
-    { cat: 'defend', need: 5, key: 'defendImmune', value: 0.50, icon: '🛡️', name: '방어 시너지 V', desc: '모든 외부 공격 50% 완전 무시' },
+    { cat: 'luck', need: 2, key: 'luckMoveChance', value: 0.25, icon: '🍀', name: '행운 시너지 II', desc: '25% 확률로 모든 이동 +1칸 · 턴 시작 2% 확률로 행운 버프' },
+    { cat: 'luck', need: 3, key: 'luckMoveChance2', value: 0.45, icon: '🍀', name: '행운 시너지 III', desc: '45% 확률로 모든 이동 +2칸 · 턴 시작 5% 확률로 행운 버프' },
+    { cat: 'luck', need: 4, key: 'luckMoveChance3', value: 0.65, icon: '🍀', name: '행운 시너지 IV', desc: '65% 확률로 모든 이동 +2칸 · 턴 시작 7% 확률로 행운 버프 · 7스택 시 행운 확률 영구 +1%' },
+    { cat: 'luck', need: 5, key: 'luckMoveChance4', value: 0.85, icon: '🍀', name: '행운 시너지 V', desc: '85% 확률로 모든 이동 +2칸 · 턴 시작 7.7% 확률로 행운 버프 · 7스택 시 행운 확률 영구 +1.7%' },
+    { cat: 'speed', need: 2, key: 'speedExtraTurn4', value: 0.10, icon: '⚡', name: '신속 시너지 II', desc: '4칸 이상 이동 시 10% 확률로 추가 턴' },
+    { cat: 'speed', need: 3, key: 'speedExtraTurn3', value: 0.10, icon: '⚡', name: '신속 시너지 III', desc: '3칸 이상 이동 시 10% 확률로 추가 턴' },
+    { cat: 'speed', need: 4, key: 'speedLandExtra', value: 0.15, icon: '⚡', name: '신속 시너지 IV', desc: '칸 도착 후 15% 확률로 추가 턴' },
+    { cat: 'speed', need: 5, key: 'speedLandExtra', value: 0.22, icon: '⚡', name: '신속 시너지 V', desc: '칸 도착 후 22% 확률로 추가 턴' },
+    { cat: 'defend', need: 2, key: 'defendImmune', value: 0.07, icon: '🛡️', name: '방어 시너지 II', desc: '함정·스킵·휴식 7% 확률로 완전 무시' },
+    { cat: 'defend', need: 3, key: 'defendImmune', value: 0.15, icon: '🛡️', name: '방어 시너지 III', desc: '함정·스킵·휴식 15% 확률로 완전 무시' },
+    { cat: 'defend', need: 4, key: 'defendImmune', value: 0.30, icon: '🛡️', name: '방어 시너지 IV', desc: '함정·스킵·휴식 30% 확률로 완전 무시' },
+    { cat: 'defend', need: 5, key: 'defendImmune', value: 0.50, icon: '🛡️', name: '방어 시너지 V', desc: '모든 외부 공격 50% 확률로 완전 무시' },
     { cat: 'chaos', need: 2, key: 'chaosChance', value: 0.08, icon: '🌪️', name: '혼돈 시너지 II', desc: '혼돈 워프 확률 +8%' },
     { cat: 'chaos', need: 3, key: 'chaosChance', value: 0.15, icon: '🌪️', name: '혼돈 시너지 III', desc: '혼돈 워프 확률 +15%' },
     { cat: 'chaos', need: 4, key: 'chaosChance', value: 0.20, icon: '🌪️', name: '혼돈 시너지 IV', desc: '혼돈 워프 확률 +20% · 모든 혼돈 증강 확률 +5%' },
     { cat: 'chaos', need: 5, key: 'chaosChance', value: 0.30, icon: '🌪️', name: '혼돈 시너지 V', desc: '혼돈 워프 확률 +30% · 모든 혼돈 증강 확률 +7%' },
-    { cat: 'relic', need: 2, key: 'relicGiftItem', value: 0.10, icon: '🏺', name: '고고학자 시너지 II', desc: '선물 칸 도착 시 10% 유물 이동 아이템 획득' },
-    { cat: 'relic', need: 3, key: 'relicLuck', value: 0.03, icon: '🏺', name: '고고학자 시너지 III', desc: '유물 성공 시 3% 추가 유물' },
-    { cat: 'relic', need: 4, key: 'relicLuck4', value: 0.05, icon: '🏺', name: '고고학자 시너지 IV', desc: '유물 성공 시 5% 추가 유물 · 획득 시 강탈 칸 이동' },
-    { cat: 'relic', need: 5, key: 'relicLuck5', value: 0.07, icon: '🏺', name: '고고학자 시너지 V', desc: '유물 성공 시 7% 추가 유물 · 획득 시 강탈 칸 이동' },
+    { cat: 'relic', need: 2, key: 'relicGiftItem', value: 0.10, icon: '🏺', name: '고고학자 시너지 II', desc: '선물 칸 도착 시 10% 확률로 유물 이동 아이템 획득' },
+    { cat: 'relic', need: 3, key: 'relicLuck', value: 0.03, icon: '🏺', name: '고고학자 시너지 III', desc: '유물 성공 시 3% 확률로 추가 유물' },
+    { cat: 'relic', need: 4, key: 'relicLuck4', value: 0.05, icon: '🏺', name: '고고학자 시너지 IV', desc: '유물 성공 시 5% 확률로 추가 유물 · 획득 시 강탈 칸 이동' },
+    { cat: 'relic', need: 5, key: 'relicLuck5', value: 0.07, icon: '🏺', name: '고고학자 시너지 V', desc: '유물 성공 시 7% 확률로 추가 유물 · 획득 시 강탈 칸 이동' },
     { cat: 'util', need: 2, key: 'allAugBonus', value: 0.005, icon: '🔧', name: '유틸 시너지 II', desc: '보유한 모든 증강 및 유물 확률 +0.5%' },
     { cat: 'util', need: 3, key: 'allAugBonus', value: 0.01, icon: '🔧', name: '유틸 시너지 III', desc: '보유한 모든 증강 및 유물 확률 +1%' },
     { cat: 'util', need: 4, key: 'allAugBonus', value: 0.015, icon: '🔧', name: '유틸 시너지 IV', desc: '보유한 모든 증강 및 유물 확률 +1.5%' },
     { cat: 'util', need: 5, key: 'allAugBonus', value: 0.025, icon: '🔧', name: '유틸 시너지 V', desc: '보유한 모든 증강 및 유물 확률 +2.5%' },
-    { cat: 'battle', need: 2, key: 'gladiatorChance', value: 0.05, icon: '⚔️', name: '전투 시너지 II', desc: '턴 시작 5% 검투사의 의지 버프' },
-    { cat: 'battle', need: 3, key: 'gladiatorChance', value: 0.07, icon: '⚔️', name: '전투 시너지 III', desc: '턴 시작 7% 검투사의 의지 버프' },
-    { cat: 'battle', need: 4, key: 'gladiatorChance', value: 0.10, icon: '⚔️', name: '전투 시너지 IV', desc: '턴 시작 10% 검투사의 의지 · 4스택 시 콜로세움의 챔피언' },
-    { cat: 'battle', need: 5, key: 'gladiatorChance', value: 0.125, icon: '⚔️', name: '전투 시너지 V', desc: '턴 시작 12.5% 검투사의 의지 · 4스택 시 콜로세움의 챔피언' },
+    { cat: 'battle', need: 2, key: 'gladiatorChance', value: 0.05, icon: '⚔️', name: '전투 시너지 II', desc: '턴 시작 5% 확률로 검투사의 의지 버프' },
+    { cat: 'battle', need: 3, key: 'gladiatorChance', value: 0.07, icon: '⚔️', name: '전투 시너지 III', desc: '턴 시작 7% 확률로 검투사의 의지 버프' },
+    { cat: 'battle', need: 4, key: 'gladiatorChance', value: 0.10, icon: '⚔️', name: '전투 시너지 IV', desc: '턴 시작 10% 확률로 검투사의 의지 · 4스택 시 콜로세움의 챔피언' },
+    { cat: 'battle', need: 5, key: 'gladiatorChance', value: 0.125, icon: '⚔️', name: '전투 시너지 V', desc: '턴 시작 12.5% 확률로 검투사의 의지 · 4스택 시 콜로세움의 챔피언' },
     { cat: 'support', need: 2, key: 'supportShare', value: 1, icon: '🤝', name: '지원 시너지 II', desc: '나눔 효과 강화' },
     { cat: 'support', need: 3, key: 'supportSpecItem', value: 1, icon: '🤝', name: '지원 시너지 III', desc: '특수 칸 팀 아이템 +1' },
     { cat: 'support', need: 4, key: 'supportTurnItem', value: 1, icon: '🤝', name: '지원 시너지 IV', desc: '턴 시작 시 나와 팀 아이템 +1' },
@@ -3053,14 +3199,19 @@
     { cat: 'restful', need: 3, key: 'restfulBonus', value: 0.037, icon: '😴', name: '휴식 시너지 III', desc: '모든 휴식 증강 확률 +3.7%' },
     { cat: 'restful', need: 4, key: 'restfulBonus', value: 0.07, icon: '😴', name: '휴식 시너지 IV', desc: '모든 휴식 증강 확률 +7% · 턴 시작 4% 확률로 자명종 아이템 획득' },
     { cat: 'restful', need: 5, key: 'restfulBonus', value: 0.07, icon: '😴', name: '휴식 시너지 V', desc: '모든 휴식 증강 확률 +7% · 턴 시작 8% 확률로 자명종 아이템 획득' },
-    { cat: 'tech', need: 2, key: 'techBuffChance', value: 0.15, icon: '🤖', name: '하이테크 시너지 II', desc: '턴 시작 15% 첨단 버프 스택' },
-    { cat: 'tech', need: 3, key: 'techBuffChance', value: 0.25, icon: '🤖', name: '하이테크 시너지 III', desc: '턴 시작 25% 첨단 버프 스택' },
-    { cat: 'tech', need: 4, key: 'techBuffChance', value: 0.35, icon: '🤖', name: '하이테크 시너지 IV', desc: '턴 시작 35% 첨단 버프 · 10스택 시 영구 하이테크 확률 +1%' },
-    { cat: 'tech', need: 5, key: 'techBuffChance', value: 0.45, icon: '🤖', name: '하이테크 시너지 V', desc: '턴 시작 45% 첨단 버프 · 10스택 시 영구 하이테크 확률 +1%' },
-    { cat: 'purify', need: 2, key: 'heresyChance', value: 0.075, icon: '✨', name: '정화 시너지 II', desc: '저주 디버프·아이템 피격 시 7.5% 이단 심문' },
-    { cat: 'purify', need: 3, key: 'heresyChance', value: 0.10, icon: '✨', name: '정화 시너지 III', desc: '저주 디버프·아이템 피격 시 10% 이단 심문' },
-    { cat: 'purify', need: 4, key: 'heresyChance', value: 0.14, icon: '✨', name: '정화 시너지 IV', desc: '저주 디버프·아이템 피격 시 14% 이단 심문' },
-    { cat: 'purify', need: 5, key: 'heresyChance', value: 0.175, icon: '✨', name: '정화 시너지 V', desc: '저주 디버프·아이템 피격 시 17.5% 이단 심문' }
+    { cat: 'tech', need: 2, key: 'techBuffChance', value: 0.15, icon: '🤖', name: '하이테크 시너지 II', desc: '턴 시작 15% 확률로 첨단 버프 스택' },
+    { cat: 'tech', need: 3, key: 'techBuffChance', value: 0.25, icon: '🤖', name: '하이테크 시너지 III', desc: '턴 시작 25% 확률로 첨단 버프 스택' },
+    { cat: 'tech', need: 4, key: 'techBuffChance', value: 0.35, icon: '🤖', name: '하이테크 시너지 IV', desc: '턴 시작 35% 확률로 첨단 버프 · 10스택 시 영구 하이테크 확률 +1%' },
+    { cat: 'tech', need: 5, key: 'techBuffChance', value: 0.45, icon: '🤖', name: '하이테크 시너지 V', desc: '턴 시작 45% 확률로 첨단 버프 · 10스택 시 영구 하이테크 확률 +1%' },
+
+    { cat: 'life_death', need: 2, key: 'ldBuffChance', value: 0.50, icon: '☯️', name: '삶과 죽음 시너지 II', desc: '턴 시작 시 50% 확률로 구세주 또는 살인마 버프 · 구세주: 상대 칸 11% 확률로 대결 없이 2턴 구원 · 살인마: 상대 칸 11% 확률로 대결 없이 죽임' },
+    { cat: 'life_death', need: 3, key: 'ldBuffChance', value: 0.60, icon: '☯️', name: '삶과 죽음 시너지 III', desc: '턴 시작 시 60% 확률로 구세주 또는 살인마 버프 · 구세주/살인마 발동 12%' },
+    { cat: 'life_death', need: 4, key: 'ldBuffChance', value: 0.70, icon: '☯️', name: '삶과 죽음 시너지 IV', desc: '턴 시작 시 70% 확률로 구세주 또는 살인마 버프 · 구세주/살인마 발동 13%' },
+    { cat: 'life_death', need: 5, key: 'ldBuffChance', value: 0.80, icon: '☯️', name: '삶과 죽음 시너지 V', desc: '턴 시작 시 80% 확률로 구세주 또는 살인마 버프 · 구세주/살인마 발동 15%' },
+    { cat: 'purify', need: 2, key: 'heresyChance', value: 0.075, icon: '✨', name: '정화 시너지 II', desc: '저주 디버프·아이템 피격 시 7.5% 확률로 이단 심문' },
+    { cat: 'purify', need: 3, key: 'heresyChance', value: 0.10, icon: '✨', name: '정화 시너지 III', desc: '저주 디버프·아이템 피격 시 10% 확률로 이단 심문' },
+    { cat: 'purify', need: 4, key: 'heresyChance', value: 0.14, icon: '✨', name: '정화 시너지 IV', desc: '저주 디버프·아이템 피격 시 14% 확률로 이단 심문' },
+    { cat: 'purify', need: 5, key: 'heresyChance', value: 0.175, icon: '✨', name: '정화 시너지 V', desc: '저주 디버프·아이템 피격 시 17.5% 확률로 이단 심문' }
   ];
 
   function activeAugList(player) {
@@ -3072,6 +3223,8 @@
       var a = getAugmentById(id);
       if (a) counts[a.cat] = (counts[a.cat] || 0) + 1;
     });
+    if (player && player.isPope) counts.purify = Math.max(counts.purify || 0, 5);
+    if (player && player.isWitch) counts.curse = Math.max(counts.curse || 0, 5);
     return counts;
   }
   function synergyBonus(player) {
@@ -3079,7 +3232,7 @@
       luckMove: 0, luckMoveChance: 0, luckMoveChance2: 0, luckMoveChance3: 0, luckMoveChance4: 0, boostExtra: 0, defendCut: 0, chaosChance: 0,
       giftBonus: 0, relicLuck: 0, relicLuck4: 0, relicLuck5: 0, comboExtra: 0, allAugBonus: 0,
       luckCrit: 0, speedAgain: 0, speedLandExtra: 0, speedExtraTurn3: 0, speedExtraTurn4: 0, defendRest: 0, defendImmune: 0, defendAll: 0, chaosGift: 0, relicItem: 0, relicGiftItem: 0, relicStealPath: 0, utilDice: 0, utilWarp: 0,
-      interfereBonus: 0, sleepChance: 0, restfulBonus: 0, alarmChance: 0, luckBonus: 0, luckBuffChance: 0, curseBonus: 0, chaosBonus: 0, techBuffChance: 0, heresyChance: 0,
+      interfereBonus: 0, sleepChance: 0, restfulBonus: 0, alarmChance: 0, luckBonus: 0, luckBuffChance: 0, curseBonus: 0, chaosBonus: 0, techBuffChance: 0, heresyChance: 0, ldBuffChance: 0, ldProcChance: 0,
       battleSteal: 0, battlePunish: 0, battleWin: 0, gladiatorChance: 0,
       supportGift: 0, supportShare: 0, supportInspire: 0, supportNormItem: 0, supportSpecItem: 0, supportTurnBonus: 0, supportTurnItem: 0,
       leapBonus: 0, leapCap: 0, leapCap1: 0, leapSix: 0, leapHigher: 0, leapHigherAlways: 0, leapAlwaysPlus1: 0,
@@ -4273,6 +4426,7 @@ refreshRoomList();
     AUGMENT_POOL.forEach(function (a) {
       if (ownedIds.indexOf(a.id) !== -1) return; // 이미 보유한 증강 제외
       if (banned.indexOf(a.id) !== -1) return; // 관리자 비활성
+      if (a.noPick) return; // 초월 등 선택 불가
       if (byCat[a.cat]) byCat[a.cat].push(a);
     });
     Object.keys(byCat).forEach(function (k) {
@@ -4289,6 +4443,14 @@ refreshRoomList();
   function enterAugmentPick(room) {
     lastRoomSnapshot = room;
     var me = room.players.find(function (p) { return p.id === myPlayerId; });
+    if (me && me.ghostMode) {
+      // 유령 상태에서는 증강 선택 불가
+      if (room.augmentPick && room.augmentPick.playerId === myPlayerId) {
+        room.augmentPick = null;
+        try { saveRoom(room); } catch (e) {}
+      }
+      return;
+    }
     myAugOffers = buildAugOffers(playerAugs(me), room);
     currentAugTab = AUGMENT_CATEGORIES[0].id;
     // 비어 있지 않은 첫 탭
@@ -4666,6 +4828,27 @@ refreshRoomList();
     if (room.houseCell != null && room.houseCell !== '') addMark(room.houseCell, '🏠', '집 (도착 시 아이템 1개)');
     // 요새 (🏯)
     if (room.fortressCell != null && room.fortressCell !== '') addMark(room.fortressCell, '🏯', '요새 (도착 시 발리스타 -3칸)');
+    // 묘비
+    var tombs = room.tombstones || {};
+    Object.keys(tombs).forEach(function (pid) {
+      var t = tombs[pid];
+      if (t && t.cell != null) addMark(t.cell, '🪦', '묘비 (' + (t.ownerName || '?') + ') — 본인 도착 시 부활');
+    });
+    // 무덤지대
+    els.boardGrid.querySelectorAll('.ld-cell.ld-cell-graveyard').forEach(function (c) {
+      c.classList.remove('ld-cell-graveyard');
+    });
+    if (room.graveyard && room.graveyard.cells) {
+      (room.graveyard.cells || []).forEach(function (gc) {
+        addMark(gc, '💜', '무덤지대 (앞·뒤 1칸)');
+        var n = Number(gc);
+        if (!isNaN(n)) {
+          n = ((n % BOARD_SIZE) + BOARD_SIZE) % BOARD_SIZE;
+          var cellEl = els.boardGrid.querySelector('.ld-cell[data-cell-index="' + n + '"]');
+          if (cellEl) cellEl.classList.add('ld-cell-graveyard');
+        }
+      });
+    }
     // 다리 (🌉) 엔드포인트
     var brM = getActiveBridge(room);
     if (brM) {
@@ -6126,6 +6309,7 @@ refreshRoomList();
     if (!player || !delta) return false;
     if (delta < 0 && isOutpostProtected(room, player)) return false;
     if (delta < 0) {
+      if (hasAug(player, 'transcend') && Math.random() < 0.30) return false;
       var synDef = synergyBonus(player);
       var immuneCh = synDef.defendAll || 0;
       if (immuneCh > 0 && Math.random() < immuneCh) return false;
@@ -6143,7 +6327,7 @@ refreshRoomList();
 
   function luckPct(player, base) {
     var syn = synergyBonus(player);
-    return Math.min(0.95, (base || 0) + (syn.luckBonus || 0) + (syn.allAugBonus || 0) + ((player && player.luckPermanentBonus) || 0));
+    return Math.min(0.95, (base || 0) + (syn.luckBonus || 0) + (syn.allAugBonus || 0) + ((player && player.luckPermanentBonus) || 0) + rockBonus(player));
   }
   function chaosPct(player, base) {
     var syn = synergyBonus(player);
@@ -6157,7 +6341,7 @@ refreshRoomList();
   }
   function techPct(player, base) {
     var syn = synergyBonus(player);
-    var b = (base || 0) + ((player && player.techPermanentBonus) || 0) + (syn.allAugBonus || 0);
+    var b = (base || 0) + ((player && player.techPermanentBonus) || 0) + (syn.allAugBonus || 0) + rockBonus(player);
     return Math.min(0.95, b);
   }
   function interferePct(player, base) {
@@ -6167,7 +6351,7 @@ refreshRoomList();
   }
   function buildPct(player, base) {
     var syn = synergyBonus(player);
-    return Math.min(0.95, (base || 0) + (syn.buildAugBonus || 0) + (syn.allAugBonus || 0));
+    return Math.min(0.95, (base || 0) + (syn.buildAugBonus || 0) + (syn.allAugBonus || 0) + rockBonus(player));
   }
   function restfulPct(player, base) {
     var syn = synergyBonus(player);
@@ -6295,8 +6479,8 @@ refreshRoomList();
     if ((player.luckBuffStacks || 0) > 0) list.push({ icon: '🍀', name: '행운아', desc: player.luckBuffStacks + '/7' });
     if ((player.gladiatorStacks || 0) > 0) list.push({ icon: '⚔️', name: '검투사의 의지', desc: player.gladiatorStacks + '/4' });
     if (player.colosseumChamp) list.push({ icon: '🏟️', name: '콜로세움의 챔피언', desc: '강탈 3판2선승 · 5칸 내 강탈' });
-    if ((player.championVictoryTurns || 0) > 0) list.push({ icon: '🏆', name: '승리한 챔피언', desc: '1턴 · 검투사 확률 영구 +1% 적용됨' });
-    if ((player.championDefeatTurns || 0) > 0) list.push({ icon: '😞', name: '패배한 검투사', desc: '1턴 · 검투사 확률 영구 -0.5% 적용됨' });
+    if ((player.championVictoryTurns || 0) > 0) list.push({ icon: '🏆', name: '승리한 챔피언', desc: '1턴 · 검투사 확률 영구 +1% 확률로 적용됨' });
+    if ((player.championDefeatTurns || 0) > 0) list.push({ icon: '😞', name: '패배한 검투사', desc: '1턴 · 검투사 확률 영구 -0.5% 확률로 적용됨' });
     if ((player.gladiatorChanceBonus || 0) !== 0) list.push({ icon: '⚔️', name: '검투사 확률 보정', desc: ((player.gladiatorChanceBonus || 0) > 0 ? '+' : '') + (Math.round((player.gladiatorChanceBonus || 0) * 1000) / 10) + '%' });
     if ((player.curseBuffStacks || 0) > 0 && !player.liberatedSoul) {
       var cs = player.curseBuffStacks | 0;
@@ -6308,7 +6492,22 @@ refreshRoomList();
       list.push({ icon: '😈', name: '저주', desc: cdesc });
     }
     if (player.liberatedSoul) list.push({ icon: '👼', name: '해방된 영혼', desc: '저주 미적용 · 저주 증강 +17%' });
-    if (player.ghostMode) list.push({ icon: '👻', name: '유령', desc: '모든 효과 무시' });
+    if (player.ghostMode) list.push({ icon: '👻', name: '유령', desc: '본인 증강·특수칸·설치 칸 효과·배틀 무시' });
+    if (player.grimMode) list.push({ icon: '💀', name: '그림 리퍼', desc: '다른 플레이어 칸 도착 시 죽임' });
+    if (player.deathState) list.push({ icon: '☠️', name: '죽음', desc: '묘비 밟으면 부활' });
+    if (player.revivedBuffTurns > 0) list.push({ icon: '✨', name: '부활', desc: '1턴 유지 후 부활자' });
+    if (player.resurrectorBuff) list.push({ icon: '🙏', name: '부활자', desc: '성역→교황 · 이단→마녀 · 10턴 제한' });
+    if (player.isPope) list.push({ icon: '✝️', name: '교황', desc: '정화 시너지 V · 부활 중재' });
+    if (player.isWitch) list.push({ icon: '🧙', name: '마녀', desc: '저주 시너지 V · 교황 부활 방해' });
+    if (player.worshipBuff) list.push({ icon: '🛐', name: '숭배', desc: '교황 보너스에 기여' });
+    if (player.salvationTurns > 0) list.push({ icon: '🛡️', name: '구원', desc: '죽음 면역 ' + player.salvationTurns + '턴' });
+    if (player.saviorBuff) list.push({ icon: '👼', name: '구세주', desc: '상대 칸에서 구원 부여 가능' });
+    if (player.killerBuff) list.push({ icon: '🗡️', name: '살인마', desc: '상대 칸에서 처형 가능' });
+    if (player.lifeReasonStacks > 0) list.push({ icon: '🌱', name: '삶의 이유', desc: player.lifeReasonStacks + '/5' });
+    if (player.afterDeathStacks > 0) list.push({ icon: '☠️', name: '죽음 이후', desc: player.afterDeathStacks + '/5' });
+    if (player.longingStacks > 0) list.push({ icon: '🩸', name: '갈망', desc: player.longingStacks + '/4' });
+    if (player.grimLockTurns > 0) list.push({ icon: '🔒', name: '갈망 봉인', desc: '그림 리퍼 ' + player.grimLockTurns + '턴 불가' });
+    if (player.humanAug) list.push({ icon: '🧑', name: '인간', desc: '부활자 만료 후' });
     if ((player.luckPermanentBonus || 0) > 0) list.push({ icon: '🍀', name: '행운 각성', desc: '행운 증강 확률 +' + Math.round((player.luckPermanentBonus || 0) * 100) + '%' });
     if (player.archDicePending) list.push({ icon: '🏺', name: '고고학 주사위 준비', desc: '다음 이동 1~3 지정' });
     if (player.luckyDicePending) list.push({ icon: '🍀', name: '행운 주사위 준비', desc: '다음 굴림 4~6 가중' });
@@ -6423,6 +6622,11 @@ refreshRoomList();
     var notes = [];
     var move = face;
     var rawFace = face;
+    // 유령: 본인 증강·디버프성 이동 변조 미적용 (기본 눈만 사용)
+    if (player && player.ghostMode) {
+      notes.push('👻 유령 — 증강·디버프 미적용');
+      return { move: move, face: face, notes: notes, rawFace: rawFace };
+    }
     if (room && room.nextPlayerPenalty && room.players) {
       var cur = room.players[room.turnIndex % room.players.length];
       if (cur && cur.id === player.id) {
@@ -6692,6 +6896,27 @@ refreshRoomList();
       move += 1 * sm;
       notes.push('☀️ 태양 +' + (1 * sm) + '칸' + (sm > 1 ? ' (신화)' : ''));
     }
+    if (hasAug(player, 'transcend')) {
+      move += 2;
+      notes.push('🕊️ 초월 +2');
+    }
+    if (player.isPope) {
+      var wcount = 0;
+      if (room && room.players) {
+        room.players.forEach(function (p) { if (p && p.worshipBuff) wcount++; });
+      }
+      if (wcount > 0) {
+        move += wcount;
+        notes.push('✝️ 교황 +' + wcount + ' (숭배 ' + wcount + ')');
+      }
+    }
+    if (player.isWitch) {
+      var wb = player.witchBlockCount || 0;
+      if (wb > 0) {
+        move += wb;
+        notes.push('🧙 마녀 +' + wb);
+      }
+    }
     if (hasRelic(player, 'thunder') && face % 2 === 0) {
       var tm = relicMult(player, 'thunder') || 1;
       move += 2 * tm;
@@ -6790,7 +7015,7 @@ refreshRoomList();
     }
 
     // 악마 유물: 방 안에 보유자가 있으면 굴릴 때마다 33% 확률로 이동 반전
-    var demonFlip = demonRoomActive(room) && Math.random() < relicPct(player, 0.33);
+    var demonFlip = demonRoomActive(room) && Math.random() < relicPct(player, 0.20);
     player._demonFlip = demonFlip;
     if (demonFlip && move !== 0) {
       move = -move;
@@ -6843,7 +7068,7 @@ refreshRoomList();
 
     // 유령 상태: 모든 특수 칸·디버프성 효과 무시
     if (player.ghostMode) {
-      result.effectText = '👻 유령 상태 — 효과 무시';
+      result.effectText = '👻 유령 상태 — 특수칸·설치 칸 효과 무시';
       result.effectIcon = '👻';
       result.effectTitle = '유령';
       result.announce = true;
@@ -7648,6 +7873,8 @@ refreshRoomList();
     var turnP = room.players[room.turnIndex % room.players.length];
     if (turnP) {
       tickSleepAndBuffs(turnP, room);
+      try { tickLifeDeathBuffs(turnP, room); } catch (eLD) {}
+
       // 여유와 조급 타이머 보정 (실제 초는 getEffectiveTurnSeconds에서 계산 · 중첩)
       (room.players || []).forEach(function (op) {
         if (!op) return;
@@ -7678,6 +7905,12 @@ refreshRoomList();
           room.announce = { icon: '⏰', title: '자명종', text: turnP.name + ' 자명종 획득', sub: '', ts: Date.now() };
         }
       }
+      if (hasAug(turnP, 'thief') && Math.random() < 0.50) {
+        if (giveSpecialItem(turnP, 'steal_chip') || giveItemToPlayer(room, turnP, 'steal_chip', 'thief')) {
+          room.announce = { icon: '🦝', title: '도둑', text: turnP.name + ' 훔치기 아이템 획득', sub: '턴 시작 50%', ts: Date.now() };
+        }
+      }
+
       // 하이테크 시너지 첨단 버프
       var tbc = synergyBonus(turnP).techBuffChance || 0;
       if (tbc > 0 && Math.random() < tbc) {
@@ -7739,6 +7972,27 @@ refreshRoomList();
       // 유령 제안 플래그
       turnP._phantomOffer = false;
       if (hasAug(turnP, 'phantom')) turnP._phantomOffer = true;
+      // 그림 리퍼 제안 플래그 (턴마다 선택 · 봉인 중이면 불가)
+      turnP._grimTriedKill = false;
+      turnP.grimMode = false; // 턴 시작 시 초기화 후 모달로 재선택
+      turnP._grimOffer = false;
+      if (hasAug(turnP, 'grim_reaper') && !(turnP.grimLockTurns > 0)) {
+        turnP._grimOffer = true;
+      }
+      // 삶과 죽음 시너지: 구세주/살인마
+      turnP.saviorBuff = false;
+      turnP.killerBuff = false;
+      var ldCh = synergyBonus(turnP).ldBuffChance || 0;
+      if (ldCh > 0 && Math.random() < ldCh) {
+        if (Math.random() < 0.5) {
+          turnP.saviorBuff = true;
+          room.announce = { icon: '👼', title: '구세주', text: turnP.name + ' 구세주 버프', sub: '이번 턴', ts: Date.now() };
+        } else {
+          turnP.killerBuff = true;
+          room.announce = { icon: '🗡️', title: '살인마', text: turnP.name + ' 살인마 버프', sub: '이번 턴', ts: Date.now() };
+        }
+      }
+
       // 드론 설치 예약 플래그 (실제 선택은 턴 주인의 클라이언트에서)
       turnP._droneCheckedThisTurn = false;
       turnP._droneOffer = false;
@@ -8122,7 +8376,7 @@ refreshRoomList();
           });
           if (protected) actualPunish = 0;
           // 악마: 방 안에 보유자가 있으면 벌점 굴림에도 33% 확률로 반대 적용 → 앞으로 이동
-          var demonPunishFlip = demonRoomActive(room) && Math.random() < relicPct(me, 0.33);
+          var demonPunishFlip = demonRoomActive(room) && Math.random() < relicPct(me, 0.20);
           var from = loser.position;
           var punishSteps = -actualPunish;
           if (demonPunishFlip && actualPunish > 0) {
@@ -8357,7 +8611,7 @@ refreshRoomList();
         return;
       }
       // 드론 설치 제안 (내 턴 시작 시 20%)
-      if (hasAug(me, 'drone') && (me._droneOffer || (!me._droneCheckedThisTurn && Math.random() < techPct(me, 0.20)))) {
+      if (!me.ghostMode && hasAug(me, 'drone') && (me._droneOffer || (!me._droneCheckedThisTurn && Math.random() < techPct(me, 0.20)))) {
         me._droneOffer = false;
         me._droneCheckedThisTurn = true;
         try {
@@ -8383,45 +8637,6 @@ refreshRoomList();
         } catch (eDrone) {}
       }
 
-      // 유령 증강: 턴 시작 시 선택
-      if (hasAug(me, 'phantom') && me._phantomOffer && !me.ghostMode) {
-        me._phantomOffer = false;
-        try {
-          var wantGhost = await new Promise(function (resolve) {
-            var modal = document.getElementById('pathChoiceModal');
-            var box = document.getElementById('pathChoiceButtons');
-            var hint = document.getElementById('pathChoiceHint');
-            var head = modal && modal.querySelector('h3');
-            if (!modal || !box) { resolve(false); return; }
-            if (head) head.textContent = '👻 유령 상태';
-            if (hint) hint.textContent = '유령이면 모든 특수칸·공격·배틀·디버프를 무시합니다. 다음 사람 턴에 해제됩니다.';
-            box.innerHTML = '';
-            var yes = document.createElement('button');
-            yes.type = 'button';
-            yes.className = 'ld-btn ld-btn-primary';
-            yes.style.width = '100%';
-            yes.textContent = '👻 유령 되기';
-            yes.onclick = function () { modal.classList.remove('show'); resolve(true); };
-            var no = document.createElement('button');
-            no.type = 'button';
-            no.className = 'ld-btn ld-btn-ghost';
-            no.style.width = '100%';
-            no.textContent = '유령 안 함';
-            no.onclick = function () { modal.classList.remove('show'); resolve(false); };
-            box.appendChild(yes);
-            box.appendChild(no);
-            modal.classList.add('show');
-            modal.setAttribute('aria-hidden', 'false');
-          });
-          if (wantGhost) {
-            me.ghostMode = true;
-            fresh.announce = { icon: '👻', title: '유령', text: me.name + ' 유령 상태', sub: '효과·배틀 무시', ts: Date.now() };
-            await saveRoom(fresh);
-            lastRoomSnapshot = fresh;
-            try { renderGame(fresh); maybeShowAnnounce(fresh); } catch (e0) {}
-          }
-        } catch (ePh) {}
-      }
       rolling = true;
       window.__rollStartedAt = Date.now();
       els.btnRoll.disabled = true;
@@ -8432,7 +8647,7 @@ refreshRoomList();
       // 지원 시너지 IV: 아이템+1 · V: 이동+1 · 아이템+1
       var turnKey = (fresh.turnIndex | 0) + ':' + (fresh.turnStartedAt || 0);
       var synSup = synergyBonus(me);
-      if ((synSup.supportTurnBonus || synSup.supportTurnItem) && me._supportIVKey !== turnKey) {
+      if (!me.ghostMode && (synSup.supportTurnBonus || synSup.supportTurnItem) && me._supportIVKey !== turnKey) {
         me._supportIVKey = turnKey;
         teamMembers(fresh, me).forEach(function (tp) {
           if (synSup.supportTurnBonus) {
@@ -8459,7 +8674,7 @@ refreshRoomList();
       await new Promise(function (r) { setTimeout(r, 700); });
       var rerollKind = null;
       // 네크로맨서: 10% 해골 설치 예약
-      if (hasAug(me, 'necromancer') && Math.random() < 0.10 && !fresh.skeletonCell) {
+      if (!me.ghostMode && hasAug(me, 'necromancer') && Math.random() < 0.10 && !fresh.skeletonCell) {
         fresh.pendingSkeleton = { playerId: myPlayerId, ts: Date.now() };
       }
       // 리롤 칩: 재굴림 제안
@@ -8736,10 +8951,10 @@ refreshRoomList();
       }
 
       // 성녀: 성역 설치
-      if (!glitchBack) maybePlaceSanctuary(fresh, me, landPos);
+      if (!glitchBack && !me.ghostMode) maybePlaceSanctuary(fresh, me, landPos);
 
       // 텔레포트 모듈 포탈
-      if (!glitchBack && hasAug(me, 'telemod') && Math.random() < techPct(me, 0.10)) {
+      if (!glitchBack && !me.ghostMode && hasAug(me, 'telemod') && Math.random() < techPct(me, 0.10)) {
         var portalTo = await offerBridgeDest(fresh, landPos);
         if (portalTo != null) {
           me.position = portalTo;
@@ -8751,7 +8966,7 @@ refreshRoomList();
         }
       }
       // 스캐너 유물 연쇄
-      if (!glitchBack && hasAug(me, 'scanner') && Math.random() < techPct(me, 0.50)) {
+      if (!glitchBack && !me.ghostMode && hasAug(me, 'scanner') && Math.random() < techPct(me, 0.50)) {
         var steps = ['탐색', '채굴', '세척', '복원', '획득'];
         var ok = true;
         var got = false;
@@ -8799,11 +9014,11 @@ refreshRoomList();
         }
       }
       // 첨단 주사위 증강
-      if (!glitchBack && hasAug(me, 'boosterpack') && Math.random() < techPct(me, 0.035)) {
+      if (!glitchBack && !me.ghostMode && hasAug(me, 'boosterpack') && Math.random() < techPct(me, 0.035)) {
         if (giveSpecialItem(me, 'advanced_dice')) mod.notes.push('🔋 첨단 주사위 획득');
       }
       // 혼란: 5% 전원 교란 1턴 (칸만 숨김 · 특수 칸 효과 유지)
-      if (!glitchBack && hasAug(me, 'jammer') && Math.random() < interferePct(me, 0.05)) {
+      if (!glitchBack && !me.ghostMode && hasAug(me, 'jammer') && Math.random() < interferePct(me, 0.05)) {
         (fresh.players || []).forEach(function (fp) {
           if (fp) fp.fogTurns = Math.max(fp.fogTurns || 0, 1);
         });
@@ -8814,7 +9029,7 @@ refreshRoomList();
 
 
       // 건설 통합: 건축가·벽돌공·요새·성벽 — 발동된 것만 한 모달에서 선택
-      if (!glitchBack) {
+      if (!glitchBack && !me.ghostMode) {
         var spMapBuild = fresh.specials || {};
         var landTypeBuild = spMapBuild[landPos] != null ? spMapBuild[landPos] : spMapBuild[String(landPos)];
         var isNormalLand = !landTypeBuild;
@@ -8902,7 +9117,7 @@ refreshRoomList();
         }
       }
       // 다리: 이동 후 10% (+시너지) → 목적지 선택 → 중앙 다리 생성 (from=현재, to=선택)
-      if (!glitchBack && hasAug(me, 'bridge')) {
+      if (!glitchBack && !me.ghostMode && hasAug(me, 'bridge')) {
         var brChance = buildPct(me, 0.10);
         if (Math.random() < brChance) {
           try { SFX.special(); } catch (e) {}
@@ -9161,11 +9376,20 @@ refreshRoomList();
           me.laps = (me.laps || 0) + addMore;
         }
       }
-      var needAugPick = lapsGained > 0;
+      if (lapsGained > 0 && me.ghostMode) {
+        fresh.announce = {
+          icon: '👻',
+          title: me.name + ' 한 바퀴 완주!',
+          text: '유령 상태 — 증강 선택을 할 수 없습니다',
+          sub: (me.laps || 0) + '바퀴',
+          ts: Date.now()
+        };
+      }
+      var needAugPick = lapsGained > 0 && !me.ghostMode;
       var startedDuel = false;
       var startedRelic = false;
 
-      // 한 바퀴면 증강 선택을 최우선 — 유물/강탈/대결은 증강 이후로 미룸
+      // 한 바퀴면 증강 선택을 최우선 — 유물/강탈/대결은 증강 이후로 미룸 (유령 상태면 증강 선택 불가)
       if (needAugPick) {
         fresh.augmentPick = { playerId: myPlayerId, ts: Date.now() };
         fresh.pendingPickExtraTurn = extraTurn;
@@ -9266,31 +9490,245 @@ refreshRoomList();
           };
         }
 
+        // 묘비 밟기 부활
+        try {
+          if (applyTombstoneStep(fresh, me)) {
+            effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '✨ 묘비 부활';
+            effect.announce = true;
+            fresh.announce = { icon: '✨', title: '부활', text: me.name + ' 묘비를 밟아 부활!', sub: '부활 버프 1턴', ts: Date.now() };
+          }
+        } catch (eTomb) {}
+        // 성역 + 부활자 → 교황
+        try {
+          var san = fresh.sanctuary || {};
+          var onSan = false;
+          Object.keys(san).forEach(function (k) {
+            var v = san[k];
+            var left = v && typeof v === 'object' ? (v.turns | 0) : (v | 0);
+            if (left > 0 && Number(k) === Number(me.position)) onSan = true;
+          });
+          if (onSan && me.resurrectorBuff && !me.isPope) {
+            me.isPope = true;
+            me.resurrectorBuff = false;
+            effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '✝️ 교황 즉위';
+            effect.announce = true;
+            fresh.announce = { icon: '✝️', title: '교황', text: me.name + ' 교황이 되었다!', sub: '정화 시너지 V', ts: Date.now() };
+          }
+        } catch (ePope) {}
+        // 묘지기: 무덤지대 도착
+        try {
+          if (!me.ghostMode && hasAug(me, 'gravedigger') && fresh.graveyard && (fresh.graveyard.cells || []).some(function (c) { return Number(c) === Number(me.position); })) {
+            var gtid = fresh.graveyard.tombOwnerId;
+            var gtp = (fresh.players || []).find(function (p) { return p.id === gtid; });
+            if (fresh.tombstones && gtid) delete fresh.tombstones[gtid];
+            fresh.graveyard = null;
+            if (gtp) {
+              window.__rollAwaitingModal = true;
+              var dest = await new Promise(function (resolve) {
+                var modal = document.getElementById('pathChoiceModal');
+                var box = document.getElementById('pathChoiceButtons');
+                var hint = document.getElementById('pathChoiceHint');
+                var head = modal && modal.querySelector('h3');
+                if (!modal || !box) { resolve(1); return; }
+                if (head) head.textContent = '🪦 묘지기 — 이동 칸';
+                if (hint) hint.textContent = (gtp.name || '?') + ' 를 몇 번 칸으로 옮길까요?';
+                box.innerHTML = '';
+                for (var ci = 0; ci < BOARD_SIZE; ci++) {
+                  (function (n) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'ld-btn ld-btn-outline';
+                    b.style.cssText = 'width:auto;padding:6px 8px;margin:2px;font-size:11px;';
+                    b.textContent = String(n);
+                    b.onclick = function () {
+                      modal.classList.remove('show');
+                      modal.setAttribute('aria-hidden', 'true');
+                      resolve(n);
+                    };
+                    box.appendChild(b);
+                  })(ci);
+                }
+                modal.classList.add('show');
+                modal.setAttribute('aria-hidden', 'false');
+              });
+              window.__rollAwaitingModal = false;
+              gtp.position = Number(dest) % BOARD_SIZE;
+              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🪦 묘지기 → ' + gtp.name + ' 칸 ' + dest;
+              effect.announce = true;
+              placeTokensInstant(fresh);
+            }
+            try { renderInstalledCellMarks(fresh); } catch (e) {}
+          }
+        } catch (eGrave) {}
         var occupant = fresh.players.find(function (p) {
-          if (p.id === myPlayerId || p.position !== me.position) return false;
+          if (p.id === myPlayerId || Number(p.position) !== Number(me.position)) return false;
           if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+          if (p.ghostMode || me.ghostMode) return false;
           return true;
         });
         if (!startedRelic && occupant && me.position !== 0) {
-          fresh.duel = {
-            attackerId: myPlayerId,
-            defenderId: occupant.id,
-            phase: 'contest',
-            rolls: {},
-            winnerId: null,
-            loserId: null,
-            punishRoll: null,
-            pendingExtraTurn: extraTurn,
-            pendingAugmentPick: false,
-            pendingAugmentPlayerId: null,
-            ts: Date.now()
-          };
-          startedDuel = true;
-          try { SFX.duel(); } catch (e) {}
+          var handledLD = false;
+          if (me.grimMode) {
+            me._grimTriedKill = true;
+            var kr = killPlayer(fresh, occupant, me);
+            if (kr.ok && !kr.phoenix) {
+              // 처형 성공 시 갈망 스택 해소
+              me.longingStacks = 0;
+              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '💀 처형 ' + occupant.name + ' (갈망 해소)';
+              effect.announce = true;
+              fresh.announce = { icon: '💀', title: '처형', text: me.name + ' → ' + occupant.name + ' 죽음', sub: '묘비 생성 · 갈망 스택 초기화', ts: Date.now() };
+              handledLD = true;
+            } else if (kr.phoenix) {
+              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🔥 불사조 부활 ' + occupant.name;
+              handledLD = true;
+            }
+          }
+          if (!handledLD && me.killerBuff) {
+            var pcK = ldProcChanceFor(me);
+            if (Math.random() < pcK) {
+              var kr2 = killPlayer(fresh, occupant, me);
+              if (kr2.ok) {
+                effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🗡️ 살인마 처형 ' + occupant.name;
+                effect.announce = true;
+                handledLD = true;
+              }
+            }
+          }
+          if (!handledLD && me.saviorBuff) {
+            var pcS = ldProcChanceFor(me);
+            if (Math.random() < pcS) {
+              occupant.salvationTurns = Math.max(occupant.salvationTurns || 0, 2);
+              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '👼 구원 ' + occupant.name;
+              effect.announce = true;
+              handledLD = true;
+            }
+          }
+          if (!handledLD) {
+            fresh.duel = {
+              attackerId: myPlayerId,
+              defenderId: occupant.id,
+              phase: 'contest',
+              rolls: {},
+              winnerId: null,
+              loserId: null,
+              punishRoll: null,
+              pendingExtraTurn: extraTurn,
+              pendingAugmentPick: false,
+              pendingAugmentPlayerId: null,
+              ts: Date.now()
+            };
+            startedDuel = true;
+          } else {
+            placeTokensInstant(fresh);
+            try { renderInstalledCellMarks(fresh); } catch (e) {}
+          }
+        }
+        if (me.grimMode && !me._grimTriedKill) {
+          me.longingStacks = (me.longingStacks || 0) + 1;
+          if (me.longingStacks >= 4) {
+            me.longingStacks = 0;
+            me.grimLockTurns = 4;
+            effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🩸 갈망 4 — 그림 리퍼 4턴 봉인';
+          } else {
+            effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🩸 갈망 ' + me.longingStacks + '/4';
+          }
+        }
+
+        // 교황 부활 중재
+        if (fresh.pendingPopeRevive && fresh.pendingPopeRevive.popeId === myPlayerId) {
+          var prv = fresh.pendingPopeRevive;
+          var vic = (fresh.players || []).find(function (p) { return p.id === prv.victimId; });
+          var witches = (fresh.players || []).filter(function (p) { return p && p.isWitch; });
+          window.__rollAwaitingModal = true;
+          try {
+            var allowRev = await new Promise(function (resolve) {
+              var modal = document.getElementById('pathChoiceModal');
+              var box = document.getElementById('pathChoiceButtons');
+              var hint = document.getElementById('pathChoiceHint');
+              var head = modal && modal.querySelector('h3');
+              if (!modal || !box) { resolve(false); return; }
+              if (head) head.textContent = '✝️ 교황 — 부활 중재';
+              if (hint) hint.textContent = (vic ? vic.name : '?') + ' 를 부활시키겠습니까?' + (witches.length ? ' (마녀가 막을 수 있음)' : '');
+              box.innerHTML = '';
+              var yes = document.createElement('button');
+              yes.type = 'button';
+              yes.className = 'ld-btn ld-btn-primary';
+              yes.style.width = '100%';
+              yes.textContent = '부활시키기';
+              yes.onclick = function () { modal.classList.remove('show'); resolve(true); };
+              var no = document.createElement('button');
+              no.type = 'button';
+              no.className = 'ld-btn ld-btn-ghost';
+              no.style.width = '100%';
+              no.textContent = '부활 안 함';
+              no.onclick = function () { modal.classList.remove('show'); resolve(false); };
+              box.appendChild(yes);
+              box.appendChild(no);
+              modal.classList.add('show');
+            });
+            if (allowRev) {
+              var blocked = false;
+              if (witches.length) {
+                // 마녀 방해: 첫 마녀가 자동 50%? 스펙: 막을 수 있다 → 마녀 모달
+                for (var wi = 0; wi < witches.length && !blocked; wi++) {
+                  var witch = witches[wi];
+                  // 교황 본인 턴이므로 마녀 차단은 즉시 확률 대신 마녀가 있으면 자동 차단 기회 1회 선택 시뮬레이션: 마녀 우선 차단 선택
+                  // 간소화: 마녀 1명당 차단 시도 UI는 교황 클라이언트에서 마녀 이름으로 표시
+                  var block = await new Promise(function (resolve) {
+                    var modal = document.getElementById('pathChoiceModal');
+                    var box = document.getElementById('pathChoiceButtons');
+                    var hint = document.getElementById('pathChoiceHint');
+                    var head = modal && modal.querySelector('h3');
+                    if (!modal || !box) { resolve(false); return; }
+                    if (head) head.textContent = '🧙 마녀 — 부활 방해';
+                    if (hint) hint.textContent = witch.name + ' (마녀) 가 부활을 막습니다. 방해할까요?';
+                    box.innerHTML = '';
+                    // 교황 화면에서 마녀 방해를 시뮬레이션: 실제로는 마녀 플레이어가 결정해야 하나 동기화 복잡 → 마녀가 있으면 방해 옵션 제공
+                    var by = document.createElement('button');
+                    by.type = 'button';
+                    by.className = 'ld-btn ld-btn-primary';
+                    by.style.width = '100%';
+                    by.textContent = '🧙 방해한다';
+                    by.onclick = function () { modal.classList.remove('show'); resolve(true); };
+                    var bn = document.createElement('button');
+                    bn.type = 'button';
+                    bn.className = 'ld-btn ld-btn-ghost';
+                    bn.style.width = '100%';
+                    bn.textContent = '방해 안 함';
+                    bn.onclick = function () { modal.classList.remove('show'); resolve(false); };
+                    box.appendChild(by);
+                    box.appendChild(bn);
+                    modal.classList.add('show');
+                  });
+                  if (block) {
+                    blocked = true;
+                    witch.witchBlockCount = (witch.witchBlockCount || 0) + 1;
+                    effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🧙 마녀 방해';
+                  }
+                }
+              }
+              if (!blocked && vic) {
+                // 부활: 묘비 제거, 숭배 부여, 죽음 해제
+                if (fresh.tombstones) delete fresh.tombstones[vic.id];
+                if (fresh.graveyard && fresh.graveyard.tombOwnerId === vic.id) fresh.graveyard = null;
+                vic.deathState = false;
+                vic.worshipBuff = true;
+                vic.revivedBuffTurns = 1;
+                effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '✝️ 교황 부활 ' + vic.name + ' (숭배)';
+                fresh.announce = { icon: '✝️', title: '교황의 부활', text: me.name + ' → ' + vic.name, sub: '숭배 버프 영구', ts: Date.now() };
+              }
+            }
+            fresh.pendingPopeRevive = null;
+          } finally {
+            window.__rollAwaitingModal = false;
+          }
+        }
+        me.grimMode = false;
+        if (startedDuel) {
           fresh.announce = {
             icon: '⚔️',
             title: '같은 칸 대결!',
-            text: me.name + ' vs ' + occupant.name,
+            text: me.name + ' vs ' + (occupant ? occupant.name : '?'),
             sub: '높은 주사위가 이깁니다',
             ts: Date.now()
           };
@@ -9918,8 +10356,29 @@ refreshRoomList();
     { id: 'shield', icon: '🛡️', name: '보호막 +1', desc: '1회 방어' },
     { id: 'skip', icon: '🔒', name: '휴식/스킵 +1턴', desc: '턴 스킵' },
     { id: 'next_bonus', icon: '➡️', name: '다음 이동 +3', desc: '다음 이동 보너스' },
-    { id: 'clear_debuffs', icon: '🧹', name: '디버프 해제', desc: '잠·봉인·교란·이단·스킵 등 정리' },
-    { id: 'clear_curse_buff', icon: '🧹', name: '저주 제거', desc: '저주 스택·해방 영혼 초기화' }
+    { id: 'champion_win', icon: '🏆', name: '승리한 챔피언', desc: '1턴 · 검투사 확률 +1%' },
+    { id: 'champion_lose', icon: '😞', name: '패배한 검투사', desc: '1턴 · 검투사 확률 -0.5%' },
+    { id: 'underclock', icon: '🧊', name: '언더클럭', desc: '1턴 · 이동 1~2만' },
+    { id: 'overheat', icon: '🔥', name: '과열 +1', desc: '6스택 시 오버클럭' },
+    { id: 'grim_mode', icon: '💀', name: '그림 리퍼', desc: '변신 상태 · 동칸 처형' },
+    { id: 'longing', icon: '🩸', name: '갈망 +1', desc: '4스택 시 그림 리퍼 4턴 봉인' },
+    { id: 'grim_lock', icon: '🔒', name: '갈망 봉인', desc: '그림 리퍼 4턴 불가' },
+    { id: 'death_state', icon: '☠️', name: '죽음', desc: '사망 상태 (묘비·1번 칸)' },
+    { id: 'revived', icon: '✨', name: '부활', desc: '1턴 · 종료 후 부활자' },
+    { id: 'resurrector', icon: '🙏', name: '부활자', desc: '성역→교황 · 이단→마녀' },
+    { id: 'pope', icon: '✝️', name: '교황', desc: '정화 시너지 V · 부활 중재' },
+    { id: 'witch', icon: '🧙', name: '마녀', desc: '저주 시너지 V · 부활 방해' },
+    { id: 'worship', icon: '🛐', name: '숭배', desc: '교황 보너스 기여 (영구)' },
+    { id: 'savior', icon: '👼', name: '구세주', desc: '이번 턴 · 구원 부여 가능' },
+    { id: 'killer', icon: '🗡️', name: '살인마', desc: '이번 턴 · 처형 가능' },
+    { id: 'salvation', icon: '🛡️', name: '구원', desc: '2턴 · 죽음 면역' },
+    { id: 'life_reason', icon: '🌱', name: '삶의 이유 +1', desc: '최대 5 · 초월 조건' },
+    { id: 'after_death', icon: '☠️', name: '죽음 이후 +1', desc: '최대 5 · 초월 조건' },
+    { id: 'transcend_buff', icon: '🕊️', name: '초월 부여', desc: '죽음 면역 · 이동 +2' },
+    { id: 'human', icon: '🧑', name: '인간', desc: '부활자 만료 후' },
+    { id: 'clear_debuffs', icon: '🧹', name: '디버프 해제', desc: '잠·봉인·교란·이단·스킵·죽음 등 정리' },
+    { id: 'clear_curse_buff', icon: '🧹', name: '저주 제거', desc: '저주 스택·해방 영혼 초기화' },
+    { id: 'clear_life_death', icon: '🧹', name: '삶과 죽음 상태 해제', desc: '교황·마녀·부활자·갈망 등 초기화' }
   ];
   function applyAdminBuff(player, buffId) {
     if (!player || !buffId) return false;
@@ -9981,13 +10440,93 @@ refreshRoomList();
       case 'shield': player.shieldCharges = (player.shieldCharges || 0) + 1; break;
       case 'skip': player.skipTurns = (player.skipTurns || 0) + 1; break;
       case 'next_bonus': player.nextMoveBonus = (player.nextMoveBonus || 0) + 3; break;
+      case 'champion_win':
+        player.championVictoryTurns = Math.max(player.championVictoryTurns || 0, 1);
+        player.gladiatorChanceBonus = (player.gladiatorChanceBonus || 0) + 0.01;
+        break;
+      case 'champion_lose':
+        player.championDefeatTurns = Math.max(player.championDefeatTurns || 0, 1);
+        player.gladiatorChanceBonus = (player.gladiatorChanceBonus || 0) - 0.005;
+        break;
+      case 'underclock': player.underclockBuffTurns = Math.max(player.underclockBuffTurns || 0, 1); break;
+      case 'overheat':
+        player.overheatStacks = (player.overheatStacks || 0) + 1;
+        if (player.overheatStacks >= 6) {
+          player.overheatStacks = 0;
+          player.overclockBuffTurns = Math.max(player.overclockBuffTurns || 0, 1);
+        }
+        break;
+      case 'grim_mode': player.grimMode = true; player.grimLockTurns = 0; break;
+      case 'longing':
+        player.longingStacks = (player.longingStacks || 0) + 1;
+        if (player.longingStacks >= 4) {
+          player.longingStacks = 0;
+          player.grimLockTurns = 4;
+          player.grimMode = false;
+        }
+        break;
+      case 'grim_lock': player.grimLockTurns = 4; player.grimMode = false; break;
+      case 'death_state':
+        player.deathState = true;
+        player.position = 1;
+        break;
+      case 'revived':
+        player.revivedBuffTurns = 1;
+        player.deathState = false;
+        break;
+      case 'resurrector':
+        player.resurrectorBuff = true;
+        player.resurrectorTurnsLeft = 10;
+        player.revivedBuffTurns = 0;
+        player.deathState = false;
+        break;
+      case 'pope':
+        player.isPope = true;
+        player.resurrectorBuff = false;
+        player.isWitch = false;
+        break;
+      case 'witch':
+        player.isWitch = true;
+        player.resurrectorBuff = false;
+        player.isPope = false;
+        break;
+      case 'worship': player.worshipBuff = true; break;
+      case 'savior': player.saviorBuff = true; player.killerBuff = false; break;
+      case 'killer': player.killerBuff = true; player.saviorBuff = false; break;
+      case 'salvation': player.salvationTurns = Math.max(player.salvationTurns || 0, 2); break;
+      case 'life_reason':
+        player.lifeReasonStacks = Math.min(5, (player.lifeReasonStacks || 0) + 1);
+        break;
+      case 'after_death':
+        player.afterDeathStacks = Math.min(5, (player.afterDeathStacks || 0) + 1);
+        break;
+      case 'transcend_buff':
+        player.augments = playerAugs(player);
+        if (player.augments.indexOf('transcend') === -1) player.augments.push('transcend');
+        player.lifeReasonStacks = 5;
+        player.afterDeathStacks = 5;
+        break;
+      case 'human':
+        player.humanAug = true;
+        player.resurrectorBuff = false;
+        break;
       case 'clear_debuffs':
         player.napTurns = 0; player.lightSleepTurns = 0; player.deepSleepTurns = 0;
         player.fogTurns = 0; player.itemSealed = false; player.heresyJudged = false;
         player.skipTurns = 0; player.ghostMode = false;
+        player.deathState = false; player.grimMode = false;
         break;
       case 'clear_curse_buff':
         player.curseBuffStacks = 0; player.liberatedSoul = false; player._cursedSoulGot = false;
+        break;
+      case 'clear_life_death':
+        player.grimMode = false; player.longingStacks = 0; player.grimLockTurns = 0;
+        player.deathState = false; player.revivedBuffTurns = 0;
+        player.resurrectorBuff = false; player.resurrectorTurnsLeft = 0;
+        player.isPope = false; player.isWitch = false; player.worshipBuff = false;
+        player.saviorBuff = false; player.killerBuff = false; player.salvationTurns = 0;
+        player.lifeReasonStacks = 0; player.afterDeathStacks = 0; player.humanAug = false;
+        player.witchBlockCount = 0;
         break;
       default: return false;
     }
@@ -9999,7 +10538,7 @@ refreshRoomList();
     { icon: '👿', name: '이단자', desc: '영구 · 모든 디버프 확률 +10% · 해탈 중 이단 판정 시 부여 · 해탈 재획득으로 해제' },
     { icon: '⚖️', name: '이단 판정', desc: '정화 시너지 · 저주 디버프·아이템 피격 시 발동 · 공격자 위치로 즉시 이동 · 휴식 2턴 · 해제 불가 · 해탈 중 피격 시 이단자로 전환' },
     { icon: '🧘', name: '명상', desc: '휴식 시 누적 · 3스택 시 해탈 · 해탈 종료 후 다시 누적 가능' },
-    { icon: '😴', name: '낮잠', desc: '턴 시작 80% 스택 · 휴식 칸에서도 +1 · 5스택 시마다 잠(얕은·깊은 잠 확률 영구 +1%) · 이후에도 스택 재누적' },
+    { icon: '😴', name: '낮잠', desc: '턴 시작 80% 확률로 스택 · 휴식 칸에서도 +1 · 5스택 시마다 잠(얕은·깊은 잠 확률 영구 +1%) · 이후에도 스택 재누적' },
     { icon: '🌙', name: '잠', desc: '낮잠 5스택마다 발동 · 얕은·깊은 잠 확률 영구 +1%(중첩) · 낮잠 스택은 계속 쌓임' },
     { icon: '😑', name: '얕은 잠', desc: '1턴 수면(행동 불가) → 종료 시 개운함 2회(이동 1.4배)' },
     { icon: '💤', name: '깊은 잠', desc: '2턴 수면(행동 불가) → 종료 시 상쾌함 3회(이동 1.7배)' },
@@ -10018,8 +10557,24 @@ refreshRoomList();
     { icon: '😞', name: '패배한 검투사', desc: '1턴 · 유물 강탈 실패 후 · 검투사의 의지 획득 확률 영구 -0.5%' },
     { icon: '😈', name: '저주', desc: '저주 시너지 · 내 턴 시작마다 +1스택 (해방된 영혼이면 미적용)\n· 5스택: 항상 이동 -2\n· 10스택: 항상 이동 -1\n· 15스택: 모든 저주 증강 확률 +5%\n· 20스택: 저주받은 영혼 아이템 획득 (아이템 칸·선물 칸에서 등장하지 않음)' },
     { icon: '👼', name: '해방된 영혼', desc: '저주받은 영혼 사용 후 · 저주가 더 이상 쌓이지 않음 · 모든 저주 증강 확률 +17%' },
-    { icon: '👻', name: '유령', desc: '턴 시작 선택 · 모든 특수 칸·공격·배틀·디버프 무시(유물 포함) · 다음 사람 턴에 해제' },
-    { icon: '🛡️', name: '보호막', desc: '함정 등 1회 방어' }
+    { icon: '👻', name: '유령', desc: '턴 시작 선택 · 본인 증강 미발동 · 특수칸·증강 설치 칸·공격·배틀·디버프 무시 · 다음 사람 턴에 해제 · 증강 선택 불가' },
+    { icon: '🛡️', name: '보호막', desc: '함정 등 1회 방어' },
+    { icon: '💀', name: '그림 리퍼', desc: '턴 시작 선택 · 변신 중 다른 플레이어 칸 도착 시 처형(죽음) · 처치 실패 시 갈망 스택 · 처형 성공 시 갈망 초기화' },
+    { icon: '🩸', name: '갈망', desc: '그림 리퍼로 처치하지 못하면 누적 · 처형 성공 시 초기화 · 4스택 시 그림 리퍼 4턴 사용 불가' },
+    { icon: '🔒', name: '갈망 봉인', desc: '갈망 4스택 후 · 그림 리퍼 변신 4턴 불가' },
+    { icon: '☠️', name: '죽음', desc: '사망 상태 · 그 자리에 묘비 · 1번 칸으로 이동 · 본인 묘비를 밟으면 부활' },
+    { icon: '✨', name: '부활', desc: '1턴 · 묘비 또는 교황 부활 후 · 종료 시 부활자 버프로 전환' },
+    { icon: '🙏', name: '부활자', desc: '성역 도착 시 교황 · 이단 심문 시 마녀 · 10턴 내 교황/마녀가 되지 못하면 사라지고 인간' },
+    { icon: '✝️', name: '교황', desc: '정화 시너지 V 취급 · 다른 플레이어 사망 시 부활 중재 · 숭배 1명당 정화 확률 +2.5% · 이동 +1' },
+    { icon: '🧙', name: '마녀', desc: '저주 시너지 V 취급 · 교황의 부활을 방해 가능 · 방해 1회당 저주 확률 +2.5% · 이동 +1' },
+    { icon: '🛐', name: '숭배', desc: '교황에게 부활된 뒤 영구 · 교황의 정화 확률·이동 보너스에 기여' },
+    { icon: '👼', name: '구세주', desc: '삶과 죽음 시너지 · 이번 턴 · 상대 칸 도착 시 확률로 대결 없이 구원 2턴 부여' },
+    { icon: '🗡️', name: '살인마', desc: '삶과 죽음 시너지 · 이번 턴 · 상대 칸 도착 시 확률로 대결 없이 처형(죽음)' },
+    { icon: '🛡️', name: '구원', desc: '2턴 · 죽음 상태 면역' },
+    { icon: '🌱', name: '삶의 이유', desc: '생 증강 · 턴 시작 10% 확률로 스택 · 최대 5 · 죽음 이후 5와 함께 초월 자동 획득' },
+    { icon: '☠️', name: '죽음 이후', desc: '사 증강 · 턴 시작 10% 확률로 스택 · 최대 5 · 삶의 이유 5와 함께 초월 자동 획득' },
+    { icon: '🕊️', name: '초월', desc: '삶의 이유 5 + 죽음 이후 5 시 자동 · 죽음 면역 · 항상 이동 +2 · 30% 확률로 공격 방어' },
+    { icon: '🧑', name: '인간', desc: '부활자 버프가 10턴 내 교황/마녀로 바뀌지 못하면 획득' }
   ];
   function openBuffBook() {
     var modal = document.getElementById('buffBookModal');
@@ -10105,10 +10660,13 @@ function openCellBook() {
         { icon: '✨', label: '성역', desc: '2턴 유지 · 모든 칸 효과 미발동 · 동시에 1개만' },
         { icon: '🏰', label: '성벽', desc: '지나가는 이동 1회 차단 후 소멸' },
         { icon: '🏠', label: '집', desc: '도착 시 아이템 1개 · 특수칸이면 둘 다 발동 · 1개만' },
-        { icon: '🏯', label: '요새', desc: '도착 시 발리스타로 상대 -3칸 · 1개만' },
+        { icon: '🏯', label: '요새', desc: '도착 시 발리스타로 상대 -1~-3칸 선택 · 1개만' },
         { icon: '🌉', label: '다리', desc: '중앙에서 출발칸→목적칸 이동 · 1개만(교체)' },
         { icon: '💀', label: '해골', desc: '밟으면 다음 이동이 뒤로 · 보드에 1개만' },
-        { icon: '📍', label: '표식', desc: '2턴 함정 · 밟으면 휴식 1턴' }
+        { icon: '📍', label: '표식', desc: '2턴 함정 · 밟으면 휴식 1턴' },
+        { icon: '🚀', label: '임시 부스트', desc: '벽돌공 설치 · 보드에 1개 · 도착 시 부스트 효과 · 다음 설치 전까지 유지' },
+        { icon: '🪦', label: '묘비', desc: '플레이어 사망 시 그 자리에 생성 · 본인이 밟으면 부활(부활 버프 1턴) · 사망자는 1번 칸으로 이동' },
+        { icon: '💜', label: '무덤지대', desc: '묘지기 보유자가 처형 시 묘비 앞·뒤 1칸에 생성 · 보드에 1곳만 · 묘지기가 밟으면 묘비·무덤지대 제거 후 해당 플레이어 이동 칸 선택' }
       ];
       extra.forEach(function (t) {
         var div = document.createElement('div');
@@ -12268,14 +12826,14 @@ function openCellBook() {
       pend.votes[myPlayerId] = decision; // 'allow' | 'deny'
 
       if (decision === 'deny') {
-        var denySuccess = Math.random() < 0.5; // 거부는 50% 확률로만 성공
+        var denySuccess = Math.random() < 0.20; // 거부는 20% 확률로만 성공
         var denier = room.players.find(function (p) { return p.id === myPlayerId; });
         if (denySuccess) {
           // 거부 성공: 아이템은 환급 없이 소멸
           room.announce = {
             icon: '😇', title: '천사가 거부!',
             text: (denier ? denier.name : '천사') + ' — ' + pend.userName + '의 ' + pend.itemName + ' 무효 (소멸)',
-            sub: '거부 성공 (50%)',
+            sub: '거부 성공 (20%)',
             ts: Date.now()
           };
           room.log = room.log || [];
@@ -12295,7 +12853,7 @@ function openCellBook() {
           var userFail = room.players.find(function (p) { return p.id === pend.userId; });
           room.announce = {
             icon: '😇', title: '천사의 거부 실패!',
-            text: (denier ? denier.name : '천사') + ' 거부 시도 실패 (50%) → ' + msgFail,
+            text: (denier ? denier.name : '천사') + ' 거부 시도 실패 (20%) → ' + msgFail,
             sub: '아이템 효과가 적용되었습니다',
             ts: Date.now()
           };
@@ -12450,6 +13008,160 @@ function openCellBook() {
 
   // ---- 내 턴 UX / 대기 안내 / 다음 칸 미리보기 ----
   var lastTurnToastKey = '';
+  var _formOfferBusy = false;
+  var _formOfferKey = '';
+  function pathChoiceYesNo(title, hint, yesLabel, noLabel) {
+    return new Promise(function (resolve) {
+      var modal = document.getElementById('pathChoiceModal');
+      var box = document.getElementById('pathChoiceButtons');
+      var hintEl = document.getElementById('pathChoiceHint');
+      var head = modal && modal.querySelector('h3');
+      if (!modal || !box) { resolve(false); return; }
+      if (head) head.textContent = title;
+      if (hintEl) hintEl.textContent = hint || '';
+      box.innerHTML = '';
+      var yes = document.createElement('button');
+      yes.type = 'button';
+      yes.className = 'ld-btn ld-btn-primary';
+      yes.style.width = '100%';
+      yes.textContent = yesLabel;
+      yes.onclick = function () {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        resolve(true);
+      };
+      var no = document.createElement('button');
+      no.type = 'button';
+      no.className = 'ld-btn ld-btn-ghost';
+      no.style.width = '100%';
+      no.textContent = noLabel;
+      no.onclick = function () {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        resolve(false);
+      };
+      box.appendChild(yes);
+      box.appendChild(no);
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+    });
+  }
+  async function maybeOfferTurnStartForms(room) {
+    if (_formOfferBusy) return;
+    if (!room || room.status !== 'playing' || !myPlayerId) return;
+    if (room.winnerId || room.winnerTeam != null) return;
+    // 다른 모달/대기 중이면 나중에 재시도 (키를  consum 하지 않음)
+    if (room.duel || room.relicChallenge || room.augmentPick || room.itemPending) return;
+    if (room.itemBoxPick || room.pendingSkeleton || room.pendingCursedSoul) return;
+    var cur = room.players && room.players[room.turnIndex % room.players.length];
+    if (!cur || cur.id !== myPlayerId) return;
+    if (typeof isAsleep === 'function' && isAsleep(cur)) return;
+
+    var turnKey = String(room.code || myRoomCode || '') + ':' + String(room.turnIndex | 0) + ':' + String(room.turnStartedAt || 0);
+    if (!room.turnStartedAt) return; // 턴 시작 시각 없으면 아직 준비 안 됨
+    if (turnKey === _formOfferKey) return;
+
+    // 서버 formOfferKey에 의존하지 않음 — 로컬 턴키만으로 1회 제한
+    var canPh = hasAug(cur, 'phantom') && !cur.ghostMode;
+    var canGr = hasAug(cur, 'grim_reaper') && !(Number(cur.grimLockTurns) > 0) && !cur.ghostMode;
+    if (!canPh && !canGr) return; // 증강 없으면 스킵하되, 키는 잠그지 않음(증강 지급 직후 재시도)
+
+    _formOfferBusy = true;
+    // 모달을 띄우기 전에 키를 잠가 중복 호출 방지
+    _formOfferKey = turnKey;
+    try {
+      var fresh = room;
+      try {
+        var remote = await getRoom(myRoomCode);
+        if (remote) fresh = remote;
+      } catch (eGet) {}
+      var me = (fresh.players || []).find(function (p) { return p.id === myPlayerId; });
+      var stillMy = fresh.players && fresh.players[fresh.turnIndex % fresh.players.length];
+      if (!me || !stillMy || stillMy.id !== myPlayerId) {
+        _formOfferKey = ''; // 내 턴이 아니면 롤백
+        return;
+      }
+      turnKey = String(fresh.code || myRoomCode || '') + ':' + String(fresh.turnIndex | 0) + ':' + String(fresh.turnStartedAt || 0);
+      _formOfferKey = turnKey;
+
+      canPh = hasAug(me, 'phantom') && !me.ghostMode;
+      canGr = hasAug(me, 'grim_reaper') && !(Number(me.grimLockTurns) > 0) && !me.ghostMode;
+      if (!canPh && !canGr) {
+        _formOfferKey = '';
+        return;
+      }
+
+      var choice = await new Promise(function (resolve) {
+        var modal = document.getElementById('pathChoiceModal');
+        var box = document.getElementById('pathChoiceButtons');
+        var hintEl = document.getElementById('pathChoiceHint');
+        var head = modal && modal.querySelector('h3');
+        if (!modal || !box) {
+          console.warn('pathChoiceModal missing');
+          resolve('none');
+          return;
+        }
+        if (head) head.textContent = '🎭 변신 선택';
+        if (hintEl) {
+          hintEl.textContent = (canPh && canGr)
+            ? '유령과 그림 리퍼 중 하나만 선택할 수 있습니다.'
+            : (canPh ? '유령 상태로 변신할까요?' : '그림 리퍼로 변신할까요?');
+        }
+        box.innerHTML = '';
+        function addBtn(label, val, primary) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = primary ? 'ld-btn ld-btn-primary' : 'ld-btn ld-btn-ghost';
+          b.style.width = '100%';
+          b.style.marginTop = '6px';
+          b.textContent = label;
+          b.onclick = function () {
+            modal.classList.remove('show');
+            modal.setAttribute('aria-hidden', 'true');
+            resolve(val);
+          };
+          box.appendChild(b);
+        }
+        if (canPh) addBtn('👻 유령', 'ghost', true);
+        if (canGr) addBtn('💀 그림 리퍼', 'grim', true);
+        addBtn('변신하지 않음', 'none', false);
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+        try { modal.style.zIndex = '9999'; } catch (ez) {}
+      });
+
+      me.formOfferKey = turnKey;
+      me._phantomOffer = false;
+      me._grimOffer = false;
+
+      if (choice === 'ghost') {
+        me.ghostMode = true;
+        me.grimMode = false;
+        fresh.announce = { icon: '👻', title: '유령', text: me.name + ' 유령 상태', sub: '효과·배틀 무시', ts: Date.now() };
+      } else if (choice === 'grim') {
+        me.grimMode = true;
+        me.ghostMode = false;
+        me._grimTriedKill = false;
+        fresh.announce = {
+          icon: '💀', title: '그림 리퍼',
+          text: me.name + ' 그림 리퍼로 변신',
+          sub: '다른 플레이어 칸 도착 시 처형',
+          ts: Date.now()
+        };
+      } else {
+        me.grimMode = false;
+      }
+      await saveRoom(fresh);
+      lastRoomSnapshot = fresh;
+      try { renderGame(fresh); maybeShowAnnounce(fresh); } catch (e1) {}
+    } catch (eForm) {
+      console.warn('turn form offer', eForm);
+      _formOfferKey = ''; // 실패 시 재시도 허용
+    } finally {
+      _formOfferBusy = false;
+    }
+  }
+
   function isMyTurnNow(room) {
     if (!room || room.status !== 'playing' || !myPlayerId) return false;
     if (room.winnerId || room.winnerTeam != null) return false;
@@ -12478,6 +13190,10 @@ function openCellBook() {
         toast.textContent = '🎲 당신 차례!';
         clearTimeout(updateTurnUX._tt);
         updateTurnUX._tt = setTimeout(function () { toast.classList.remove('show'); }, 2200);
+        // 턴 진입 직후 변신 모달 재시도
+        setTimeout(function () {
+          try { maybeOfferTurnStartForms(room); } catch (e) {}
+        }, 120);
       }
       if (!mine) toast.classList.remove('show');
     }
@@ -12552,6 +13268,7 @@ function openCellBook() {
       if (room && room.pendingCursedSoul && room.pendingCursedSoul.userId === myPlayerId) {
         showCursedSoulPick(room);
       }
+      try { maybeOfferTurnStartForms(room); } catch (eForm2) {}
     } catch (ePick) {}
     if (room && (room.winnerId || room.winnerTeam != null)) {
       handleGameEnd(room);
