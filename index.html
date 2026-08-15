@@ -1645,7 +1645,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.6.28</span></div>
+      <div class="ld-version">패치 <span>v1.0.6.30</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -3186,10 +3186,10 @@
     { cat: 'support', need: 3, key: 'supportSpecItem', value: 1, icon: '🤝', name: '지원 시너지 III', desc: '특수 칸 팀 아이템 +1' },
     { cat: 'support', need: 4, key: 'supportTurnItem', value: 1, icon: '🤝', name: '지원 시너지 IV', desc: '턴 시작 시 나와 팀 아이템 +1' },
     { cat: 'support', need: 5, key: 'supportTurnBonus', value: 1, icon: '🤝', name: '지원 시너지 V', desc: '턴 시작 시 나와 팀 이동 +1 · 아이템 +1' },
-    { cat: 'leap', need: 2, key: 'leapHigher', value: 0.50, icon: '🦘', name: '도약 시너지 II', desc: '이전 눈보다 같거나 높은 칸 확률 50% 상승' },
-    { cat: 'leap', need: 3, key: 'leapHigher', value: 0.70, icon: '🦘', name: '도약 시너지 III', desc: '이전 눈보다 같거나 높은 칸 확률 70% 상승' },
-    { cat: 'leap', need: 4, key: 'leapHigherAlways', value: 1, icon: '🦘', name: '도약 시너지 IV', desc: '이전 눈보다 항상 같거나 높은 칸으로 나옴' },
-    { cat: 'leap', need: 5, key: 'leapAlwaysPlus1', value: 1, icon: '🦘', name: '도약 시너지 V', desc: '이전 눈보다 항상 높은 칸 +1 · 7칸 이상은 1~6 재굴림' },
+    { cat: 'leap', need: 2, key: 'leapHigher', value: 0.50, icon: '🦘', name: '도약 시너지 II', desc: '이전 눈보다 같거나 높은 칸 확률 50% 상승 · 6이 2턴 이상 연속 시 1~6 랜덤' },
+    { cat: 'leap', need: 3, key: 'leapHigher', value: 0.70, icon: '🦘', name: '도약 시너지 III', desc: '이전 눈보다 같거나 높은 칸 확률 70% 상승 · 6이 2턴 이상 연속 시 1~6 랜덤' },
+    { cat: 'leap', need: 4, key: 'leapHigherAlways', value: 1, icon: '🦘', name: '도약 시너지 IV', desc: '이전 눈보다 항상 같거나 높은 칸으로 나옴 · 6이 2턴 이상 연속 시 1~6 랜덤' },
+    { cat: 'leap', need: 5, key: 'leapAlwaysPlus1', value: 1, icon: '🦘', name: '도약 시너지 V', desc: '이전 눈보다 항상 높은 칸 +1 · 7칸 이상은 1~6 재굴림 · 6이 2턴 이상 연속 시 1~6 랜덤' },
     { cat: 'curse', need: 2, key: 'curseBuffGain', value: 1, icon: '😈', name: '저주 시너지 II', desc: '턴 시작 시 저주 획득' },
     { cat: 'curse', need: 3, key: 'curseBuffGain', value: 1, icon: '😈', name: '저주 시너지 III', desc: '턴 시작 시 저주 획득 · 저주 증강 확률 +1.5%' },
     { cat: 'curse', need: 4, key: 'curseBuffGain', value: 1, icon: '😈', name: '저주 시너지 IV', desc: '턴 시작 시 저주 획득 · 저주 증강 확률 +3%' },
@@ -3862,6 +3862,7 @@
       skipTurns: 0,
       shieldCharges: 0,
       lastFace: 0,
+      leapSixStreak: 0,
       nextMoveBonus: 0,
       augDisabled: [],
       items: [],
@@ -4696,6 +4697,7 @@ refreshRoomList();
     selectedRosterId = null;
     tokenEls = {};
     tokenRenderedPos = {};
+    try { clearAllTokens(); } catch (eTok) {}
     rolling = false;
     remoteAnimating = false;
     lastAnnounceTs = 0;
@@ -4734,11 +4736,21 @@ refreshRoomList();
     }
   })();
 
+  function clearAllTokens() {
+    try {
+      document.querySelectorAll('.ld-token').forEach(function (t) {
+        if (t && t.parentNode) t.parentNode.removeChild(t);
+      });
+    } catch (e) {}
+    tokenEls = {};
+    tokenRenderedPos = {};
+  }
   function buildBoard(specials) {
-    var oldTokens = els.boardGrid.querySelectorAll('.ld-token');
-    var tokenNodes = [];
-    oldTokens.forEach(function (t) { tokenNodes.push(t); t.remove(); });
-    els.boardGrid.querySelectorAll('.ld-cell').forEach(function (c) { c.remove(); });
+    // 이전 방 토큰이 board-wrap에 남아 있을 수 있음 → 전부 제거 후 재배치
+    clearAllTokens();
+    if (els.boardGrid) {
+      els.boardGrid.querySelectorAll('.ld-cell').forEach(function (c) { c.remove(); });
+    }
 
     specials = specials || {};
     for (var i = 0; i < BOARD_SIZE; i++) {
@@ -4768,7 +4780,6 @@ refreshRoomList();
       })(i, type);
       els.boardGrid.insertBefore(cell, els.boardCenter);
     }
-    tokenNodes.forEach(function (t) { els.boardGrid.appendChild(t); });
     boardBuilt = true;
 
     els.boardLegend.innerHTML = '';
@@ -4912,6 +4923,20 @@ refreshRoomList();
   }
 
   function placeTokensInstant(room) {
+    if (!room || !room.players) {
+      clearAllTokens();
+      return;
+    }
+    var liveIds = {};
+    room.players.forEach(function (p) { if (p && p.id) liveIds[p.id] = true; });
+    document.querySelectorAll('.ld-token').forEach(function (t) {
+      var id = t.id && t.id.indexOf('token-') === 0 ? t.id.slice(6) : '';
+      if (!id || !liveIds[id]) {
+        if (t.parentNode) t.parentNode.removeChild(t);
+        delete tokenRenderedPos[id];
+        delete tokenEls[id];
+      }
+    });
     room.players.forEach(function (p) {
       var el = document.getElementById('token-' + p.id);
       if (!el) {
@@ -6840,7 +6865,8 @@ refreshRoomList();
       extraTurn = true;
       notes.push('신속 II 추가 턴');
     }
-    // 도약 시너지: II/III 같거나 높은 확률 · IV 항상 같거나 높은 · V 항상 높은(+1) · 7칸 이상이면 1~6 재굴림
+    // 도약 시너지: II/III 같거나 높은 확률 · IV 항상 같거나 높은 · V 항상 높은(+1)
+    // · 7칸 이상이면 1~6 재굴림 · 6이 2턴 이상 연속이면 1~6 랜덤
     if (player.lastFace && (syn.leapAlwaysPlus1 || syn.leapHigherAlways || syn.leapHigher)) {
       var prevLeap = player.lastFace | 0;
       var forcePlus1 = !!syn.leapAlwaysPlus1;
@@ -6875,7 +6901,19 @@ refreshRoomList();
         notes.push('🦘 도약 재굴림: ' + face);
         leapChanged = true;
       }
+      // 6이 2턴 이상 연속 → 1~6 랜덤 (고착 방지)
+      var sixStreak = player.leapSixStreak | 0;
+      if (sixStreak >= 1 && face === 6) {
+        face = 1 + Math.floor(Math.random() * 6);
+        notes.push('🦘 도약 연속6 해제: ' + face);
+        leapChanged = true;
+      }
       if (leapChanged) move = face;
+    }
+    // 도약 연속 6 스트릭 갱신
+    if (syn.leapAlwaysPlus1 || syn.leapHigherAlways || syn.leapHigher) {
+      if ((face | 0) === 6) player.leapSixStreak = (player.leapSixStreak | 0) + 1;
+      else player.leapSixStreak = 0;
     }
     // 콤보: 이전 눈과 같으면 그 눈만큼 추가 이동
     if (hasAug(player, 'combo') && player.lastFace && face === (player.lastFace | 0)) {
