@@ -928,6 +928,11 @@
     color: var(--text-main); font-weight: 700;
   }
   .ld-item-chip:hover { filter: brightness(1.15); border-color: var(--green); }
+  .ld-item-chip.ld-item-special {
+    border: 2px solid #fbbf24;
+    box-shadow: 0 0 0 1px rgba(251,191,36,0.35), 0 0 8px rgba(251,191,36,0.35);
+  }
+  .ld-item-chip.ld-item-special:hover { border-color: #fde047; }
   .ld-item-empty { font-size: 11px; color: var(--text-dim); padding: 4px; }
   .ld-item-use {
     display: none; margin: 0 0 12px; padding: 12px; border-radius: 14px;
@@ -1645,7 +1650,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.7.1</span></div>
+      <div class="ld-version">패치 <span>v1.0.7.3</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -2452,7 +2457,7 @@
   function giveItemToPlayer(room, player, itemId, reason) {
     if (!player || !room) return;
     player.items = playerItems(player);
-    if (player.items.length >= 3) return;
+    if (normalItemCount(player.items) >= itemCapFor(player, room)) return;
     var id = itemId || randomItemId(room);
     var def = getItemById(id);
     // 특수 주사위/자명종은 칸·랜덤 지급으로 나오지 않음 (명시적 giveSpecialItem만)
@@ -2473,7 +2478,7 @@
       if (p.id === player.id) return;
       if (hasAug(p, 'beneficiary')) {
         p.items = playerItems(p);
-        if (p.items.length < 3) {
+        if (normalItemCount(p.items) < itemCapFor(p, room)) {
           p.items.push(randomItemId(room));
         }
       }
@@ -2500,6 +2505,27 @@
     if (!p || !p.items) return [];
     if (Array.isArray(p.items)) return p.items.slice();
     return Object.keys(p.items).map(function (k) { return p.items[k]; }).filter(Boolean);
+  }
+  // 특별 아이템(specialOnly)은 일반 아이템 3칸 제한 계산에서 제외
+  function normalItemCount(items) {
+    items = items || [];
+    var n = 0;
+    for (var i = 0; i < items.length; i++) {
+      var d = getItemById(items[i]);
+      if (!d || !d.specialOnly) n++;
+    }
+    return n;
+  }
+  // 아이템 최대 보유량: 기본 3 + (가방 증강 · 지원 시너지 V 영구 보너스, 나와 팀 전원 적용)
+  function itemCapFor(player, room) {
+    var cap = 3;
+    if (!player) return cap;
+    var bonus = 0;
+    teamMembers(room, player).forEach(function (p) {
+      if (hasAug(p, 'bag')) bonus += 1;
+      if (synergyBonus(p).supportItemCap) bonus += 1;
+    });
+    return cap + bonus;
   }
 
   var RELIC_TYPES = [
@@ -2563,8 +2589,19 @@
     if (Array.isArray(p.mythicRelics)) return p.mythicRelics.slice();
     return Object.keys(p.mythicRelics).map(function (k) { return p.mythicRelics[k]; }).filter(Boolean);
   }
+  function isRelicDestroyed(room, id) {
+    if (!room || !id) return false;
+    var d = room.destroyedRelics;
+    if (!d) return false;
+    if (!Array.isArray(d)) d = Object.keys(d).map(function (k) { return d[k]; });
+    return d.indexOf(id) !== -1;
+  }
   function hasRelic(player, id) {
     if (playerRelics(player).indexOf(id) === -1) return false;
+    // 저주받은 영혼으로 존재 소멸된 유물 종류는 능력 미발동
+    try {
+      if (typeof lastRoomSnapshot !== 'undefined' && lastRoomSnapshot && isRelicDestroyed(lastRoomSnapshot, id)) return false;
+    } catch (eDest) {}
     // 저주 걸린 유물은 능력 미발동
     if (playerCursedRelics(player).indexOf(id) !== -1) return false;
     return true;
@@ -2731,6 +2768,7 @@
     { id: 'donor', cat: 'support', icon: '🤲', name: '기부자', desc: '아이템을 다른 플레이어에게 선물하면 나도 랜덤 아이템 1개 획득', tag: '필드', chance: '아이템' },
     { id: 'beneficiary', cat: 'support', icon: '🎀', name: '수혜자', desc: '다른 플레이어가 아이템을 획득하면 나도 아이템 1개 획득', tag: '필드', chance: '상황' },
     { id: 'protector', cat: 'support', icon: '🛡️', name: '보호자', desc: '앞·뒤 4칸 이내 대결에서 패배 벌칙 무효', tag: '전투', chance: '전투 시' },
+    { id: 'bag', cat: 'support', icon: '🎒', name: '가방', desc: '나와 팀의 아이템 최대 보유량 +1', tag: '필드', chance: '항상' },
     // leap (신규) — 큰 이동/도약만
     { id: 'hop', cat: 'leap', icon: '🐇', name: '홉', desc: '3이 나오면 1~3칸 중 랜덤 이동', tag: '필드', chance: '17% 확률' },
     { id: 'vault', cat: 'leap', icon: '🚀', name: '도약', desc: '6이 나오면 4~6칸 중 랜덤 이동', tag: '필드', chance: '17% 확률' },
@@ -3201,7 +3239,7 @@
     { cat: 'support', need: 2, key: 'supportShare', value: 1, icon: '🤝', name: '지원 시너지 II', desc: '나눔 효과 강화' },
     { cat: 'support', need: 3, key: 'supportSpecItem', value: 1, icon: '🤝', name: '지원 시너지 III', desc: '특수 칸 팀 아이템 +1' },
     { cat: 'support', need: 4, key: 'supportTurnItem', value: 1, icon: '🤝', name: '지원 시너지 IV', desc: '턴 시작 시 나와 팀 아이템 +1' },
-    { cat: 'support', need: 5, key: 'supportTurnBonus', value: 1, icon: '🤝', name: '지원 시너지 V', desc: '턴 시작 시 나와 팀 이동 +1 · 아이템 +1' },
+    { cat: 'support', need: 5, key: 'supportTurnBonus', value: 1, icon: '🤝', name: '지원 시너지 V', desc: '턴 시작 시 나와 팀 이동 +1 · 아이템 최대 보유량 +1' },
     { cat: 'leap', need: 2, key: 'leapHigher', value: 0.50, icon: '🦘', name: '도약 시너지 II', desc: '이전 눈보다 같거나 높은 칸 확률 50% 상승 · 6이 2턴 이상 연속 시 1~6 랜덤' },
     { cat: 'leap', need: 3, key: 'leapHigher', value: 0.70, icon: '🦘', name: '도약 시너지 III', desc: '이전 눈보다 같거나 높은 칸 확률 70% 상승 · 6이 2턴 이상 연속 시 1~6 랜덤' },
     { cat: 'leap', need: 4, key: 'leapHigherAlways', value: 1, icon: '🦘', name: '도약 시너지 IV', desc: '이전 눈보다 항상 같거나 높은 칸으로 나옴 · 6이 2턴 이상 연속 시 1~6 랜덤' },
@@ -3257,7 +3295,7 @@
       luckCrit: 0, speedAgain: 0, speedLandExtra: 0, speedExtraTurn3: 0, speedExtraTurn4: 0, defendRest: 0, defendImmune: 0, defendAll: 0, chaosGift: 0, relicItem: 0, relicGiftItem: 0, relicStealPath: 0, utilDice: 0, utilWarp: 0,
       interfereBonus: 0, sleepChance: 0, restfulBonus: 0, alarmChance: 0, luckBonus: 0, luckBuffChance: 0, curseBonus: 0, chaosBonus: 0, techBuffChance: 0, heresyChance: 0, ldBuffChance: 0, ldProcChance: 0,
       battleSteal: 0, battlePunish: 0, battleWin: 0, gladiatorChance: 0,
-      supportGift: 0, supportShare: 0, supportInspire: 0, supportNormItem: 0, supportSpecItem: 0, supportTurnBonus: 0, supportTurnItem: 0,
+      supportGift: 0, supportShare: 0, supportInspire: 0, supportNormItem: 0, supportSpecItem: 0, supportTurnBonus: 0, supportTurnItem: 0, supportItemCap: 0,
       leapBonus: 0, leapCap: 0, leapCap1: 0, leapSix: 0, leapHigher: 0, leapHigherAlways: 0, leapAlwaysPlus1: 0,
       curseTrap: 0, curseDuel: 0, curseSkip: 0, curseRestSkip: 0, curseBuffGain: 0,
       buildAugBonus: 0, buildLock: 0, buildLockTurns: 0, buildShield: 0, buildBoost: 0,
@@ -3307,8 +3345,8 @@
     else if ((counts.luck || 0) >= 2) out.luckBuffChance = Math.max(out.luckBuffChance || 0, 0.02);
     // 방어 V: 외부 공격 전체
     if ((counts.defend || 0) >= 5) out.defendAll = 0.50;
-    // 지원 V면 아이템 보너스도 포함
-    if ((counts.support || 0) >= 5) out.supportTurnItem = 1;
+    // 지원 V: 아이템 최대 보유량 +1 (턴 시작 지급이 아닌 영구 보너스)
+    if ((counts.support || 0) >= 5) out.supportItemCap = 1;
     // 해방된 영혼: 저주 증강 +17%
     if (player && player.liberatedSoul) out.curseBonus = (out.curseBonus || 0) + 0.17;
     // 저주 15스택: +5%
@@ -5432,16 +5470,30 @@ refreshRoomList();
         pickEl.style.display = iAm ? 'flex' : 'none';
         pickEl.innerHTML = '';
         if (iAm) {
-          var missing = RELIC_TYPES.filter(function (t) {
-            return playerRelics(room.players.find(function (p) { return p.id === myPlayerId; })).indexOf(t.id) === -1;
-          });
-          if (!missing.length) missing = RELIC_TYPES.slice();
-          missing.forEach(function (r) {
+          var ownedPick = playerRelics(room.players.find(function (p) { return p.id === myPlayerId; }));
+          RELIC_TYPES.forEach(function (r) {
+            var destroyed = isRelicDestroyed(room, r.id);
+            var already = ownedPick.indexOf(r.id) !== -1;
             var b = document.createElement('button');
             b.type = 'button';
             b.className = 'ld-relic-pick-btn';
-            b.textContent = r.icon + ' ' + r.name;
-            b.onclick = function () { finishRelicPick(r.id); };
+            if (destroyed) {
+              b.textContent = r.icon + ' ' + r.name + ' (소멸)';
+              b.disabled = true;
+              b.style.color = '#000';
+              b.style.background = '#2a2a2a';
+              b.style.opacity = '0.7';
+              b.style.cursor = 'not-allowed';
+              b.title = '저주받은 영혼으로 존재가 소멸된 유물';
+            } else if (already) {
+              b.textContent = r.icon + ' ' + r.name + ' (보유)';
+              b.disabled = true;
+              b.style.opacity = '0.45';
+              b.style.cursor = 'not-allowed';
+            } else {
+              b.textContent = r.icon + ' ' + r.name;
+              b.onclick = function () { finishRelicPick(r.id); };
+            }
             pickEl.appendChild(b);
           });
         }
@@ -5496,6 +5548,11 @@ refreshRoomList();
   }
 
   async function finishRelicPick(relicId) {
+      if (typeof isRelicDestroyed === 'function' && isRelicDestroyed(typeof lastRoomSnapshot !== 'undefined' ? lastRoomSnapshot : null, relicId)) {
+        if (els.gameError) els.gameError.textContent = '소멸된 유물은 선택할 수 없습니다';
+        return;
+      }
+
     try {
       var room = await getRoom(myRoomCode);
       if (!room || !room.relicChallenge || room.relicChallenge.phase !== 'pickRelic') return;
@@ -7585,7 +7642,7 @@ refreshRoomList();
       result.effectText = '🌀 워프 → ' + dest;
       if (hasAug(player, 'dimtraveler') && typeof ITEM_TYPES !== 'undefined') {
         player.items = playerItems(player);
-        if (player.items.length < 3) {
+        if (normalItemCount(player.items) < itemCapFor(player, room)) {
           var dit = getItemById(randomItemId(room)) || ITEM_TYPES[0];
           player.items.push(dit.id);
           result.effectText += ' · 🌌아이템 ' + dit.icon;
@@ -7690,7 +7747,7 @@ refreshRoomList();
         if (typeof ITEM_TYPES !== 'undefined' && ITEM_TYPES.length) {
           var it = getItemById(randomItemId(room)) || ITEM_TYPES[0];
           player.items = playerItems(player);
-          if (player.items.length < 3) {
+          if (normalItemCount(player.items) < itemCapFor(player, room)) {
             player.items.push(it.id);
             result.effectText = '🎁 선물 아이템: ' + it.icon + ' ' + it.name;
           } else {
@@ -7735,7 +7792,7 @@ refreshRoomList();
         result.effectText += ' · 🎀더블선물 +' + g3;
         if (Math.random() < 0.35 && typeof ITEM_TYPES !== 'undefined') {
           player.items = playerItems(player);
-          if (player.items.length < 3) {
+          if (normalItemCount(player.items) < itemCapFor(player, room)) {
             var git = getItemById(randomItemId(room)) || ITEM_TYPES[0];
             player.items.push(git.id);
             result.effectText += '·아이템' + git.icon;
@@ -7745,7 +7802,7 @@ refreshRoomList();
       // 고고학자 시너지 II: 선물 칸 10% 유물 지도
       if (synG.relicGiftItem && Math.random() < synG.relicGiftItem) {
         player.items = playerItems(player);
-        if (player.items.length < 3) {
+        if (normalItemCount(player.items) < itemCapFor(player, room)) {
           player.items.push('relic_compass');
           result.effectText += ' · 🏺유물지도 획득';
         }
@@ -7770,7 +7827,7 @@ refreshRoomList();
           result.effectText = '🔄 ' + target.name + '과 교체';
           if (hasAug(player, 'dimtraveler') && typeof ITEM_TYPES !== 'undefined') {
             player.items = playerItems(player);
-            if (player.items.length < 3) {
+            if (normalItemCount(player.items) < itemCapFor(player, room)) {
               var sit2 = getItemById(randomItemId(room)) || ITEM_TYPES[0];
               player.items.push(sit2.id);
               result.effectText += ' · 🌌아이템 ' + sit2.icon;
@@ -7798,7 +7855,7 @@ refreshRoomList();
       }
       if (hasAug(player, 'prospector') && Math.random() < 0.10) {
         player.items = playerItems(player);
-        if (player.items.length < 3) {
+        if (normalItemCount(player.items) < itemCapFor(player, room)) {
           player.items.push('relic_compass');
           result.effectText += ' · ⛏️유물지도 획득';
         }
@@ -7811,7 +7868,7 @@ refreshRoomList();
       result.announce = true;
       if (hasAug(player, 'prospector') && Math.random() < 0.10) {
         player.items = playerItems(player);
-        if (player.items.length < 3) {
+        if (normalItemCount(player.items) < itemCapFor(player, room)) {
           player.items.push('relic_compass');
           result.effectText += ' · ⛏️유물지도 획득';
         }
@@ -7819,8 +7876,8 @@ refreshRoomList();
     } else if (type === 'item') {
       var it = getItemById(randomItemId(room)) || ITEM_TYPES[0];
       player.items = playerItems(player);
-      var itemCap = 3;
-      if (player.items.length < itemCap) {
+      var itemCap = itemCapFor(player, room);
+      if (normalItemCount(player.items) < itemCap) {
         player.items.push(it.id);
         result.effectText = '🎒 아이템 획득: ' + it.icon + ' ' + it.name;
         result.gotItem = it.id;
@@ -7829,14 +7886,14 @@ refreshRoomList();
           if (bp.id === player.id) return;
           if (hasAug(bp, 'beneficiary')) {
             bp.items = playerItems(bp);
-            if (bp.items.length < 3) {
+            if (normalItemCount(bp.items) < itemCapFor(bp, room)) {
               var bix = getItemById(randomItemId(room)) || ITEM_TYPES[0];
               bp.items.push(bix.id);
               result.effectText += ' · 🎀수혜자 ' + bp.name;
             }
           }
         });
-        if (hasAug(player, 'hoarder') && player.items.length < itemCap) {
+        if (hasAug(player, 'hoarder') && normalItemCount(player.items) < itemCap) {
           var itH = getItemById(randomItemId(room)) || ITEM_TYPES[0];
           player.items.push(itH.id);
           result.effectText += ' · 📦사재기 +' + itH.icon;
@@ -7849,7 +7906,7 @@ refreshRoomList();
       result.announce = true;
       if (hasAug(player, 'prospector') && Math.random() < 0.10) {
         player.items = playerItems(player);
-        if (player.items.length < 3) {
+        if (normalItemCount(player.items) < itemCapFor(player, room)) {
           player.items.push('relic_compass');
           result.effectText += ' · ⛏️유물지도 획득';
         }
@@ -8712,18 +8769,18 @@ refreshRoomList();
       els.turnBanner.className = 'ld-turn-banner rb-wait';
       els.turnBanner.textContent = '굴리는 중...';
 
-      // 지원 시너지 IV: 아이템+1 · V: 이동+1 · 아이템+1
+      // 지원 시너지 IV: 턴 시작 시 아이템+1 · V: 턴 시작 시 이동+1 (아이템 효과는 최대 보유량 영구 +1로 대체됨)
       var turnKey = (fresh.turnIndex | 0) + ':' + (fresh.turnStartedAt || 0);
       var synSup = synergyBonus(me);
-      if (!me.ghostMode && (synSup.supportTurnBonus || synSup.supportTurnItem) && me._supportIVKey !== turnKey) {
+      if (!me.ghostMode && (synSup.supportTurnBonus || (synSup.supportTurnItem && !synSup.supportItemCap)) && me._supportIVKey !== turnKey) {
         me._supportIVKey = turnKey;
         teamMembers(fresh, me).forEach(function (tp) {
           if (synSup.supportTurnBonus) {
             tp.nextMoveBonus = (tp.nextMoveBonus || 0) + 1;
           }
-          if (synSup.supportTurnBonus || synSup.supportTurnItem) {
+          if (synSup.supportTurnItem && !synSup.supportItemCap) {
             tp.items = playerItems(tp);
-            if (tp.items.length < 3) {
+            if (normalItemCount(tp.items) < itemCapFor(tp, fresh)) {
               var iv = getItemById(randomItemId(room)) || ITEM_TYPES[0];
               tp.items.push(iv.id);
             }
@@ -10340,27 +10397,28 @@ refreshRoomList();
     var q = (qEl && qEl.value ? qEl.value : '').trim().toLowerCase();
     listEl.innerHTML = '';
     var shown = 0;
-    var diceHeaderDone = false;
+    var specialHeaderDone = false;
     sortedItemTypesForDisplay().forEach(function (it) {
       if (q) {
         var hay = (it.name + ' ' + (it.desc || '') + ' ' + it.id + ' ' + (it.target || '')).toLowerCase();
         if (hay.indexOf(q) === -1) return;
       }
-      if ((it.group === 'dice' || (it.specialOnly && /dice/.test(it.id))) && !diceHeaderDone && !q) {
+      if (it.specialOnly && !specialHeaderDone && !q) {
         var hd = document.createElement('div');
         hd.className = 'ld-code-hint';
         hd.style.cssText = 'margin:10px 0 6px;font-weight:800;color:var(--gold);';
-        hd.textContent = '🎲 특수 주사위 (아이템 칸·선물 칸 미등장)';
+        hd.textContent = '⭐ 특별 아이템 (아이템 칸·선물 칸 미등장 · 칸 3개 초과 보유 가능)';
         listEl.appendChild(hd);
-        diceHeaderDone = true;
+        specialHeaderDone = true;
       }
       var div = document.createElement('div');
       div.className = 'ld-book-aug';
       var tgt = it.target === 'enemy' ? '상대 대상' : (it.target === 'self' ? '자신 대상' : (it.target === 'any' ? '본인/상대' : ''));
       div.innerHTML =
-        '<div class="nm">' + it.icon + ' ' + escapeHtml(it.name) + '</div>' +
+        '<div class="nm">' + (it.specialOnly ? '⭐ ' : '') + it.icon + ' ' + escapeHtml(it.name) + '</div>' +
         '<div class="ds">' + escapeHtml(it.desc || '') + '</div>' +
         (tgt ? '<div class="tg">' + tgt + '</div>' : '');
+      if (it.specialOnly) div.style.cssText = 'border:1px solid rgba(251,191,36,0.45);border-radius:10px;';
       listEl.appendChild(div);
       shown++;
     });
@@ -10391,19 +10449,20 @@ refreshRoomList();
     var list = document.getElementById('boardItemList');
     if (!list || list.dataset.ready === '1') return;
     list.innerHTML = '';
-    var diceHead = false;
+    var specialHead = false;
     sortedItemTypesForDisplay().forEach(function (it) {
-      if ((it.group === 'dice' || (it.specialOnly && /dice/.test(it.id))) && !diceHead) {
+      if (it.specialOnly && !specialHead) {
         var h = document.createElement('div');
         h.className = 'ld-board-relic-row';
-        h.innerHTML = '<b style="color:var(--gold);">🎲 특수 주사위 — 아이템·선물 칸 미등장</b>';
+        h.innerHTML = '<b style="color:var(--gold);">⭐ 특별 아이템 — 아이템·선물 칸 미등장 · 칸 3개 초과 보유 가능</b>';
         list.appendChild(h);
-        diceHead = true;
+        specialHead = true;
       }
       var row = document.createElement('div');
       row.className = 'ld-board-relic-row';
       var tgt = it.target === 'enemy' ? ' (상대)' : (it.target === 'self' ? ' (자신)' : (it.target === 'any' ? ' (본인/상대)' : ''));
-      row.innerHTML = '<b>' + it.icon + ' ' + escapeHtml(it.name) + '</b> — ' + escapeHtml(it.desc || '') + escapeHtml(tgt);
+      row.innerHTML = '<b>' + (it.specialOnly ? '⭐ ' : '') + it.icon + ' ' + escapeHtml(it.name) + '</b> — ' + escapeHtml(it.desc || '') + escapeHtml(tgt);
+      if (it.specialOnly) row.style.cssText = 'border:1px solid rgba(251,191,36,0.4);border-radius:8px;';
       list.appendChild(row);
     });
     list.dataset.ready = '1';
@@ -11366,8 +11425,10 @@ function openCellBook() {
         var idef = getItemById(iid);
         if (!idef) { showGiveMsg('⚠️ 아이템을 선택하세요', false); return; }
         tp.items = playerItems(tp);
-        if (tp.items.length >= 3) {
-          showGiveMsg('⚠️ ' + tp.name + '의 아이템 칸이 가득 참 (3/3)', false);
+        // 특별 아이템(specialOnly)은 아이템 칸 3개 제한과 무관하게 지급 가능
+        if (!idef.specialOnly && normalItemCount(tp.items) >= itemCapFor(tp, room)) {
+          var _cap = itemCapFor(tp, room);
+          showGiveMsg('⚠️ ' + tp.name + '의 아이템 칸이 가득 참 (' + normalItemCount(tp.items) + '/' + _cap + ')', false);
           return;
         }
         if (idef.maxOne && tp.items.indexOf(iid) !== -1) {
@@ -12075,15 +12136,15 @@ function openCellBook() {
       var it = getItemById(id);
       var chip = document.createElement('button');
       chip.type = 'button';
-      chip.className = 'ld-item-chip';
-      chip.textContent = (it ? it.icon + ' ' + it.name : id);
-      chip.title = it ? (it.desc + (it.target === 'enemy' ? ' (상대)' : ' (자신)')) : id;
+      chip.className = 'ld-item-chip' + (it && it.specialOnly ? ' ld-item-special' : '');
+      chip.textContent = (it ? (it.specialOnly ? '⭐' : '') + it.icon + ' ' + it.name : id);
+      chip.title = it ? ((it.specialOnly ? '⭐ 특별 아이템 · ' : '') + it.desc + (it.target === 'enemy' ? ' (상대)' : ' (자신)')) : id;
       chip.onclick = function () { openItemUse(room, id, idx, false); };
       bar.appendChild(chip);
       if (canDonate) {
         var g = document.createElement('button');
         g.type = 'button';
-        g.className = 'ld-item-chip';
+        g.className = 'ld-item-chip' + (it && it.specialOnly ? ' ld-item-special' : '');
         g.style.borderColor = 'rgba(251,191,36,0.5)';
         g.textContent = '🎁' + (it ? it.icon : '');
         g.title = '기부: ' + (it ? it.name : id) + ' 선물하고 랜덤 아이템 받기';
@@ -12125,9 +12186,9 @@ function openCellBook() {
       if (!me) return;
       me.items = playerItems(me);
       // 이미 상자는 소모된 상태 · 선택 아이템 지급
-      if (me.items.indexOf(chosenId) === -1 && me.items.length < 3) {
+      if (me.items.indexOf(chosenId) === -1 && normalItemCount(me.items) < itemCapFor(me, fresh)) {
         me.items.push(chosenId);
-      } else if (me.items.length < 3) {
+      } else if (normalItemCount(me.items) < itemCapFor(me, fresh)) {
         me.items.push(chosenId);
       }
       var it = getItemById(chosenId);
@@ -12152,19 +12213,32 @@ function openCellBook() {
 
   function destroyRelicType(room, destroyId, userId) {
     if (!room || !destroyId) return;
-    room.destroyedRelics = room.destroyedRelics || [];
-    if (room.destroyedRelics.indexOf(destroyId) === -1) room.destroyedRelics.push(destroyId);
+    var dlist = room.destroyedRelics;
+    if (!Array.isArray(dlist)) {
+      dlist = dlist ? Object.keys(dlist).map(function (k) { return dlist[k]; }).filter(Boolean) : [];
+    }
+    if (dlist.indexOf(destroyId) === -1) dlist.push(destroyId);
+    room.destroyedRelics = dlist;
     (room.players || []).forEach(function (p) {
       p.relics = playerRelics(p).filter(function (id) { return id !== destroyId; });
       if (p.fakeRelics) {
         var fr = Array.isArray(p.fakeRelics) ? p.fakeRelics : Object.keys(p.fakeRelics).map(function (k) { return p.fakeRelics[k]; });
         p.fakeRelics = fr.filter(function (id) { return id !== destroyId; });
       }
+      if (p.cursedRelics) {
+        var cr = Array.isArray(p.cursedRelics) ? p.cursedRelics : Object.keys(p.cursedRelics).map(function (k) { return p.cursedRelics[k]; });
+        p.cursedRelics = cr.filter(function (id) { return id !== destroyId; });
+      }
+      if (p.mythicRelics) {
+        var mr = Array.isArray(p.mythicRelics) ? p.mythicRelics : Object.keys(p.mythicRelics).map(function (k) { return p.mythicRelics[k]; });
+        p.mythicRelics = mr.filter(function (id) { return id !== destroyId; });
+      }
     });
     var user = (room.players || []).find(function (p) { return p.id === userId; });
     if (user) {
       user.curseBuffStacks = 0;
       user.liberatedSoul = true;
+      user._cursedSoulGot = true;
     }
   }
   async function resolveCursedSoulPick(destroyId) {
@@ -12205,14 +12279,21 @@ function openCellBook() {
     var opts = pend.options || [];
     if (!Array.isArray(opts)) opts = Object.keys(opts).map(function (k) { return opts[k]; });
     opts = opts.filter(Boolean);
-    if (!opts.length) return;
+    if (!opts.length && pend.targetId) {
+      var tp0 = (room.players || []).find(function (p) { return p.id === pend.targetId; });
+      if (tp0) opts = playerRelics(tp0);
+    }
+    if (!opts.length) {
+      if (els.gameError) els.gameError.textContent = '파괴할 유물이 없습니다';
+      return;
+    }
     var modal = document.getElementById('pathChoiceModal');
     var box = document.getElementById('pathChoiceButtons');
     var hint = document.getElementById('pathChoiceHint');
     var head = modal && modal.querySelector('h3');
     if (!modal || !box) return;
     if (head) head.textContent = '💀 파괴할 유물 선택';
-    if (hint) hint.textContent = '선택한 유물 종류가 게임에서 소멸합니다 (보유자 전원·유물 칸 포함)';
+    if (hint) hint.textContent = '선택한 유물 종류가 게임에서 소멸합니다 (보유자 전원 제거 · 유물 칸에서 선택 불가)';
     box.innerHTML = '';
     opts.forEach(function (id) {
       var r = getRelicById(id) || { icon: '💎', name: id, desc: '' };
@@ -12237,6 +12318,7 @@ function openCellBook() {
     });
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
+    try { modal.style.zIndex = '10080'; } catch (ez) {}
   }
 
   function showItemBoxPick(room) {
@@ -12333,6 +12415,60 @@ function openCellBook() {
     selectedItemId = null;
     window.__itemAsGift = false;
   }
+  function setItemTargetValue(pid) {
+    var selEl = document.getElementById('itemTarget');
+    if (!selEl) return;
+    selEl.innerHTML = '';
+    var o = document.createElement('option');
+    o.value = pid;
+    o.textContent = String(pid);
+    selEl.appendChild(o);
+    selEl.value = pid;
+  }
+  function openPlayerPickModal(room, title, hint, candidates) {
+    return new Promise(function (resolve) {
+      var modal = document.getElementById('pathChoiceModal');
+      var box = document.getElementById('pathChoiceButtons');
+      var hintEl = document.getElementById('pathChoiceHint');
+      var head = modal && modal.querySelector('h3');
+      if (!modal || !box) { resolve(null); return; }
+      if (head) head.textContent = title || '대상 선택';
+      if (hintEl) hintEl.textContent = hint || '사용할 대상을 고르세요';
+      box.innerHTML = '';
+      (candidates || []).forEach(function (p) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ld-btn ld-btn-primary';
+        b.style.cssText = 'width:100%;margin-top:6px;text-align:left;';
+        var relicN = playerRelics(p).length;
+        b.textContent = (p.avatar || '👤') + ' ' + p.name
+          + (p.id === myPlayerId ? ' (나)' : '')
+          + (relicN ? ' · 유물 ' + relicN : '')
+          + ((p.skipTurns || 0) > 0 ? ' · 휴식' + p.skipTurns : '');
+        b.onclick = function () {
+          modal.classList.remove('show');
+          modal.setAttribute('aria-hidden', 'true');
+          resolve(p.id);
+        };
+        box.appendChild(b);
+      });
+      var no = document.createElement('button');
+      no.type = 'button';
+      no.className = 'ld-btn ld-btn-ghost';
+      no.style.width = '100%';
+      no.style.marginTop = '8px';
+      no.textContent = '취소';
+      no.onclick = function () {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        resolve(null);
+      };
+      box.appendChild(no);
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      try { modal.style.zIndex = '10060'; } catch (ez) {}
+    });
+  }
   function openItemUse(room, itemId, idx, asGift) {
     selectedItemId = itemId;
     window.__itemIdx = idx;
@@ -12341,119 +12477,24 @@ function openCellBook() {
     var title = document.getElementById('itemUseTitle');
     var sel = document.getElementById('itemTarget');
     var it = getItemById(itemId);
-    if (!box || !it) return;
+    if (!it) return;
     var me = room.players.find(function (p) { return p.id === myPlayerId; });
     var myTurn = room.players[room.turnIndex % room.players.length];
     if (!myTurn || myTurn.id !== myPlayerId) {
       if (els.gameError) els.gameError.textContent = '내 턴에만 아이템을 사용할 수 있어요';
       return;
     }
-    if (me && isAsleep(me) && itemId !== 'alarm_clock') {
+    if (room.duel || room.relicChallenge || room.augmentPick || room.itemPending) {
+      if (els.gameError) els.gameError.textContent = '지금은 아이템을 사용할 수 없어요';
+      return;
+    }
+    if (typeof isAsleep === 'function' && isAsleep(me) && itemId !== 'alarm_clock') {
       if (els.gameError) els.gameError.textContent = '수면 중에는 자명종만 사용할 수 있어요';
       return;
     }
-    if (room.duel || room.relicChallenge || room.augmentPick || room.itemPending) {
-      if (els.gameError) els.gameError.textContent = '대결/유물/증강/천사중재 중에는 사용할 수 없어요';
-      return;
-    }
-    // 상자: 대상 선택 없이 바로 개봉 모달
-    if (itemId === 'item_box' && !asGift) {
-      var selSelf = document.getElementById('itemTarget');
-      if (selSelf) {
-        selSelf.innerHTML = '';
-        var oSelf = document.createElement('option');
-        oSelf.value = myPlayerId;
-        oSelf.textContent = '나 자신';
-        selSelf.appendChild(oSelf);
-        selSelf.value = myPlayerId;
-      }
-      useSelectedItem();
-      return;
-    }
-    title.textContent = asGift
-      ? ('🎁 기부: ' + (it.icon || '') + ' ' + it.name + ' — 선물 후 랜덤 아이템 획득')
-      : ((it.icon || '') + ' ' + it.name + ' — ' + it.desc);
-    sel.innerHTML = '';
-    if (asGift) {
-      room.players.forEach(function (p) {
-        if (p.id === myPlayerId) return;
-        var opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = (p.avatar || '') + ' ' + p.name;
-        sel.appendChild(opt);
-      });
-      if (!sel.options.length) {
-        if (els.gameError) els.gameError.textContent = '선물 대상이 없습니다';
-        return;
-      }
-    } else if (it.teamOnly && room.gameMode !== 'team') {
-      if (els.gameError) els.gameError.textContent = '팀전 전용 아이템입니다';
-      return;
-    } else if (it.target === 'self' || it.target === 'team') {
-      var opt = document.createElement('option');
-      opt.value = myPlayerId;
-      opt.textContent = it.target === 'team' ? '아군 전원' : '나 자신';
-      sel.appendChild(opt);
-      // 주사위/즉시 자기 대상 아이템: 확인 모달 후 바로 사용 (사용 창이 남는 문제 방지)
-      if (!asGift && (it.group === 'dice' || itemId === 'alarm_clock' || itemId === 'advanced_dice' || itemId === 'lucky_dice' || itemId === 'loaded_dice' || itemId === 'arch_dice' || itemId === 'chaos_dice')) {
-        var modal = document.getElementById('pathChoiceModal');
-        var boxB = document.getElementById('pathChoiceButtons');
-        var hint = document.getElementById('pathChoiceHint');
-        var head = modal && modal.querySelector('h3');
-        if (modal && boxB) {
-          if (head) head.textContent = (it.icon || '🎲') + ' ' + it.name;
-          if (hint) hint.textContent = it.desc || '사용하시겠습니까?';
-          boxB.innerHTML = '';
-          var yes = document.createElement('button');
-          yes.type = 'button';
-          yes.className = 'ld-btn ld-btn-primary';
-          yes.style.cssText = 'width:100%;margin:0;';
-          yes.textContent = '사용';
-          yes.onclick = function () {
-            modal.classList.remove('show');
-            useSelectedItem();
-          };
-          var no = document.createElement('button');
-          no.type = 'button';
-          no.className = 'ld-btn ld-btn-ghost';
-          no.style.cssText = 'width:100%;margin:0;';
-          no.textContent = '취소';
-          no.onclick = function () {
-            modal.classList.remove('show');
-            closeItemUsePanel();
-          };
-          boxB.appendChild(yes);
-          boxB.appendChild(no);
-          modal.classList.add('show');
-          modal.setAttribute('aria-hidden', 'false');
-          return; // itemUseBox 열지 않음
-        }
-      }
-    } else if (it.target === 'ally') {
-      room.players.forEach(function (p) {
-        if (p.id === myPlayerId) return;
-        if (!(room.gameMode === 'team' && me && sameTeam(me, p))) return;
-        var opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = (p.avatar || '') + ' ' + p.name + ((p.skipTurns || 0) > 0 ? ' (휴식' + p.skipTurns + ')' : '');
-        sel.appendChild(opt);
-      });
-      if (!sel.options.length) {
-        if (els.gameError) els.gameError.textContent = '대상 아군이 없습니다';
-        return;
-      }
-    } else if (it.target === 'any') {
-      room.players.forEach(function (p) {
-        var opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = (p.avatar || '') + ' ' + p.name + (p.id === myPlayerId ? ' (나)' : '');
-        sel.appendChild(opt);
-      });
-    } else if (it.target === 'cell') {
-      // 표식 등: 드론과 같은 칸 선택 모달
-      selectedItemId = itemId;
-      window.__itemIdx = idx;
-      window.__itemAsGift = false;
+
+    // 칸 대상
+    if (it.target === 'cell' && !asGift) {
       openCellPickModal({
         title: (it.icon || '📍') + ' ' + it.name + ' — 칸 선택',
         hint: it.desc || '설치할 칸을 고르세요',
@@ -12465,34 +12506,73 @@ function openCellBook() {
           selectedItemId = null;
           return;
         }
-        // 가상 select 값 세팅 후 사용
-        var selEl = document.getElementById('itemTarget');
-        if (selEl) {
-          selEl.innerHTML = '';
-          var o = document.createElement('option');
-          o.value = 'cell:' + cell;
-          o.textContent = '칸 ' + cell;
-          selEl.appendChild(o);
-          selEl.value = 'cell:' + cell;
-        }
+        setItemTargetValue('cell:' + cell);
         useSelectedItem();
       });
       return;
+    }
+
+    // 자신 대상: 확인 모달 후 바로 사용
+    if (it.target === 'self' && !asGift) {
+      openPlayerPickModal(
+        room,
+        (it.icon || '🎒') + ' ' + it.name,
+        (it.desc || '자신에게 사용합니다') + ' — 사용할까요?',
+        [me]
+      ).then(function (pid) {
+        if (!pid) { selectedItemId = null; return; }
+        window.__itemTargetId = pid;
+        setItemTargetValue(pid);
+        setTimeout(function () { useSelectedItem(); }, 30);
+      });
+      return;
+    }
+
+    // 플레이어 대상 (적/아군/아무나/기부): 모달에서 플레이어 버튼 선택
+    var candidates = [];
+    if (asGift || it.target === 'any') {
+      (room.players || []).forEach(function (p) {
+        if (asGift && p.id === myPlayerId) return;
+        candidates.push(p);
+      });
+    } else if (it.target === 'ally') {
+      (room.players || []).forEach(function (p) {
+        if (p.id === myPlayerId) return;
+        if (room.gameMode === 'team' && me && sameTeam(me, p)) candidates.push(p);
+      });
     } else {
-      room.players.forEach(function (p) {
+      // enemy (기본)
+      (room.players || []).forEach(function (p) {
         if (p.id === myPlayerId) return;
         if (room.gameMode === 'team' && me && sameTeam(me, p)) return;
-        var opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = (p.avatar || '') + ' ' + p.name;
-        sel.appendChild(opt);
+        candidates.push(p);
       });
-      if (!sel.options.length) {
-        if (els.gameError) els.gameError.textContent = '대상이 없습니다';
+    }
+    if (!candidates.length) {
+      if (els.gameError) els.gameError.textContent = '대상이 없습니다';
+      selectedItemId = null;
+      return;
+    }
+    // 저주받은 영혼: 유물 있는 대상만
+    if (itemId === 'cursed_soul' && !asGift) {
+      candidates = candidates.filter(function (p) { return playerRelics(p).length > 0; });
+      if (!candidates.length) {
+        if (els.gameError) els.gameError.textContent = '유물을 가진 대상이 없습니다';
+        selectedItemId = null;
         return;
       }
     }
-    box.classList.add('show');
+    openPlayerPickModal(
+      room,
+      (asGift ? '🎁 기부 — ' : '') + (it.icon || '🎒') + ' ' + it.name,
+      asGift ? '선물할 플레이어를 고르세요' : ((it.desc || '대상을 고르세요') + ' — 플레이어를 누르면 사용됩니다'),
+      candidates
+    ).then(function (pid) {
+      if (!pid) { selectedItemId = null; return; }
+      window.__itemTargetId = pid;
+      setItemTargetValue(pid);
+      setTimeout(function () { useSelectedItem(); }, 30);
+    });
   }
 
   function consumeItemCellTriggers(room, playerId) {
@@ -12575,7 +12655,7 @@ function openCellBook() {
         me.items.push(stolen);
         var sit = getItemById(stolen);
         msg = me.name + ' ← ' + (sit ? sit.icon + sit.name : stolen) + ' ← ' + target.name;
-        if (hasAug(me, 'thief') && me.items.length < 3) {
+        if (hasAug(me, 'thief') && normalItemCount(me.items) < itemCapFor(me, room)) {
           var extraIt = getItemById(randomItemId(room)) || ITEM_TYPES[0];
           me.items.push(extraIt.id);
           msg += ' · 도둑 +' + extraIt.icon;
@@ -12722,7 +12802,8 @@ function openCellBook() {
   async function useSelectedItem() {
     if (!selectedItemId || !myRoomCode) return;
     var sel = document.getElementById('itemTarget');
-    var tid = sel && sel.value;
+    var tid = window.__itemTargetId || (sel && sel.value);
+    window.__itemTargetId = null;
     var itemId = selectedItemId;
     var idx = window.__itemIdx | 0;
     try {
@@ -12784,9 +12865,9 @@ function openCellBook() {
       if (window.__itemAsGift && hasAug(me, 'donor')) {
         me.items.splice(at, 1);
         target.items = playerItems(target);
-        if (target.items.length < 3) target.items.push(itemId);
+        if (it.specialOnly || normalItemCount(target.items) < itemCapFor(target, room)) target.items.push(itemId);
         me.items = playerItems(me);
-        if (me.items.length < 3) {
+        if (normalItemCount(me.items) < itemCapFor(me, room)) {
           me.items.push(randomItemId(room));
         }
         room.announce = {
@@ -12923,12 +13004,20 @@ function openCellBook() {
       await saveRoom(room);
       lastRoomSnapshot = room;
       placeTokensInstant(room);
-      renderGame(room);
-      maybeShowAnnounce(room);
       document.getElementById('itemUseBox').classList.remove('show');
       selectedItemId = null;
-      if (room.pendingCursedSoul && room.pendingCursedSoul.userId === myPlayerId) {
-        showCursedSoulPick(room);
+      // 저주받은 영혼: 파괴할 유물 선택 모달은 renderGame(내부 렌더 함수 예외 등)에
+      // 의존하지 않고 여기서 먼저·확실하게 띄운다 (모달 미노출 버그 방지)
+      var needsCursedSoulPick = !!(room.pendingCursedSoul && room.pendingCursedSoul.userId === myPlayerId);
+      if (needsCursedSoulPick) {
+        try { showCursedSoulPick(room); } catch (eCs0) { console.warn('showCursedSoulPick', eCs0); }
+      }
+      try { renderGame(room); } catch (eRg) { console.warn('renderGame', eRg); }
+      try { maybeShowAnnounce(room); } catch (eAn) {}
+      if (needsCursedSoulPick) {
+        // renderGame이 같은 pathChoiceModal을 다른 용도로 덮어썼을 수 있으니 한 번 더 확실히 표시
+        try { showCursedSoulPick(room); } catch (eCs1) { console.warn('showCursedSoulPick', eCs1); }
+        setTimeout(function () { try { showCursedSoulPick(room); } catch (eCs2) {} }, 150);
       }
       if (room.augmentPick && room.augmentPick.playerId === myPlayerId) enterAugmentPick(room);
     } catch (e) {
@@ -12992,6 +13081,9 @@ function openCellBook() {
           placeTokensInstant(room);
           renderGame(room);
           maybeShowAnnounce(room);
+          if (room.pendingCursedSoul && room.pendingCursedSoul.userId === myPlayerId) {
+            showCursedSoulPick(room);
+          }
           if (room.augmentPick && room.augmentPick.playerId === myPlayerId) enterAugmentPick(room);
           return;
         }
@@ -13026,6 +13118,9 @@ function openCellBook() {
       placeTokensInstant(room);
       renderGame(room);
       maybeShowAnnounce(room);
+      if (room.pendingCursedSoul && room.pendingCursedSoul.userId === myPlayerId) {
+        showCursedSoulPick(room);
+      }
       if (room.augmentPick && room.augmentPick.playerId === myPlayerId) enterAugmentPick(room);
     } catch (e) {
       if (els.gameError) els.gameError.textContent = '천사 중재 실패';
@@ -13372,31 +13467,37 @@ function openCellBook() {
   // hook renderGame to refresh chat + admin targets
   var _renderGameOrig = renderGame;
   renderGame = function (room) {
-    _renderGameOrig(room);
+    // 아래 렌더 보조 함수들 중 하나가 예외를 던져도 나머지(특히 저주받은 영혼 등
+    // 대기 중인 선택 모달 재표시)가 반드시 실행되도록 각각 개별 try/catch로 보호한다.
+    try { _renderGameOrig(room); } catch (eOrig) { console.warn('renderGame(core)', eOrig); }
     try { tryAutoForceSkipTurn(room); } catch (eAuto) {}
-    renderChat(room);
-    renderItemBar(room);
-    renderItemPending(room);
-    renderRelicCatalog();
-    ensureTurnTimer(room);
-    updateTimerDisplay(room);
-    updateTurnUX(room);
-    updateWaitBar(room);
-    if (isAdmin) refreshAdminTargets();
+    try { renderChat(room); } catch (e1) { console.warn('renderChat', e1); }
+    try { renderItemBar(room); } catch (e2) { console.warn('renderItemBar', e2); }
+    try { renderItemPending(room); } catch (e3) { console.warn('renderItemPending', e3); }
+    try { renderRelicCatalog(); } catch (e4) { console.warn('renderRelicCatalog', e4); }
+    try { ensureTurnTimer(room); } catch (e5) { console.warn('ensureTurnTimer', e5); }
+    try { updateTimerDisplay(room); } catch (e6) { console.warn('updateTimerDisplay', e6); }
+    try { updateTurnUX(room); } catch (e7) { console.warn('updateTurnUX', e7); }
+    try { updateWaitBar(room); } catch (e8) { console.warn('updateWaitBar', e8); }
+    try { if (isAdmin) refreshAdminTargets(); } catch (e9) { console.warn('refreshAdminTargets', e9); }
     try { updateCenterBridgeUI(room); } catch (e) {}
     // 상자 선택 대기 중이면 모달 재표시 (동기화/리렌더 후에도 안 사라지게)
     try {
       if (room && room.itemBoxPick && room.itemBoxPick.playerId === myPlayerId) {
         showItemBoxPick(room);
       }
+    } catch (ePick1) { console.warn('showItemBoxPick', ePick1); }
+    try {
       if (room && room.pendingSkeleton && room.pendingSkeleton.playerId === myPlayerId) {
         showSkeletonCellPick(room);
       }
+    } catch (ePick2) { console.warn('showSkeletonCellPick', ePick2); }
+    try {
       if (room && room.pendingCursedSoul && room.pendingCursedSoul.userId === myPlayerId) {
         showCursedSoulPick(room);
       }
-      try { maybeOfferTurnStartForms(room); } catch (eForm2) {}
-    } catch (ePick) {}
+    } catch (ePick3) { console.warn('showCursedSoulPick', ePick3); }
+    try { maybeOfferTurnStartForms(room); } catch (eForm2) {}
     if (room && (room.winnerId || room.winnerTeam != null)) {
       handleGameEnd(room);
     } else {
