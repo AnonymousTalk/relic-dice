@@ -422,10 +422,26 @@
 
   .ld-log { margin-top: 4px; }
   .ld-log-title { font-size: 12px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-  .ld-log-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; font-size: 12.5px; background: rgba(255,255,255,0.02); margin-bottom: 5px; }
+  .ld-log-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; font-size: 12.5px; background: rgba(255,255,255,0.02); margin-bottom: 5px; border: 2px solid rgba(139,92,246,0.45); box-sizing: border-box; }
   .ld-log-face { width: 22px; height: 22px; border-radius: 6px; background: rgba(139,92,246,0.2); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; color: var(--purple2); flex-shrink: 0; }
   .ld-log-text { color: var(--text-dim); }
+  .ld-log-name { font-weight: 800; }
+  .ld-log-move { color: var(--gold); font-weight: 800; margin-right: 3px; }
   .ld-log-empty { text-align: center; color: var(--text-dim); font-size: 13px; padding: 10px 0; }
+  .ld-log-open-btn { position: relative; }
+  .ld-log-badge {
+    position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px;
+    border-radius: 999px; background: #ef4444; color: #fff; font-size: 10.5px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--bg, #12102a);
+  }
+  .ld-log-term {
+    display: inline-flex; align-items: center; border: none; cursor: pointer;
+    background: rgba(139,92,246,0.22); color: var(--purple2, #a78bfa); font: inherit; font-weight: 700;
+    padding: 1px 5px; margin: 0 1px; border-radius: 6px; line-height: 1.5;
+  }
+  .ld-log-term:hover, .ld-log-term:active { background: rgba(139,92,246,0.4); }
+  #logModal .ld-log-row { flex-wrap: wrap; align-items: flex-start; }
+  #logModal .ld-log-text { line-height: 1.6; }
 
   .ld-screen { display: none; }
   .ld-screen.active { display: block; }
@@ -819,7 +835,7 @@
   .pip-grid-mini { position: relative; z-index: 1; }
 
   .ld-cell-tip {
-    display: none; position: fixed; z-index: 60; left: 50%; top: 50%;
+    display: none; position: fixed; z-index: 10001; left: 50%; top: 50%;
     transform: translate(-50%, -50%); width: min(300px, 88vw);
     padding: 16px 18px; border-radius: 16px; text-align: center;
     background: rgba(18,14,42,0.98); border: 1px solid rgba(139,92,246,0.5);
@@ -1526,6 +1542,19 @@
     </div>
   </div>
 
+  <div class="ld-modal" id="logModal" aria-hidden="true">
+    <div class="ld-modal-card">
+      <div class="ld-modal-head">
+        <h3>📜 최근 기록</h3>
+        <button type="button" class="ld-btn ld-btn-ghost" id="logModalClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
+      </div>
+      <div class="ld-modal-body">
+        <div style="text-align:center;color:var(--text-dim);font-size:11.5px;margin-bottom:8px;">[대괄호]로 표시된 항목을 누르면 자세한 설명이 나와요</div>
+        <div id="gameLog"><div class="ld-log-empty">아직 굴린 기록이 없습니다</div></div>
+      </div>
+    </div>
+  </div>
+
   <div class="ld-cell-tip" id="cellTip">
     <div class="ld-cell-tip-icon" id="cellTipIcon">🎲</div>
     <div class="ld-cell-tip-title" id="cellTipTitle">칸 정보</div>
@@ -1650,7 +1679,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.7.3</span></div>
+      <div class="ld-version">패치 <span>v1.0.8.1</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -1831,8 +1860,10 @@
             </div>
 
             <div class="ld-log" id="ldLogPanel">
-              <div class="ld-log-title">최근 기록</div>
-              <div id="gameLog"><div class="ld-log-empty">아직 굴린 기록이 없습니다</div></div>
+              <button type="button" class="ld-btn ld-btn-outline ld-log-open-btn" id="btnOpenLog" style="width:100%;">
+                📜 최근 기록
+                <span class="ld-log-badge" id="logNewBadge" style="display:none;">0</span>
+              </button>
             </div>
             <div class="ld-error" id="gameError"></div>
           </div>
@@ -1882,10 +1913,10 @@
   var MAX_PLAYERS = 8;
   var GAME_VERSION = '1.0.3.7';
   var TURN_SECONDS_DEFAULT = 45;
-  var COLORS = ['#8b5cf6', '#22d3ee', '#fbbf24', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa'];
+  var COLORS = ['#8b5cf6', '#22d3ee', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa', '#a3e635'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
   var TEAM_NAMES = ['블루', '레드'];
-  var AVATARS = ['🦊', '🐱', '🐼', '🐯', '🐸', '🐧', '🦄', '🐲', '🐶', '🐰', '🦁', '🐻', '🐷', '🐵', '🦉', '🐺', '🐙', '🦑'];
+  var AVATARS = ['🦊', '🐱', '🐼', '🦄', '🐲', '🐶', '🐰', '🦁', '🐷', '🐵', '🐙', '🦑', '🍀', '🦕', '🐘', '🦧', '🐻\u200d❄️', '🐊'];
   var BOARD_G = 9;
   var BOARD_SIZE = 4 * (BOARD_G - 1);
 
@@ -2865,6 +2896,7 @@
   function killPlayer(room, victim, killer, opts) {
     opts = opts || {};
     if (!room || !victim) return { ok: false, reason: 'none' };
+    if (killer && killer.id !== victim.id && isInSanctuary(room, victim)) return { ok: false, reason: 'sanctuary' };
     if (isDeathImmune(victim)) return { ok: false, reason: 'immune' };
     if (victim.ghostMode) return { ok: false, reason: 'ghost' };
     // 불사조: 그 자리 부활, 묘비 없음
@@ -3274,6 +3306,94 @@
     { cat: 'purify', need: 4, key: 'heresyChance', value: 0.14, icon: '✨', name: '정화 시너지 IV', desc: '저주 디버프·아이템 피격 시 14% 확률로 이단 심문' },
     { cat: 'purify', need: 5, key: 'heresyChance', value: 0.175, icon: '✨', name: '정화 시너지 V', desc: '저주 디버프·아이템 피격 시 17.5% 확률로 이단 심문' }
   ];
+
+  // ── 최근 기록 용어 도감 (특수 칸·아이템·유물·증강·시너지 + 기타 상태) ──
+  var GLOSSARY_STATUS_TERMS = [
+    { name: '해탈', icon: '🕊️', desc: '명상 3스택 시 얻는 상태 · 2턴 동안 이단을 제외한 모든 디버프에 면역이 됩니다.' },
+    { name: '이단자', icon: '👿', desc: '해탈 중에 이단 판정을 받으면 되는 영구 상태 · 모든 디버프 발동 확률 +10% · 해탈을 다시 얻으면 해제됩니다.' },
+    { name: '이단 판정', icon: '⚖️', desc: '정화 시너지의 이단 심문에 당하면 붙는 상태 · 공격자 위치로 이동하고 2턴 휴식 · 스스로 해제할 수 없습니다.' },
+    { name: '묘비', icon: '🪦', desc: '그림 리퍼에게 처치된 자리에 세워지는 표식 · 이 칸을 밟으면 죽은 플레이어가 부활합니다.' },
+    { name: '무덤지대', icon: '⚰️', desc: '묘지기 증강 보유 시 묘비 생성과 함께 앞·뒤 1칸에 생기는 구역 · 밟으면 묘비·무덤지대가 사라지고 그 플레이어가 이동할 칸을 직접 고릅니다.' },
+    { name: '죽음', icon: '☠️', desc: '그림 리퍼에게 처치되어 대기 상태가 된 것 · 자신의 묘비를 밟으면 부활합니다.' },
+    { name: '부활', icon: '✨', desc: '묘비를 밟아 되살아난 직후 1턴간 유지되는 상태 · 끝나면 부활자로 전환됩니다.' },
+    { name: '부활자', icon: '🙏', desc: '부활 직후 얻는 상태 · 성역에 도착하면 교황이 되고, 이단 판정을 받으면 마녀가 됩니다 · 10턴 제한.' },
+    { name: '교황', icon: '✝️', desc: '부활자가 성역에 도착하면 되는 상태 · 정화 시너지 V 효과를 받고 다른 사람의 부활을 중재할 수 있습니다.' },
+    { name: '마녀', icon: '🧙', desc: '부활자가 이단 판정을 받으면 되는 상태 · 저주 시너지 V 효과를 받고 교황의 부활 중재를 방해합니다.' },
+    { name: '성역', icon: '✨', desc: '일정 턴 동안 모든 칸 효과와 외부 공격이 통하지 않는 안전지대입니다.' },
+    { name: '대결', icon: '⚔️', desc: '같은 칸에 두 플레이어가 있을 때 벌어지는 주사위 대결 · 패자는 뒤로 밀려납니다.' },
+    { name: '강탈', icon: '🏴‍☠️', desc: '강탈 칸에서 벌어지는 유물 쟁탈전 · 승리하면 상대의 유물 하나를 빼앗습니다.' },
+    { name: '신화 유물', icon: '🌟', desc: '유물 정화로 만들어지는 강화된 유물 · 효과가 2배로 적용됩니다.' },
+    { name: '발리스타', icon: '🏹', desc: '요새에서 발사하는 공격 · 대상을 골라 1~3칸 중 원하는 만큼 뒤로 밀어냅니다.' }
+  ];
+  var GLOSSARY_MAP = null;
+  function buildGlossaryMap() {
+    var map = {};
+    function add(name, icon, desc, cat) {
+      if (!name || map[name]) return;
+      map[name] = { name: name, icon: icon || '❔', desc: desc || '', cat: cat || '' };
+    }
+    try { Object.keys(CELL_TYPES).forEach(function (k) { var c = CELL_TYPES[k]; add(c.label, c.icon, c.desc, '특수 칸'); }); } catch (e) {}
+    try { ITEM_TYPES.forEach(function (it) { add(it.name, it.icon, it.desc, '아이템'); }); } catch (e) {}
+    try { RELIC_TYPES.forEach(function (r) { add(r.name, r.icon, r.desc, '유물'); }); } catch (e) {}
+    try { AUGMENT_POOL.forEach(function (a) { add(a.name, a.icon, a.desc, '증강'); }); } catch (e) {}
+    try { SYNERGY_RULES.forEach(function (s) { add(s.name, s.icon, s.desc, '시너지'); }); } catch (e) {}
+    try { GLOSSARY_STATUS_TERMS.forEach(function (s) { add(s.name, s.icon, s.desc, '상태'); }); } catch (e) {}
+    return map;
+  }
+  function getGlossaryMap() {
+    if (!GLOSSARY_MAP) GLOSSARY_MAP = buildGlossaryMap();
+    return GLOSSARY_MAP;
+  }
+  var GLOSSARY_TERMS_SORTED = null;
+  function getGlossaryTermsSorted() {
+    if (!GLOSSARY_TERMS_SORTED) {
+      GLOSSARY_TERMS_SORTED = Object.keys(getGlossaryMap()).filter(function (t) { return t.length >= 2; })
+        .sort(function (a, b) { return b.length - a.length; });
+    }
+    return GLOSSARY_TERMS_SORTED;
+  }
+  // 텍스트 안에서 도감 용어를 찾아 클릭 가능한 [용어] 버튼으로 바꿔줍니다.
+  function linkifyGlossaryText(text) {
+    if (!text) return '';
+    var glossary = getGlossaryMap();
+    var terms = getGlossaryTermsSorted();
+    var out = '';
+    var i = 0;
+    var n = text.length;
+    while (i < n) {
+      var matched = null;
+      for (var t = 0; t < terms.length; t++) {
+        var term = terms[t];
+        if (text.substr(i, term.length) === term) { matched = term; break; }
+      }
+      if (matched) {
+        out += '<button type="button" class="ld-log-term" data-term="' + escapeHtml(matched) + '">[' + escapeHtml(matched) + ']</button>';
+        i += matched.length;
+      } else {
+        out += escapeHtml(text.charAt(i));
+        i++;
+      }
+    }
+    return out;
+  }
+  function showGlossaryTip(term) {
+    var g = getGlossaryMap()[term];
+    if (!g) return;
+    var tip = document.getElementById('cellTip');
+    if (!tip) return;
+    document.getElementById('cellTipIcon').textContent = g.icon;
+    document.getElementById('cellTipTitle').textContent = g.name + (g.cat ? ' · ' + g.cat : '');
+    document.getElementById('cellTipDesc').textContent = g.desc;
+    tip.classList.add('show');
+    tip.setAttribute('aria-hidden', 'false');
+    var cellTipClose = document.getElementById('cellTipClose');
+    if (cellTipClose) {
+      cellTipClose.onclick = function () {
+        tip.classList.remove('show');
+        tip.setAttribute('aria-hidden', 'true');
+      };
+    }
+  }
 
   function activeAugList(player) {
     return playerAugList(player).filter(function (id) { return !isAugDisabled(player, id); });
@@ -4637,6 +4757,7 @@ refreshRoomList();
         var victims = room.players.filter(function (p) {
           if (p.id === myPlayerId) return false;
           if (room.gameMode === 'team' && sameTeam(me, p)) return false;
+          if (isInSanctuary(room, p)) return false;
           return playerRelics(p).length > 0;
         });
         if (victims.length) {
@@ -5123,6 +5244,7 @@ refreshRoomList();
       card.className = 'ld-roster-card' +
         (selectedRosterId === p.id ? ' active' : '') +
         (isTurn ? ' is-turn' : '');
+      if (!isTurn && selectedRosterId !== p.id && p.color) card.style.borderColor = p.color;
       card.innerHTML =
         '<div class="ld-roster-dot" style="background:' + p.color + '; display:flex;align-items:center;justify-content:center;font-size:14px;">' + (p.avatar || '') + '</div>' +
         '<div class="ld-roster-name">' + escapeHtml(p.name) + (p.id === myPlayerId ? ' (나)' : '') + '</div>' +
@@ -5441,6 +5563,7 @@ refreshRoomList();
           if (p.id === myPlayerId) return;
           if (room.gameMode === 'team' && meSel && sameTeam(meSel, p)) return;
           if (!playerRelics(p).length) return;
+          if (isInSanctuary(room, p)) return;
           if (champOnly && ch.champVictimIds.indexOf(p.id) === -1) return;
           var opt = document.createElement('option');
           opt.value = p.id;
@@ -5631,6 +5754,7 @@ refreshRoomList();
         var victims = room.players.filter(function (p) {
           if (p.id === myPlayerId) return false;
           if (room.gameMode === 'team' && sameTeam(me, p)) return false;
+          if (isInSanctuary(room, p)) return false;
           return playerRelics(p).length > 0;
         });
         if (victims.length) {
@@ -5894,14 +6018,89 @@ refreshRoomList();
       room.log.forEach(function (entry) {
         var row = document.createElement('div');
         row.className = 'ld-log-row';
-        var extra = entry.effectText ? ' · ' + entry.effectText : '';
+
+        // '획득: 🥷 훔치기' 처럼 줄바꿈되면 안 되는 구간은 공백을 줄바꿈 없는 공백(nbsp)으로 치환
+        var effectRaw = entry.effectText || '';
+        effectRaw = effectRaw.replace(/(획득:\s*)([^\s·]+(?:\s[^\s·]+)*)/g, function (m, p1, p2) {
+          return p1.replace(/\s/g, '\u00A0') + p2.replace(/ /g, '\u00A0');
+        });
+        var extraHtml = effectRaw ? ' · ' + linkifyGlossaryText(effectRaw) : '';
+
+        var hasMove = entry.oldPos != null && entry.oldPos !== entry.newPos;
+        var moveHtml = hasMove
+          ? '<span class="ld-log-move">(' + entry.oldPos + '번\u00A0칸\u00A0→\u00A0' + entry.newPos + '번\u00A0칸)</span>'
+          : '';
+
+        var logPlayer = (room.players || []).find(function (pp) {
+          return (entry.playerId && pp.id === entry.playerId) || (!entry.playerId && pp.name === entry.name);
+        });
+        var nameColor = (logPlayer && logPlayer.color) ? logPlayer.color : '';
+        var nameSpan = nameColor
+          ? '<span class="ld-log-name" style="color:' + nameColor + '">' + escapeHtml(entry.name) + '</span>'
+          : '<span class="ld-log-name">' + escapeHtml(entry.name) + '</span>';
+
+        var nameHtml = nameSpan + (hasMove ? ' ' + moveHtml : '');
         row.innerHTML =
           '<div class="ld-log-face">' + (entry.face || '?') + '</div>' +
-          '<span class="ld-log-text">' + escapeHtml(entry.name) + ' · 칸 ' + entry.newPos + escapeHtml(extra) + '</span>';
+          '<span class="ld-log-text">' + nameHtml + ' · 칸 ' + entry.newPos + extraHtml + '</span>';
         els.gameLog.appendChild(row);
       });
     }
+    updateLogBadge(room);
   }
+
+  var __lastSeenLogTs = 0;
+  function updateLogBadge(room) {
+    var badge = document.getElementById('logNewBadge');
+    if (!badge) return;
+    var logModal = document.getElementById('logModal');
+    var isOpen = logModal && logModal.classList.contains('show');
+    if (isOpen) {
+      var newestTs = (room.log && room.log[0] && room.log[0].ts) || 0;
+      __lastSeenLogTs = newestTs;
+      badge.style.display = 'none';
+      return;
+    }
+    var unread = (room.log || []).filter(function (e) { return (e.ts || 0) > __lastSeenLogTs; }).length;
+    if (unread > 0) {
+      badge.textContent = unread > 9 ? '9+' : String(unread);
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  (function setupLogModal() {
+    var btn = document.getElementById('btnOpenLog');
+    var modal = document.getElementById('logModal');
+    var closeBtn = document.getElementById('logModalClose');
+    var gameLogEl = document.getElementById('gameLog');
+    if (!btn || !modal) return;
+    btn.onclick = function () {
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      if (lastRoomSnapshot) updateLogBadge(lastRoomSnapshot);
+    };
+    if (closeBtn) {
+      closeBtn.onclick = function () {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+      };
+    }
+    if (gameLogEl) {
+      gameLogEl.addEventListener('click', function (e) {
+        var target = e.target;
+        while (target && target !== gameLogEl) {
+          if (target.classList && target.classList.contains('ld-log-term')) {
+            var term = target.getAttribute('data-term');
+            if (term) showGlossaryTip(term);
+            return;
+          }
+          target = target.parentNode;
+        }
+      });
+    }
+  })();
 
   function maybeShowAnnounce(room) {
     if (!room.announce || !room.announce.ts) return;
@@ -6067,6 +6266,7 @@ refreshRoomList();
 
   function tryHeresyInquisition(room, victim, attacker) {
     if (!room || !victim || !attacker || victim.id === attacker.id) return false;
+    if (isInSanctuary(room, victim)) return false;
     if (victim.heresyJudged) return false;
     var syn = synergyBonus(victim);
     var ch = syn.heresyChance || 0;
@@ -6363,6 +6563,7 @@ refreshRoomList();
       var count = 0;
       (room.players || []).forEach(function (p) {
         if (!p || p.id === meId) return;
+        if (isInSanctuary(room, p)) return;
         count++;
         (function (pl) {
           var b = document.createElement('button');
@@ -6399,6 +6600,16 @@ refreshRoomList();
 
 
 
+  /** 성역: 그 칸에 있는 플레이어는 외부發 공격(밀림·처치·저주·강탈·이단심문·아이템 등) 전부 면역 */
+  function isInSanctuary(room, player) {
+    if (!room || !player || !room.sanctuary) return false;
+    var pos = player.position | 0;
+    var v = room.sanctuary[pos];
+    if (v == null) v = room.sanctuary[String(pos)];
+    var left = v && typeof v === 'object' ? (v.turns | 0) : (v | 0);
+    return left > 0;
+  }
+
   /** 초소: 유물 칸 앞뒤 2칸 안이면 외부 뒤로 밀림 면역 */
   function isOutpostProtected(room, player) {
     if (!player || !hasAug(player, 'outpost') || !room) return false;
@@ -6414,6 +6625,7 @@ refreshRoomList();
   }
   function tryPushPlayer(room, player, delta, reason) {
     if (!player || !delta) return false;
+    if (delta < 0 && isInSanctuary(room, player)) return false;
     if (delta < 0 && isOutpostProtected(room, player)) return false;
     if (delta < 0) {
       if (hasAug(player, 'transcend') && Math.random() < 0.30) return false;
@@ -7399,9 +7611,14 @@ refreshRoomList();
       if (hasAug(player, 'hex')) {
         room.players.forEach(function (p) {
           if (p.id !== player.id && p.position === landPos) {
-            p.position = (p.position - 2 + BOARD_SIZE) % BOARD_SIZE;
-            result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '😈 헥스 ' + p.name + ' -2';
-            result.announce = true;
+            if (tryPushPlayer(room, p, -2, 'hex')) {
+              result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '😈 헥스 ' + p.name + ' -2';
+              result.announce = true;
+              tryHeresyInquisition(room, p, player);
+            } else {
+              result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '😈 헥스 → ' + p.name + ' 성역으로 무효';
+              result.announce = true;
+            }
           }
         });
       }
@@ -7594,16 +7811,21 @@ refreshRoomList();
           if (p.position > maxPos) { maxPos = p.position; front = p; }
         });
         if (front) {
-          front.position = (front.position - 2 + BOARD_SIZE) % BOARD_SIZE;
-          result.effectText += ' · 약화 → ' + front.name + ' -2';
+          if (tryPushPlayer(room, front, -2, 'weaken')) {
+            result.effectText += ' · 약화 → ' + front.name + ' -2';
+            tryHeresyInquisition(room, front, player);
+          } else {
+            result.effectText += ' · 약화 → ' + front.name + ' 성역/면역으로 무효';
+          }
         }
       }
       if (synD.curseTrap) {
-        var others = room.players.filter(function (p) { return p.id !== player.id; });
+        var others = room.players.filter(function (p) { return p.id !== player.id && !isInSanctuary(room, p); });
         if (others.length) {
           var victim = others[Math.floor(Math.random() * others.length)];
-          victim.position = (victim.position - 1 + BOARD_SIZE) % BOARD_SIZE;
-          result.effectText += ' · 저주 → ' + victim.name + ' -1';
+          if (tryPushPlayer(room, victim, -1, 'curseTrap')) {
+            result.effectText += ' · 저주 → ' + victim.name + ' -1';
+          }
         }
       }
     } else if (type === 'again') {
@@ -7623,17 +7845,21 @@ refreshRoomList();
       } else {
       result.skipNext = true;
       result.effectText = '⏭️ 상대 스킵';
+      var skipVictim = room.players[(room.turnIndex + 1) % room.players.length];
+      if (skipVictim && skipVictim.id !== player.id) tryHeresyInquisition(room, skipVictim, player);
       }
     if (hasAug(player, 'snare') || synergyBonus(player).curseSkip) {
         var near2 = null, bestD2 = 999;
         room.players.forEach(function (p) {
           if (p.id === player.id) return;
+          if (isInSanctuary(room, p)) return;
           var d = Math.min((p.position - landPos + BOARD_SIZE) % BOARD_SIZE, (landPos - p.position + BOARD_SIZE) % BOARD_SIZE);
           if (d < bestD2) { bestD2 = d; near2 = p; }
         });
         if (near2) {
           near2.skipTurns = (near2.skipTurns || 0) + 1;
           result.effectText = (result.effectText ? result.effectText + ' · ' : '') + '올가미 → ' + near2.name;
+          tryHeresyInquisition(room, near2, player);
         }
       }
     } else if (type === 'warp') {
@@ -7809,18 +8035,19 @@ refreshRoomList();
       }
     } else if (type === 'swap') {
       if (hasAug(player, 'jester')) {
-        var positions = room.players.map(function (p) { return p.position; });
-        for (var i = 0; i < room.players.length; i++) {
-          room.players[i].position = positions[(i + 1) % positions.length];
+        var rotatable = room.players.filter(function (p) { return !isInSanctuary(room, p); });
+        var positions = rotatable.map(function (p) { return p.position; });
+        for (var i = 0; i < rotatable.length; i++) {
+          rotatable[i].position = positions[(i + 1) % positions.length];
         }
         result.pos = player.position;
-        result.effectText = '🃏 광대: 전원 위치 회전';
+        result.effectText = '🃏 광대: 전원 위치 회전 (성역 제외)';
       } else if (hasAug(player, 'swaptrap')) {
         result._swapChoice = true;
         result.effectText = '🔀 스왑트랩: 상대 선택';
         result.announce = true;
       } else {
-        var others = room.players.filter(function (p) { return p.id !== player.id; });
+        var others = room.players.filter(function (p) { return p.id !== player.id && !isInSanctuary(room, p); });
         if (others.length) {
           var target = others[Math.floor(Math.random() * others.length)];
           result.swapWith = target.id;
@@ -8234,6 +8461,13 @@ refreshRoomList();
                 text: attacker.name + ' ← ' + (srt ? srt.icon + srt.name : stolen) + ' ← ' + defender.name,
                 sub: aR + ' vs ' + bR, ts: Date.now()
               };
+              room.log = room.log || [];
+              room.log.unshift({
+                name: attacker.name, playerId: attacker.id, face: '🏴‍☠️', newPos: attacker.position,
+                effectText: '🏴‍☠️ 강탈 성공 → ' + (srt ? srt.icon + srt.name : stolen) + ' (' + defender.name + ' 로부터)',
+                ts: Date.now()
+              });
+              room.log = room.log.slice(0, 10);
               if (hasAug(attacker, 'graverobber')) {
                 defender.skipTurns = (defender.skipTurns || 0) + 1;
                 room.announce.text += ' · 🪦도굴꾼 휴식';
@@ -8330,7 +8564,7 @@ refreshRoomList();
           ts: Date.now()
         };
         room.log = room.log || [];
-        room.log.unshift({ name: me.name, face: sum, newPos: me.position, effectText: '💎 유물 성공 ' + sum, ts: Date.now() });
+        room.log.unshift({ name: me.name, playerId: me.id, face: sum, newPos: me.position, effectText: '💎 유물 성공 ' + sum, ts: Date.now() });
         room.log = room.log.slice(0, 10);
         await saveRoom(room);
         lastRoomSnapshot = room;
@@ -8348,7 +8582,7 @@ refreshRoomList();
         ts: Date.now()
       };
       room.log = room.log || [];
-      room.log.unshift({ name: me ? me.name : '?', face: sum, newPos: me ? me.position : 0, effectText: '💎 유물 실패 ' + sum, ts: Date.now() });
+      room.log.unshift({ name: me ? me.name : '?', playerId: me ? me.id : null, face: sum, newPos: me ? me.position : 0, effectText: '💎 유물 실패 ' + sum, ts: Date.now() });
       room.log = room.log.slice(0, 10);
 
       var extraTurn = !!ch.pendingExtraTurn;
@@ -8570,8 +8804,10 @@ refreshRoomList();
         };
         room.log = room.log || [];
         room.log.unshift({
-          name: '대결',
+          name: loser ? loser.name : '대결',
+          playerId: loser ? loser.id : null,
           face: punish,
+          oldPos: (loser && punishSteps) ? from : null,
           newPos: loser ? loser.position : 0,
           effectText: '⚔️ ' + (loser ? loser.name : '?') + ' -' + punish,
           ts: Date.now()
@@ -9410,6 +9646,7 @@ refreshRoomList();
             other.position = me.position;
             me.position = tmp;
             effect.pos = me.position;
+            tryHeresyInquisition(fresh, other, me);
           }
         } else {
           me.position = effect.pos;
@@ -9428,6 +9665,7 @@ refreshRoomList();
             if (p.id === me.id) return false;
             if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
             if (!playerRelics(p).length) return false;
+            if (isInSanctuary(fresh, p)) return false;
             var d = Math.min((p.position - me.position + BOARD_SIZE) % BOARD_SIZE, (me.position - p.position + BOARD_SIZE) % BOARD_SIZE);
             return d > 0 && d <= 5;
           });
@@ -9542,6 +9780,7 @@ refreshRoomList();
             if (p.id === myPlayerId || p.position !== me.position) return false;
             if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
             if (p.ghostMode || me.ghostMode) return false;
+            if (isInSanctuary(fresh, p)) return false;
             return true;
           });
           if (occupant0 && me.position !== 0) {
@@ -9557,11 +9796,82 @@ refreshRoomList();
           ts: Date.now()
         };
       } else {
+        // 죽음(그림 리퍼 처형 · 살인마 · 구세주)은 유물/유물강탈/대결보다 항상 먼저 처리
+        var deathOccupant = fresh.players.find(function (p) {
+          if (p.id === myPlayerId || Number(p.position) !== Number(me.position)) return false;
+          if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+          if (p.ghostMode || me.ghostMode) return false;
+          return true;
+        });
+        var deathHandled = false;
+        if (deathOccupant && me.position !== 0) {
+          if (me.grimMode) {
+            me._grimTriedKill = true;
+            var kr = killPlayer(fresh, deathOccupant, me);
+            if (kr.ok && !kr.phoenix) {
+              // 처형 성공 시 갈망 스택 해소
+              me.longingStacks = 0;
+              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '💀 처형 ' + deathOccupant.name + ' (갈망 해소)';
+              effect.announce = true;
+              fresh.announce = { icon: '💀', title: '처형', text: me.name + ' → ' + deathOccupant.name + ' 죽음', sub: '묘비 생성 · 갈망 스택 초기화', ts: Date.now() };
+              deathHandled = true;
+            } else if (kr.phoenix) {
+              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🔥 불사조 부활 ' + deathOccupant.name;
+              deathHandled = true;
+            } else {
+              // 처치 실패(면역 대상 등): 듀얼로 새지 않고 갈망 스택 처리
+              me.longingStacks = (me.longingStacks || 0) + 1;
+              if (me.longingStacks >= 4) {
+                me.longingStacks = 0;
+                me.grimLockTurns = 4;
+                effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '💀 처형 실패 · 🩸 갈망 4 — 그림 리퍼 4턴 봉인';
+              } else {
+                effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '💀 처형 실패(' + deathOccupant.name + ') · 🩸 갈망 ' + me.longingStacks + '/4';
+              }
+              deathHandled = true;
+            }
+          }
+          if (!deathHandled && me.killerBuff) {
+            var pcK = ldProcChanceFor(me);
+            if (Math.random() < pcK) {
+              var kr2 = killPlayer(fresh, deathOccupant, me);
+              if (kr2.ok) {
+                effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🗡️ 살인마 처형 ' + deathOccupant.name;
+                effect.announce = true;
+                deathHandled = true;
+              }
+            }
+          }
+          if (!deathHandled && me.saviorBuff) {
+            var pcS = ldProcChanceFor(me);
+            if (Math.random() < pcS) {
+              deathOccupant.salvationTurns = Math.max(deathOccupant.salvationTurns || 0, 2);
+              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '👼 구원 ' + deathOccupant.name;
+              effect.announce = true;
+              deathHandled = true;
+            }
+          }
+          if (deathHandled) {
+            placeTokensInstant(fresh);
+            try { renderInstalledCellMarks(fresh); } catch (e) {}
+          }
+        }
+        if (me.grimMode && !me._grimTriedKill) {
+          me.longingStacks = (me.longingStacks || 0) + 1;
+          if (me.longingStacks >= 4) {
+            me.longingStacks = 0;
+            me.grimLockTurns = 4;
+            effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🩸 갈망 4 — 그림 리퍼 4턴 봉인';
+          } else {
+            effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🩸 갈망 ' + me.longingStacks + '/4';
+          }
+        }
         // 증강 없을 때만 유물/강탈/대결/턴 진행
         if (effect.startSteal) {
           var victims = fresh.players.filter(function (p) {
             if (p.id === myPlayerId) return false;
             if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+            if (isInSanctuary(fresh, p)) return false;
             return playerRelics(p).length > 0;
           });
           if (!victims.length) {
@@ -9585,9 +9895,10 @@ refreshRoomList();
             var occ2 = fresh.players.find(function (p) {
               if (p.id === myPlayerId || p.position !== me.position) return false;
               if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+              if (isInSanctuary(fresh, p)) return false;
               return true;
             });
-            if (occ2 && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ2.id;
+            if (!deathHandled && occ2 && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ2.id;
             startedRelic = true;
             fresh.announce = {
               icon: '🏴‍☠️', title: '유물 강탈!', text: me.name + ' — 대상을 선택하세요', sub: '', ts: Date.now()
@@ -9615,9 +9926,10 @@ refreshRoomList();
           var occ = fresh.players.find(function (p) {
             if (p.id === myPlayerId || p.position !== me.position) return false;
             if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+            if (isInSanctuary(fresh, p)) return false;
             return true;
           });
-          if (occ && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ.id;
+          if (!deathHandled && occ && me.position !== 0) fresh.relicChallenge.pendingDuelWith = occ.id;
           startedRelic = true;
           fresh.announce = {
             icon: isFake ? '🎭' : (ev.icon || '💎'),
@@ -9698,50 +10010,16 @@ refreshRoomList();
             try { renderInstalledCellMarks(fresh); } catch (e) {}
           }
         } catch (eGrave) {}
-        var occupant = fresh.players.find(function (p) {
-          if (p.id === myPlayerId || Number(p.position) !== Number(me.position)) return false;
-          if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
-          if (p.ghostMode || me.ghostMode) return false;
-          return true;
-        });
-        if (!startedRelic && occupant && me.position !== 0) {
-          var handledLD = false;
-          if (me.grimMode) {
-            me._grimTriedKill = true;
-            var kr = killPlayer(fresh, occupant, me);
-            if (kr.ok && !kr.phoenix) {
-              // 처형 성공 시 갈망 스택 해소
-              me.longingStacks = 0;
-              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '💀 처형 ' + occupant.name + ' (갈망 해소)';
-              effect.announce = true;
-              fresh.announce = { icon: '💀', title: '처형', text: me.name + ' → ' + occupant.name + ' 죽음', sub: '묘비 생성 · 갈망 스택 초기화', ts: Date.now() };
-              handledLD = true;
-            } else if (kr.phoenix) {
-              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🔥 불사조 부활 ' + occupant.name;
-              handledLD = true;
-            }
-          }
-          if (!handledLD && me.killerBuff) {
-            var pcK = ldProcChanceFor(me);
-            if (Math.random() < pcK) {
-              var kr2 = killPlayer(fresh, occupant, me);
-              if (kr2.ok) {
-                effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🗡️ 살인마 처형 ' + occupant.name;
-                effect.announce = true;
-                handledLD = true;
-              }
-            }
-          }
-          if (!handledLD && me.saviorBuff) {
-            var pcS = ldProcChanceFor(me);
-            if (Math.random() < pcS) {
-              occupant.salvationTurns = Math.max(occupant.salvationTurns || 0, 2);
-              effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '👼 구원 ' + occupant.name;
-              effect.announce = true;
-              handledLD = true;
-            }
-          }
-          if (!handledLD) {
+        // 죽음이 이미 위에서 처리됐다면(유물/유물강탈 칸이든 아니든) 여기선 일반 대결만 남은 경우에 시작
+        if (!startedRelic && !deathHandled) {
+          var occupant = fresh.players.find(function (p) {
+            if (p.id === myPlayerId || Number(p.position) !== Number(me.position)) return false;
+            if (fresh.gameMode === 'team' && sameTeam(me, p)) return false;
+            if (p.ghostMode || me.ghostMode) return false;
+            if (isInSanctuary(fresh, p)) return false;
+            return true;
+          });
+          if (occupant && me.position !== 0) {
             fresh.duel = {
               attackerId: myPlayerId,
               defenderId: occupant.id,
@@ -9756,19 +10034,6 @@ refreshRoomList();
               ts: Date.now()
             };
             startedDuel = true;
-          } else {
-            placeTokensInstant(fresh);
-            try { renderInstalledCellMarks(fresh); } catch (e) {}
-          }
-        }
-        if (me.grimMode && !me._grimTriedKill) {
-          me.longingStacks = (me.longingStacks || 0) + 1;
-          if (me.longingStacks >= 4) {
-            me.longingStacks = 0;
-            me.grimLockTurns = 4;
-            effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🩸 갈망 4 — 그림 리퍼 4턴 봉인';
-          } else {
-            effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🩸 갈망 ' + me.longingStacks + '/4';
           }
         }
 
@@ -9903,7 +10168,9 @@ refreshRoomList();
       fresh.log = fresh.log || [];
       fresh.log.unshift({
         name: me.name,
+        playerId: me.id,
         face: finalFace,
+        oldPos: oldPos,
         newPos: me.position,
         effectText: effectNotes.join(' · ') + (startedDuel ? ' · ⚔️대결!' : ''),
         ts: Date.now()
@@ -12263,6 +12530,13 @@ function openCellBook() {
         sub: '동일 유물 보유자·유물 칸에서도 더 이상 획득 불가',
         ts: Date.now()
       };
+      fresh.log = fresh.log || [];
+      fresh.log.unshift({
+        name: me ? me.name : '?', playerId: me ? me.id : null, face: '💀', newPos: me ? me.position : 0,
+        effectText: '💀 저주받은 영혼 → ' + (drt ? drt.icon + drt.name : destroyId) + ' 존재 파괴',
+        ts: Date.now()
+      });
+      fresh.log = fresh.log.slice(0, 10);
       lastRoomSnapshot = fresh;
       await saveRoom(fresh);
       renderGame(fresh);
@@ -12616,6 +12890,10 @@ function openCellBook() {
     var me = room.players.find(function (p) { return p.id === userId; });
     var target = room.players.find(function (p) { return p.id === targetId; });
     if (!me) return '사용자 없음';
+    var HARMFUL_TARGET_ITEMS = { swap_scroll: 1, steal_chip: 1, curse_dice: 1, cursed_soul: 1 };
+    if (target && target.id !== me.id && HARMFUL_TARGET_ITEMS[itemId] && isInSanctuary(room, target)) {
+      return '✨ ' + target.name + ' — 성역이 아이템을 막았습니다';
+    }
     var msg = '';
     if (itemId === 'boost_potion') {
       var from = me.position;
@@ -12703,12 +12981,14 @@ function openCellBook() {
       (room.players || []).forEach(function (p) {
         if (p.id === me.id) return;
         if (room.gameMode === 'team' && sameTeam(me, p)) return;
+        if (isInSanctuary(room, p)) return;
         var d = Math.min((p.position - me.position + BOARD_SIZE) % BOARD_SIZE, (me.position - p.position + BOARD_SIZE) % BOARD_SIZE);
         if (d > 0 && d < bestD) { bestD = d; nearest = p; }
       });
       if (!nearest) return '끌어올 상대 없음';
       nearest.position = me.position;
       msg = '🧲 ' + nearest.name + '을(를) 칸 ' + me.position + '으로 끌어옴';
+      tryHeresyInquisition(room, nearest, me);
       if (me.position !== 0) {
         room.duel = {
           attackerId: me.id,
@@ -12728,6 +13008,7 @@ function openCellBook() {
       target.curseNextBackward = true;
       target.curseDiceNext = true;
       msg = '☠️ ' + target.name + ' 저주 — 다음 이동이 뒤로 발동됩니다';
+      if (target.id !== me.id) tryHeresyInquisition(room, target, me);
     } else if (itemId === 'medkit') {
       if (!target) return '대상 없음';
       if ((target.skipTurns || 0) <= 0) {
@@ -12983,6 +13264,7 @@ function openCellBook() {
                   msg += ' · 🏕️초소로 발리스타 면역 (' + ltp.name + ')';
                 } else {
                   msg += ' · 🏹 발리스타 → ' + ltp.name + ' -' + ladderPush;
+                  tryHeresyInquisition(room, ltp, me);
                 }
               }
             }
@@ -12998,7 +13280,7 @@ function openCellBook() {
         text: msg, sub: '', ts: Date.now()
       };
       room.log = room.log || [];
-      room.log.unshift({ name: me.name, face: '🎒', newPos: me.position, effectText: msg, ts: Date.now() });
+      room.log.unshift({ name: me.name, playerId: me.id, face: '🎒', newPos: me.position, effectText: msg, ts: Date.now() });
       room.log = room.log.slice(0, 10);
 
       await saveRoom(room);
@@ -13073,7 +13355,7 @@ function openCellBook() {
             ts: Date.now()
           };
           room.log = room.log || [];
-          room.log.unshift({ name: pend.userName || '?', face: '🎒', newPos: userFail ? userFail.position : 0, effectText: msgFail + ' (거부 실패)', ts: Date.now() });
+          room.log.unshift({ name: pend.userName || '?', playerId: pend.userId, face: '🎒', newPos: userFail ? userFail.position : 0, effectText: msgFail + ' (거부 실패)', ts: Date.now() });
           room.log = room.log.slice(0, 10);
           room.itemPending = null;
           await saveRoom(room);
@@ -13110,7 +13392,7 @@ function openCellBook() {
         text: msg + ' (천사 허용)', sub: '', ts: Date.now()
       };
       room.log = room.log || [];
-      room.log.unshift({ name: pend.userName || '?', face: '🎒', newPos: user2 ? user2.position : 0, effectText: msg, ts: Date.now() });
+      room.log.unshift({ name: pend.userName || '?', playerId: pend.userId, face: '🎒', newPos: user2 ? user2.position : 0, effectText: msg, ts: Date.now() });
       room.log = room.log.slice(0, 10);
       room.itemPending = null;
       await saveRoom(room);
