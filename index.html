@@ -1076,9 +1076,17 @@
   .ld-book-aug .nm { display: flex; align-items: center; gap: 8px; }
   .ld-book-aug .ds,
   .ld-book-aug .tg { margin-left: 34px; text-align: left; }
-  /* 증강 도감만 아이콘 아래 들여쓰기 없이 완전히 왼쪽 정렬 */
+  /* 증강/유물/아이템/특수 칸/버프·상태 도감 전부 아이콘 아래 들여쓰기 없이 완전히 왼쪽 정렬 */
   #augBookModal .ld-book-aug .ds,
-  #augBookModal .ld-book-aug .tg { margin-left: 0; }
+  #augBookModal .ld-book-aug .tg,
+  #relicBookModal .ld-book-aug .ds,
+  #relicBookModal .ld-book-aug .tg,
+  #itemBookModal .ld-book-aug .ds,
+  #itemBookModal .ld-book-aug .tg,
+  #cellBookModal .ld-book-aug .ds,
+  #cellBookModal .ld-book-aug .tg,
+  #buffBookModal .ld-book-aug .ds,
+  #buffBookModal .ld-book-aug .tg { margin-left: 0; }
 
 
   .ld-admin-aug-ban {
