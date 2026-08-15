@@ -1645,7 +1645,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.6.33</span></div>
+      <div class="ld-version">패치 <span>v1.0.6.35</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -2775,7 +2775,7 @@
     { id: 'waitup', cat: 'restful', icon: '🪑', name: '대기', desc: '일반 칸 착지 시 10% 확률로 다음 이동 +3 예약', tag: '필드', chance: '10% 확률' },
     { id: 'dreamer', cat: 'restful', icon: '🌙', name: '몽상가', desc: '수면(얕은·깊은 잠)·휴식에서 깨어날 때 20% 확률로 추가 턴', tag: '필드', chance: '20% 확률' },
     { id: 'sleepdual', cat: 'restful', icon: '😴', name: '얕은 잠 · 깊은 잠', desc: '얕은 잠: 턴 시작 10% 확률로 → 1턴 수면 → 개운함 2회(1.4배) / 깊은 잠: 턴 시작 10% 확률로 → 2턴 수면 → 상쾌함 3회(1.7배)', tag: '필드', chance: '각 10%' },
-    { id: 'alarm_aug', cat: 'restful', icon: '⏰', name: '자명종', desc: '턴 시작 2% 확률로 자명종 아이템 획득 (최대 1 · 아이템/선물 칸 미등장)', tag: '필드', chance: '2% 확률' },
+    { id: 'alarm_aug', cat: 'restful', icon: '⏰', name: '자명종', desc: '턴 시작 12% 확률로 자명종 아이템 획득 (최대 1 · 아이템/선물 칸 미등장)', tag: '필드', chance: '12% 확률' },
     // tech — 하이테크
     { id: 'scanner', cat: 'tech', icon: '📡', name: '스캐너', desc: '이동 후 50% 확률로 유물 탐색 → 채굴 → 세척 → 복원 → 획득 (각 단계 50% 확률로 성공 시 다음)', tag: '필드', chance: '50%×5' },
     { id: 'drone', cat: 'tech', icon: '🛸', name: '드론', desc: '내 턴 시작 시 20% 확률로 칸 선택해 드론 설치 (보드 1개) · 드론 칸 앞·뒤 1칸 도착 시 -1칸 · 새 드론 설치 시 교체', tag: '필드', chance: '20% 확률' },
@@ -5782,7 +5782,7 @@ refreshRoomList();
         var me = room.players.find(function (p) { return p.id === myPlayerId; });
         if (me && isAsleep(me)) {
           els.turnBanner.className = 'ld-turn-banner rb-low';
-          els.turnBanner.textContent = ((me.deepSleepTurns || 0) > 0 ? '💤 깊은 잠' : '😑 얕은 잠') + ' — 수면 중 · 행동 불가';
+          els.turnBanner.textContent = ((me.deepSleepTurns || 0) > 0 ? '💤 깊은 잠' : '😑 얕은 잠') + ' — 수면 중 · 자명종 사용 가능';
           els.btnRoll.disabled = false;
           els.btnRoll.textContent = '턴 넘기기 (수면)';
         } else if (me && (me.skipTurns || 0) > 0) {
@@ -6424,7 +6424,7 @@ refreshRoomList();
   }
   function mustForceSkipTurn(player) {
     if (!player) return false;
-    if (isAsleep(player)) return true;
+    // 수면은 자동 넘김 안 함 — 자명종 사용 기회를 위해 수동 '턴 넘기기'만 가능
     var sk = player.skipTurns || 0;
     if (sk <= 0) return false;
     if (hasRelic(player, 'herb') && !player._herbUsedThisSkip && sk <= 1) return false;
@@ -6694,12 +6694,7 @@ refreshRoomList();
       }
     }
 
-    // 저주 주사위: 대상의 다음 이동을 뒤로 발동
-    if (player.curseNextBackward) {
-      player.curseNextBackward = false;
-      move = -move;
-      notes.push('☠️ 저주 발동: 뒤로 ' + Math.abs(move) + '칸');
-    }
+    // (저주 주사위 후진은 이동 보정 맨 끝에서 적용 — 중간에 눈이 덮어씌워지지 않도록)
 
     // 별/파도 자동 재굴림 제거 → 호출측에서 선택 UI 처리
     // (opts.skipRerollRelics 일 때 스킵)
@@ -7012,11 +7007,13 @@ refreshRoomList();
       player.pilgrimBoost = false;
     }
     // 응원 등 nextMoveBonus는 기존 처리
-    // 저주 주사위: 다음 이동 뒤로
-    if (player.curseDiceNext) {
+    // 저주 주사위 / 아이템 저주: 모든 가산 후 최종 이동을 뒤로 (양수일 때만 반전)
+    if (player.curseDiceNext || player.curseNextBackward) {
       if (move > 0) move = -move;
+      else if (move === 0) move = -1;
       player.curseDiceNext = false;
-      notes.push('☠️ 저주 주사위: 뒤로 이동');
+      player.curseNextBackward = false;
+      notes.push('☠️ 저주 주사위: 뒤로 ' + Math.abs(move) + '칸');
     }
     // 과열 스택: 굴릴 때마다 20% → 6스택 시 오버클럭(1턴) · 오버클럭/언더클럭 중에는 미적용
     if (hasAug(player, 'overclock')
@@ -7961,7 +7958,7 @@ refreshRoomList();
       } else if (sleepKind === 'sleep_mastery') {
         room.announce = { icon: '🌙', title: '잠!', text: turnP.name + ' — 얕은·깊은 잠 확률 영구 +1%', sub: '낮잠 5스택 달성', ts: Date.now() };
       }
-      var alarmCh = (hasAug(turnP, 'alarm_aug') ? 0.02 : 0) + (synergyBonus(turnP).alarmChance || 0);
+      var alarmCh = (hasAug(turnP, 'alarm_aug') ? 0.12 : 0) + (synergyBonus(turnP).alarmChance || 0);
       if (alarmCh > 0 && Math.random() < alarmCh) {
         if (giveSpecialItem(turnP, 'alarm_clock')) {
           room.announce = { icon: '⏰', title: '자명종', text: turnP.name + ' 자명종 획득', sub: '', ts: Date.now() };
@@ -8623,13 +8620,13 @@ refreshRoomList();
       var meIndex = fresh.players.findIndex(function (p) { return p.id === myPlayerId; });
       var me = fresh.players[meIndex];
 
-      // 수면 상태(얕은·깊은 잠): 행동 불가 → 턴만 넘김
+      // 수면 상태: 주사위 불가 · '턴 넘기기'로만 넘김 (자명종은 아이템으로 기상 가능)
       if (isAsleep(me)) {
         fresh.announce = {
           icon: (me.deepSleepTurns || 0) > 0 ? '💤' : '😑',
-          title: '수면 중',
-          text: me.name + ' — 수면 상태라 행동할 수 없습니다',
-          sub: '턴 넘김',
+          title: '수면 중 — 턴 넘김',
+          text: me.name + ' — 수면 상태 (자명종으로 기상 가능)',
+          sub: '수동 턴 넘김',
           ts: Date.now()
         };
         advanceTurn(fresh, false);
@@ -12001,18 +11998,8 @@ function openCellBook() {
       if (!me || !mustForceSkipTurn(me)) return;
 
       if (isAsleep(me)) {
-        fresh.announce = {
-          icon: (me.deepSleepTurns || 0) > 0 ? '💤' : '😑',
-          title: '수면 중 (자동 턴 넘김)',
-          text: me.name + ' — 수면 상태',
-          sub: '자동으로 다음 플레이어 차례',
-          ts: Date.now()
-        };
-        if ((me.fogTurns || 0) > 0) me.fogTurns -= 1;
-        if ((me.liberationTurns || 0) > 0) me.liberationTurns -= 1;
-        if ((me.championVictoryTurns || 0) > 0) me.championVictoryTurns -= 1;
-        if ((me.championDefeatTurns || 0) > 0) me.championDefeatTurns -= 1;
-        advanceTurn(fresh, false);
+        // 수면은 자동 턴 넘김 없음 — 자명종 사용 또는 수동 턴 넘기기
+        return;
       } else if ((me.skipTurns || 0) > 0) {
         if (hasRelic(me, 'herb') && !me._herbUsedThisSkip && me.skipTurns <= 1) {
           me.skipTurns -= 1;
@@ -12654,6 +12641,7 @@ function openCellBook() {
     } else if (itemId === 'curse_dice') {
       if (!target) return '대상 없음';
       target.curseNextBackward = true;
+      target.curseDiceNext = true;
       msg = '☠️ ' + target.name + ' 저주 — 다음 이동이 뒤로 발동됩니다';
     } else if (itemId === 'medkit') {
       if (!target) return '대상 없음';
