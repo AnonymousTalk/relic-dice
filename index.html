@@ -977,6 +977,7 @@
     color: var(--text-main); font-size: 13px; font-weight: 800; cursor: pointer;
   }
   .ld-aug-book-btn:hover { background: rgba(139,92,246,0.28); border-color: var(--purple2); }
+  .ld-aug-book-btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
   .ld-info-btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
   .ld-info-btn-row .ld-aug-book-btn { flex: 1; margin-bottom: 0; width: auto; }
   .ld-modal {
@@ -1519,6 +1520,20 @@
       </div>
     </div>
   </div>
+  <div class="ld-modal" id="leaveConfirmModal" aria-hidden="true">
+    <div class="ld-modal-card" style="max-width:360px;">
+      <div class="ld-modal-head">
+        <h3>나가시겠습니까?</h3>
+      </div>
+      <div class="ld-modal-body">
+        <p class="ld-code-hint" style="font-size:14px;color:var(--text-main);">게임 중 나가면 다시 들어올 수 없습니다.</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
+          <button type="button" class="ld-btn ld-btn-primary" id="btnLeaveConfirmYes" style="flex:1;padding:12px;font-size:14px;">확인</button>
+          <button type="button" class="ld-btn ld-btn-ghost" id="btnLeaveConfirmNo" style="flex:1;padding:12px;font-size:14px;">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="ld-modal" id="augBookModal" aria-hidden="true">
     <div class="ld-modal-card">
       <div class="ld-modal-head">
@@ -1598,6 +1613,31 @@
     </div>
   </div>
 
+  <div class="ld-modal" id="infoBookModal" aria-hidden="true">
+    <div class="ld-modal-card">
+      <div class="ld-modal-head">
+        <h3>📜 게임 설명 &amp; 전적</h3>
+        <button type="button" class="ld-btn ld-btn-ghost" id="infoBookClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
+      </div>
+      <div class="ld-modal-body">
+        <div class="ld-tabs" id="infoBookTabs">
+          <button type="button" class="ld-tab active" data-tab="desc">📖 게임 설명</button>
+          <button type="button" class="ld-tab" data-tab="history">🏆 전적</button>
+        </div>
+        <div id="infoBookDescPane">
+          <textarea id="infoBookDescText" rows="6" placeholder="게임 설명을 입력하세요" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(165,160,201,0.3);background:rgba(0,0,0,0.25);color:var(--text-main);font-size:13px;line-height:1.5;resize:vertical;font-family:inherit;"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <button type="button" class="ld-btn ld-btn-primary" id="infoBookDescSave" style="width:auto;padding:8px 14px;">저장</button>
+            <span id="infoBookDescMsg" style="font-size:12px;color:var(--text-dim);"></span>
+          </div>
+        </div>
+        <div id="infoBookHistoryPane" style="display:none;">
+          <div id="infoBookHistoryList"><div class="ld-log-empty">불러오는 중...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="ld-modal" id="logModal" aria-hidden="true">
     <div class="ld-modal-card">
       <div class="ld-modal-head">
@@ -1647,6 +1687,7 @@
           <button class="ld-btn ld-btn-outline" id="btnAdminKick">강퇴</button>
           <button class="ld-btn ld-btn-outline" id="btnAdminMute">채금 토글</button>
           <button class="ld-btn ld-btn-outline" id="btnAdminSkip">턴 강제 스킵</button>
+          <button class="ld-btn ld-btn-outline" id="btnAdminForceWin" style="border-color:var(--gold);color:var(--gold);">🏆 강제 승리</button>
           <div class="ld-field-label">칸 번호로 이동</div>
           <input type="number" id="adminCell" min="0" max="31" placeholder="0~31" />
           <button class="ld-btn ld-btn-primary" id="btnAdminMove">해당 칸으로 이동</button>
@@ -1735,7 +1776,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span>v1.0.8.1</span></div>
+      <div class="ld-version">패치 <span>v1.0.9.3</span></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -1756,6 +1797,7 @@
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeItem">🎒 아이템</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeCell">🗺️ 특수 칸</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeBuff">✨ 버프&상태</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeInfo">📜 게임 설명&전적</button>
         </div>
         <div class="ld-field-label" style="margin-top:0;">닉네임</div>
         <input class="ld-input" id="homeNickname" placeholder="예: 행운의주사위" maxlength="10" />
@@ -1804,6 +1846,7 @@
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyItem">🎒 아이템</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyCell">🗺️ 특수 칸</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyBuff">✨ 버프&상태</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyInfo">📜 게임 설명&전적</button>
         </div>
         <div class="ld-panel">
           <div class="ld-field-label" style="margin-top:0;">참가자</div>
@@ -2644,7 +2687,7 @@
     { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 확률로 재굴림 제안 (수락 시 다시 굴림)' },
     { id: 'herb', icon: '🌿', name: '허브 유물', desc: '휴식 칸 무시 · 스킵 턴 1회 자동 회복' },
     { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈에서 내가 굴리는 주사위 +1' },
-    { id: 'wind', icon: '💨', name: '바람 유물', desc: '방 공유: 전원 주사위 22% 확률로 +3칸 · 누구든 한 바퀴 시 바퀴 카운트 +2 (증강 선택은 1회)' },
+    { id: 'wind', icon: '💨', name: '바람 유물', desc: '내 턴 시작 시 22% 확률로 모든 플레이어 현재 위치에서 +3칸 이동 · 한 바퀴 시 전체 바퀴 카운트 +2 (전체 플레이어 적용, 증강 선택은 1회)' },
     { id: 'crystal', icon: '💠', name: '수정 유물', desc: '일반 칸 착지 시 45% 확률로 근처 특수 칸으로 이동' },
     { id: 'thunder', icon: '⚡', name: '번개 유물', desc: '짝수 눈이면 이동 +2' },
     { id: 'bloom', icon: '🌸', name: '꽃 유물', desc: '홀수 눈이면 이동 +2' },
@@ -3262,6 +3305,86 @@
     }, 1000);
   }
 
+  // ---- 게임 설명 & 전적 기록 ----
+  function notesPath() { return 'luckydice/notes'; }
+  function historyPath() { return 'luckydice/history'; }
+  var DEFAULT_GAME_DESC = '방에 설정된 유물 개수를 모두 모으면 승리! 보드를 한 바퀴 돌 때마다 증강을 하나 선택할 수 있어요.';
+  async function getGameDesc() {
+    if (!fbDb) return DEFAULT_GAME_DESC;
+    try {
+      var snap = await fbDb.ref(notesPath() + '/desc').once('value');
+      var v = snap.val();
+      return (v == null || v === '') ? DEFAULT_GAME_DESC : String(v);
+    } catch (e) { return DEFAULT_GAME_DESC; }
+  }
+  async function setGameDesc(text) {
+    if (!fbDb) throw new Error('no db');
+    await fbDb.ref(notesPath() + '/desc').set(String(text || ''));
+  }
+  async function pushMatchHistory(entry) {
+    if (!fbDb || !entry) return;
+    try {
+      var ref = fbDb.ref(historyPath()).push();
+      entry.id = ref.key;
+      await ref.set(entry);
+    } catch (e) { console.warn('history push failed', e); }
+  }
+  async function getMatchHistory() {
+    if (!fbDb) return [];
+    try {
+      var snap = await fbDb.ref(historyPath()).once('value');
+      var val = snap.val();
+      if (!val) return [];
+      var list = Object.keys(val).map(function (k) { var v = val[k] || {}; v.id = v.id || k; return v; });
+      list.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+      return list;
+    } catch (e) { return []; }
+  }
+  async function deleteMatchHistory(id) {
+    if (!fbDb || !id) return;
+    try { await fbDb.ref(historyPath() + '/' + id).remove(); } catch (e) { console.warn('history delete failed', e); }
+  }
+  function augNameById(id) {
+    var a = AUGMENT_POOL.find(function (x) { return x.id === id; });
+    return a ? (a.icon + ' ' + a.name) : id;
+  }
+  function relicNameById(id) {
+    var r = RELIC_TYPES.find(function (x) { return x.id === id; });
+    return r ? (r.icon + ' ' + r.name) : id;
+  }
+  function buildMatchHistoryEntry(room, need) {
+    var mode = room.gameMode === 'team' ? 'team' : 'solo';
+    var playersInfo = (room.players || []).map(function (p) {
+      return {
+        name: p.name || '이름없음',
+        team: mode === 'team' ? (p.team | 0) : null,
+        laps: p.laps || 0,
+        relics: playerRelics(p).map(relicNameById),
+        augments: playerAugs(p).map(augNameById)
+      };
+    });
+    var winnerNames = '';
+    if (mode === 'team' && room.winnerTeam != null) {
+      winnerNames = playersInfo.filter(function (p) { return p.team === room.winnerTeam; })
+        .map(function (p) { return p.name; }).join(', ');
+    } else if (room.winnerId) {
+      var wp = (room.players || []).find(function (p) { return p.id === room.winnerId; });
+      winnerNames = wp ? wp.name : '';
+    }
+    var totalLaps = 0;
+    playersInfo.forEach(function (p) { if ((p.laps || 0) > totalLaps) totalLaps = p.laps; });
+    return {
+      ts: Date.now(),
+      roomCode: room.code || '',
+      mode: mode,
+      winnerTeamLabel: (mode === 'team' && room.winnerTeam != null) ? TEAM_NAMES[room.winnerTeam] : null,
+      winnerNames: winnerNames,
+      relicsToWin: need,
+      totalLaps: totalLaps,
+      players: playersInfo
+    };
+  }
+
   function checkWinner(room) {
     if (room.winnerId || room.winnerTeam != null) return true;
     var need = relicsNeeded(room);
@@ -3280,6 +3403,7 @@
             ts: Date.now()
           };
           room.victoryAt = Date.now();
+          try { pushMatchHistory(buildMatchHistoryEntry(room, need)); } catch (eH) { console.warn(eH); }
           return true;
         }
       }
@@ -3297,6 +3421,7 @@
             ts: Date.now()
           };
           room.victoryAt = Date.now();
+          try { pushMatchHistory(buildMatchHistoryEntry(room, need)); } catch (eH) { console.warn(eH); }
           return true;
         }
       }
@@ -4142,30 +4267,55 @@
     if (!els.roomList) return;
     els.roomList.innerHTML = '<div class="ld-room-empty">불러오는 중...</div>';
     try {
-      var lobby = await getLobby();
-      var rooms = (lobby.rooms || []).filter(function (r) { return r.status === 'waiting'; });
-      // verify live
-      var checks = await Promise.all(rooms.map(function (info) { return getRoom(info.code); }));
       var live = [];
-      checks.forEach(function (r) {
-        // 공개·비공개 모두 목록에 표시 (비공개는 입장 시 코드 확인)
-        if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8) {
-          live.push({
-            code: r.code,
-            host: r.players[0].name,
-            players: r.players.length,
-            status: r.status,
-            mode: r.gameMode || 'solo',
-            isPrivate: !!r.isPrivate,
-            updatedAt: Date.now()
-          });
+      var adminMode = (typeof isAdmin !== 'undefined' && isAdmin);
+      if (adminMode) {
+        // 관리자 모드: 대기 중인 방뿐 아니라 플레이 중인 방까지 전체 직접 조회
+        var allSnap = fbDb ? await fbDb.ref('luckydice/rooms').once('value') : null;
+        var allVal = allSnap ? allSnap.val() : null;
+        var allRooms = allVal ? Object.keys(allVal).map(function (k) { return normalizeRoom(allVal[k]); }) : [];
+        allRooms.forEach(function (r) {
+          if (r && r.players && r.players.length > 0 && (r.status === 'waiting' || r.status === 'playing')) {
+            live.push({
+              code: r.code,
+              host: r.players[0].name,
+              players: r.players.length,
+              status: r.status,
+              mode: r.gameMode || 'solo',
+              isPrivate: !!r.isPrivate,
+              updatedAt: Date.now()
+            });
+          }
+        });
+        live.sort(function (a, b) {
+          if (a.status === b.status) return 0;
+          return a.status === 'waiting' ? -1 : 1;
+        });
+      } else {
+        var lobby = await getLobby();
+        var rooms = (lobby.rooms || []).filter(function (r) { return r.status === 'waiting'; });
+        // verify live
+        var checks = await Promise.all(rooms.map(function (info) { return getRoom(info.code); }));
+        checks.forEach(function (r) {
+          // 공개·비공개 모두 목록에 표시 (비공개는 입장 시 코드 확인)
+          if (r && r.status === 'waiting' && r.players && r.players.length > 0 && r.players.length < 8) {
+            live.push({
+              code: r.code,
+              host: r.players[0].name,
+              players: r.players.length,
+              status: r.status,
+              mode: r.gameMode || 'solo',
+              isPrivate: !!r.isPrivate,
+              updatedAt: Date.now()
+            });
+          }
+        });
+        // write back cleaned list occasionally
+        if (live.length !== rooms.length) {
+          var full = await getLobby();
+          full.rooms = live;
+          try { await saveLobby(full); } catch (e) {}
         }
-      });
-      // write back cleaned list occasionally
-      if (live.length !== rooms.length) {
-        var full = await getLobby();
-        full.rooms = live;
-        try { await saveLobby(full); } catch (e) {}
       }
       if (!live.length) {
         els.roomList.innerHTML = '<div class="ld-room-empty">참가 가능한 방이 없습니다. 새 방을 만들어 보세요!</div>';
@@ -4173,22 +4323,48 @@
       }
       els.roomList.innerHTML = '';
       live.forEach(function (info) {
-        var card = document.createElement('button');
-        card.type = 'button';
+        var card = document.createElement('div');
         card.className = 'ld-room-card';
+        var isPlaying = info.status === 'playing';
         var lockTag = info.isPrivate ? '🔒 ' : '🌐 ';
-        var metaText = info.players + '/8명 · ' + (info.isPrivate ? '비공개' : '공개') + ' · 대기 중';
+        var statusTag = isPlaying ? '🎮 진행 중' : '대기 중';
+        var metaText = info.players + '/8명 · ' + (info.isPrivate ? '비공개' : '공개') + ' · ' + statusTag;
+        var joinBtnHtml = isPlaying
+          ? '<span class="ld-btn ld-btn-ghost" style="width:auto;padding:8px 12px;font-size:12px;opacity:0.5;cursor:default;">진행 중</span>'
+          : '<button type="button" class="ld-btn ld-btn-primary ld-room-join-btn" style="width:auto;padding:8px 12px;font-size:12px;">입장</button>';
         card.innerHTML =
-          '<div><div class="title">' + lockTag + escapeHtml(info.host) + '의 방</div>' +
+          '<div><div class="title">' + lockTag + escapeHtml(info.host) + '의 방' + (isPlaying ? ' <span style="color:var(--gold);font-size:11px;">🎮</span>' : '') + '</div>' +
           '<div class="meta">' + metaText + '</div></div>' +
-          '<span class="ld-btn ld-btn-primary" style="width:auto;padding:8px 12px;font-size:12px;">입장</span>';
-        card.onclick = function () {
-          if (info.isPrivate) {
-            openPrivateJoinModal(info);
-            return;
-          }
-          joinRoomByCode(info.code);
-        };
+          '<span class="ld-room-card-actions" style="display:flex;gap:6px;align-items:center;flex-shrink:0;">' +
+          (adminMode ? '<button type="button" class="ld-btn ld-btn-outline ld-room-admin-del" style="width:auto;padding:8px 10px;font-size:12px;border-color:var(--red);color:var(--red);" data-code="' + escapeHtml(info.code) + '">🗑 삭제</button>' : '') +
+          joinBtnHtml +
+          '</span>';
+        var joinBtn = card.querySelector('.ld-room-join-btn');
+        if (joinBtn) {
+          joinBtn.onclick = function () {
+            if (info.isPrivate) {
+              openPrivateJoinModal(info);
+              return;
+            }
+            joinRoomByCode(info.code);
+          };
+        }
+        var delBtn = card.querySelector('.ld-room-admin-del');
+        if (delBtn) {
+          delBtn.onclick = async function (e) {
+            e.stopPropagation();
+            if (!confirm('방 ' + info.code + ' (' + info.host + '의 방) 을(를) 삭제할까요?')) return;
+            delBtn.disabled = true;
+            try {
+              try { await removeRoomFromLobby(info.code); } catch (e1) {}
+              if (fbDb) await fbDb.ref(roomPath(info.code)).remove();
+              refreshRoomList();
+            } catch (e2) {
+              delBtn.disabled = false;
+              alert('삭제 실패');
+            }
+          };
+        }
         els.roomList.appendChild(card);
       });
     } catch (e) {
@@ -4894,7 +5070,7 @@ refreshRoomList();
   }
 
   els.btnLeaveLobby.onclick = function () { leaveRoom(); };
-  els.btnLeaveGame.onclick = function () { leaveRoom(); };
+  els.btnLeaveGame.onclick = function () { openLeaveConfirm(); };
 
   function removePlayerFromRoom(room, pid) {
     if (!room || !pid) return room;
@@ -4929,6 +5105,23 @@ refreshRoomList();
       room.status = 'closed';
     }
     return room;
+  }
+
+  function openLeaveConfirm() {
+    var modal = document.getElementById('leaveConfirmModal');
+    var yes = document.getElementById('btnLeaveConfirmYes');
+    var no = document.getElementById('btnLeaveConfirmNo');
+    if (!modal || !yes || !no) { leaveRoom(); return; }
+    function cleanup() {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      yes.onclick = null;
+      no.onclick = null;
+    }
+    yes.onclick = function () { try { SFX.click(); } catch (e) {} cleanup(); leaveRoom(); };
+    no.onclick = function () { try { SFX.click(); } catch (e) {} cleanup(); };
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
   }
 
   async function leaveRoom() {
@@ -6139,7 +6332,8 @@ refreshRoomList();
         effectRaw = effectRaw.replace(/(획득:\s*)([^\s·]+(?:\s[^\s·]+)*)/g, function (m, p1, p2) {
           return p1.replace(/\s/g, '\u00A0') + p2.replace(/ /g, '\u00A0');
         });
-        var extraHtml = effectRaw ? ' · ' + linkifyGlossaryText(effectRaw) : '';
+        // 이름·이동·칸 번호(1줄)와 효과/결과 텍스트(2줄)를 항상 분리 — 숫자 옆 텍스트(이름·칸 번호)가 줄바꿈 없이 항상 붙어있도록 우선 보장
+        var extraHtml = effectRaw ? '<br>' + linkifyGlossaryText(effectRaw) : '';
 
         var hasMove = entry.oldPos != null && entry.oldPos !== entry.newPos;
         var moveHtml = hasMove
@@ -7422,17 +7616,7 @@ refreshRoomList();
       }
     }
     player._radianceProtect = false;
-    // 바람 유물: 방에 보유자가 있으면 모든 플레이어 주사위에 20% +3
-    var windInRoom = false;
-    if (room && room.players) {
-      room.players.forEach(function (p) { if (hasRelic(p, 'wind')) windInRoom = true; });
-    } else if (hasRelic(player, 'wind')) {
-      windInRoom = true;
-    }
-    if (windInRoom && Math.random() < relicPct(player, 0.22)) {
-      move += 3;
-      notes.push('💨 바람 +3 (전체)');
-    }
+    // 바람 유물: 내 턴 시작 시(advanceTurn) 전체 플레이어 이동으로 처리 — 여기서는 개별 주사위 보정 없음
 
     // 그림자 유물: 현재 위치 기준 앞·뒤 3칸 이내 상대 → 그 위치로 이동
     if (hasRelic(player, 'shadow') && room && room.players) {
@@ -8469,8 +8653,41 @@ refreshRoomList();
         turnP._droneCheckedThisTurn = true;
         if (Math.random() < techPct(turnP, 0.20)) turnP._droneOffer = true;
       }
+
+      // 바람 유물: 내 턴 시작 시 22% 확률로 모든 플레이어를 현재 위치에서 +3칸 이동
+      if (hasRelic(turnP, 'wind') && Math.random() < relicPct(turnP, 0.22)) {
+        (room.players || []).forEach(function (wp) {
+          if (!wp) return;
+          var oldWPos = wp.position | 0;
+          var passedLaps = 0;
+          var wPos = oldWPos;
+          for (var wi = 0; wi < 3; wi++) {
+            wPos = (wPos + 1) % BOARD_SIZE;
+            if (wPos === 0) passedLaps++;
+          }
+          wp.position = wPos;
+          if (passedLaps > 0) {
+            var prevWLaps = wp.laps || 0;
+            wp.laps = prevWLaps + passedLaps;
+            applyLapMilestones(room, wp, prevWLaps, wp.laps);
+          }
+        });
+        room.announce = {
+          icon: '💨', title: '바람 유물!',
+          text: turnP.name + ' — 모든 플레이어 +3칸 이동',
+          sub: '', ts: Date.now()
+        };
+        room.log = room.log || [];
+        room.log.unshift({
+          name: '시스템', system: true, face: '💨',
+          effectText: '💨 바람 유물(' + turnP.name + '): 모든 플레이어 +3칸 이동!',
+          ts: Date.now()
+        });
+        room.log = room.log.slice(0, 60);
+      }
     }
   };
+
 
 
   els.btnRelicRoll.onclick = async function () {
@@ -10607,7 +10824,18 @@ refreshRoomList();
     roomListener = fbDb.ref(roomPath(myRoomCode));
     roomListener.on('value', function (snap) {
       var room = snap.val();
-      if (!room) return;
+      if (!room) {
+        // 방이 삭제됨 (관리자 등에 의해) — 자동으로 메인 화면으로 이동
+        if (myRoomCode) {
+          var deletedCode = myRoomCode;
+          leaveRoom().then(function () {
+            try {
+              if (els.homeError) els.homeError.textContent = '방 ' + deletedCode + ' 이(가) 삭제되어 메인 화면으로 이동했습니다.';
+            } catch (eMsg) {}
+          }).catch(function () {});
+        }
+        return;
+      }
       handleRoomSnapshot(normalizeRoom(room));
     });
     // ⚠️ 삭제/수정 금지 — 턴 갱신 안 되는 버그 수정용 (2026-08 수정)
@@ -10828,31 +11056,50 @@ refreshRoomList();
     var q = (qEl && qEl.value ? qEl.value : '').trim().toLowerCase();
     listEl.innerHTML = '';
     var shown = 0;
-    var specialHeaderDone = false;
+    function itemMatches(it) {
+      if (!q) return true;
+      var hay = (it.name + ' ' + (it.desc || '') + ' ' + it.id + ' ' + (it.target || '')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    }
+    var tgtLabel = function (it) {
+      return it.target === 'enemy' ? '상대 대상' : (it.target === 'self' ? '자신 대상' : (it.target === 'any' ? '본인/상대' : ''));
+    };
+    // 일반 아이템 (특수 아이템 제외)
     sortedItemTypesForDisplay().forEach(function (it) {
-      if (q) {
-        var hay = (it.name + ' ' + (it.desc || '') + ' ' + it.id + ' ' + (it.target || '')).toLowerCase();
-        if (hay.indexOf(q) === -1) return;
-      }
-      if (it.specialOnly && !specialHeaderDone && !q) {
-        var hd = document.createElement('div');
-        hd.className = 'ld-code-hint';
-        hd.style.cssText = 'margin:10px 0 6px;font-weight:800;color:var(--gold);';
-        hd.textContent = '⭐ 특별 아이템 (아이템 칸·선물 칸 미등장 · 칸 3개 초과 보유 가능)';
-        listEl.appendChild(hd);
-        specialHeaderDone = true;
-      }
+      if (it.specialOnly) return;
+      if (!itemMatches(it)) return;
       var div = document.createElement('div');
       div.className = 'ld-book-aug';
-      var tgt = it.target === 'enemy' ? '상대 대상' : (it.target === 'self' ? '자신 대상' : (it.target === 'any' ? '본인/상대' : ''));
+      var tgt = tgtLabel(it);
       div.innerHTML =
-        '<div class="nm"><span class="ld-desc-icon">' + it.icon + '</span><span>' + (it.specialOnly ? '⭐ ' : '') + escapeHtml(it.name) + '</span></div>' +
+        '<div class="nm"><span class="ld-desc-icon">' + it.icon + '</span><span>' + escapeHtml(it.name) + '</span></div>' +
         '<div class="ds">' + escapeHtml(it.desc || '') + '</div>' +
         (tgt ? '<div class="tg">' + tgt + '</div>' : '');
-      if (it.specialOnly) div.style.cssText = 'border:1px solid rgba(251,191,36,0.45);border-radius:10px;';
       listEl.appendChild(div);
       shown++;
     });
+    // 특수 아이템 (특정 조건에서만 얻거나 사용하는 아이템) — 조건 특수 칸처럼 구분 표시
+    var specialMatches = sortedItemTypesForDisplay().filter(function (it) {
+      return it.specialOnly && itemMatches(it);
+    });
+    if (specialMatches.length) {
+      var specHead = document.createElement('div');
+      specHead.style.cssText = 'margin:14px 0 8px;text-align:center;';
+      specHead.innerHTML = '<b style="color:var(--gold);">🌟 특수 아이템 — 아이템 칸·선물 칸 미등장 · 칸 3개 초과 보유 가능</b>';
+      listEl.appendChild(specHead);
+      specialMatches.forEach(function (it) {
+        var div = document.createElement('div');
+        div.className = 'ld-book-aug';
+        div.style.cssText = 'border:1px solid rgba(251,191,36,0.45);border-radius:10px;';
+        var tgt = tgtLabel(it);
+        div.innerHTML =
+          '<div class="nm"><span class="ld-desc-icon">' + it.icon + '</span><span>🌟 ' + escapeHtml(it.name) + '</span></div>' +
+          '<div class="ds">' + escapeHtml(it.desc || '') + '</div>' +
+          (tgt ? '<div class="tg">' + tgt + '</div>' : '');
+        listEl.appendChild(div);
+        shown++;
+      });
+    }
     if (!shown) {
       listEl.innerHTML = '<div class="ld-code-hint">검색 결과 없음</div>';
     }
@@ -11356,6 +11603,140 @@ function openCellBook() {
     gameEndHandled = true;
   }
 
+  // ---- 게임 설명 & 전적 모달 ----
+  var infoBookTab = 'desc';
+  function openInfoBook() {
+    var modal = document.getElementById('infoBookModal');
+    if (!modal) return;
+    infoBookTab = 'desc';
+    renderInfoBookTabs();
+    loadInfoBookDesc();
+    loadInfoBookHistory();
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    try { SFX.click(); } catch (e) {}
+  }
+  function closeInfoBook() {
+    var modal = document.getElementById('infoBookModal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  function renderInfoBookTabs() {
+    var descPane = document.getElementById('infoBookDescPane');
+    var histPane = document.getElementById('infoBookHistoryPane');
+    var tabs = document.querySelectorAll('#infoBookTabs .ld-tab');
+    tabs.forEach(function (t) {
+      var on = t.getAttribute('data-tab') === infoBookTab;
+      t.className = 'ld-tab' + (on ? ' active' : '');
+    });
+    if (descPane) descPane.style.display = infoBookTab === 'desc' ? '' : 'none';
+    if (histPane) histPane.style.display = infoBookTab === 'history' ? '' : 'none';
+  }
+  async function loadInfoBookDesc() {
+    var ta = document.getElementById('infoBookDescText');
+    if (!ta) return;
+    var msg = document.getElementById('infoBookDescMsg');
+    var saveBtn = document.getElementById('infoBookDescSave');
+    var adminMode = (typeof isAdmin !== 'undefined' && isAdmin);
+    ta.readOnly = !adminMode;
+    ta.style.opacity = adminMode ? '1' : '0.75';
+    ta.style.cursor = adminMode ? 'text' : 'default';
+    if (saveBtn) saveBtn.style.display = adminMode ? '' : 'none';
+    if (msg) {
+      msg.textContent = adminMode ? '' : '🔒 게임 설명 수정은 관리자만 가능합니다';
+      msg.style.color = 'var(--text-dim)';
+    }
+    ta.value = await getGameDesc();
+  }
+  async function loadInfoBookHistory() {
+    var list = document.getElementById('infoBookHistoryList');
+    if (!list) return;
+    list.innerHTML = '<div class="ld-log-empty">불러오는 중...</div>';
+    var records = await getMatchHistory();
+    if (!records.length) {
+      list.innerHTML = '<div class="ld-log-empty">아직 승리로 종료된 전적이 없습니다</div>';
+      return;
+    }
+    list.innerHTML = '';
+    var adminModeH = (typeof isAdmin !== 'undefined' && isAdmin);
+    records.forEach(function (rec) {
+      var div = document.createElement('div');
+      div.className = 'ld-book-aug';
+      div.style.cssText = 'text-align:left;';
+      var dt = rec.ts ? new Date(rec.ts) : null;
+      var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+      var dateStr = dt ? (dt.getFullYear() + '.' + pad2(dt.getMonth() + 1) + '.' + pad2(dt.getDate()) + ' ' + pad2(dt.getHours()) + ':' + pad2(dt.getMinutes())) : '';
+      var winTitle = (rec.mode === 'team')
+        ? ('🏆 팀 ' + escapeHtml(rec.winnerTeamLabel || '') + ' 승리' + (rec.winnerNames ? ' (' + escapeHtml(rec.winnerNames) + ')' : ''))
+        : ('🏆 ' + escapeHtml(rec.winnerNames || '?') + ' 승리');
+      var playersHtml = (rec.players || []).map(function (p) {
+        var augTxt = (p.augments && p.augments.length) ? p.augments.map(escapeHtml).join(', ') : '없음';
+        var relicTxt = (p.relics && p.relics.length) ? p.relics.map(escapeHtml).join(', ') : '없음';
+        var teamTxt = (p.team != null && TEAM_NAMES[p.team]) ? (' (팀 ' + escapeHtml(TEAM_NAMES[p.team]) + ')') : '';
+        return '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(165,160,201,0.25);font-size:12px;">' +
+          '<b>' + escapeHtml(p.name || '') + '</b>' + teamTxt + ' · ' + (p.laps || 0) + '바퀴<br/>' +
+          '<span style="color:var(--cyan);">증강&amp;시너지</span> ' + augTxt + '<br/>' +
+          '<span style="color:var(--gold);">유물</span> ' + relicTxt +
+          '</div>';
+      }).join('');
+      div.innerHTML =
+        '<div class="nm"><span>' + winTitle + '</span></div>' +
+        '<div class="ds">' + dateStr + ' · 방 ' + escapeHtml(rec.roomCode || '-') + ' · 유물 목표 ' + (rec.relicsToWin || '') + '개 · 총 ' + (rec.totalLaps || 0) + '바퀴 · 참가자 ' + (rec.players || []).length + '명</div>' +
+        playersHtml +
+        (adminModeH ? ('<div style="margin-top:8px;text-align:right;"><button type="button" class="ld-btn ld-btn-outline" style="width:auto;padding:6px 12px;font-size:11px;border-color:var(--red);color:var(--red);" data-del="' + escapeHtml(rec.id) + '">🗑 전적 삭제</button></div>') : '');
+      list.appendChild(div);
+    });
+    if (!adminModeH) {
+      var hint = document.createElement('div');
+      hint.style.cssText = 'text-align:left;font-size:11.5px;color:var(--text-dim);margin-top:8px;';
+      hint.textContent = '🔒 전적 삭제는 관리자만 가능합니다';
+      list.appendChild(hint);
+    }
+    Array.prototype.forEach.call(list.querySelectorAll('[data-del]'), function (btn) {
+      btn.onclick = async function () {
+        if (!(typeof isAdmin !== 'undefined' && isAdmin)) return;
+        if (!confirm('이 전적 기록을 삭제할까요?')) return;
+        btn.disabled = true;
+        await deleteMatchHistory(btn.getAttribute('data-del'));
+        loadInfoBookHistory();
+      };
+    });
+  }
+  (function initInfoBook() {
+    var btnHomeInfo = document.getElementById('btnAugBookHomeInfo');
+    var btnLobbyInfo = document.getElementById('btnAugBookLobbyInfo');
+    var close = document.getElementById('infoBookClose');
+    var modal = document.getElementById('infoBookModal');
+    if (btnHomeInfo) btnHomeInfo.onclick = openInfoBook;
+    if (btnLobbyInfo) btnLobbyInfo.onclick = openInfoBook;
+    if (close) close.onclick = closeInfoBook;
+    if (modal) {
+      modal.addEventListener('click', function (e) { if (e.target === modal) closeInfoBook(); });
+    }
+    var tabs = document.querySelectorAll('#infoBookTabs .ld-tab');
+    Array.prototype.forEach.call(tabs, function (t) {
+      t.onclick = function () { infoBookTab = t.getAttribute('data-tab'); renderInfoBookTabs(); };
+    });
+    var saveBtn = document.getElementById('infoBookDescSave');
+    if (saveBtn) {
+      saveBtn.onclick = async function () {
+        if (!(typeof isAdmin !== 'undefined' && isAdmin)) return;
+        var ta = document.getElementById('infoBookDescText');
+        var msg = document.getElementById('infoBookDescMsg');
+        if (!ta) return;
+        saveBtn.disabled = true;
+        try {
+          await setGameDesc(ta.value);
+          if (msg) { msg.textContent = '저장됨'; msg.style.color = 'var(--green)'; }
+        } catch (e) {
+          if (msg) { msg.textContent = '저장 실패'; msg.style.color = 'var(--red)'; }
+        }
+        saveBtn.disabled = false;
+      };
+    }
+  })();
+
   // ---- Admin (password 1183) ----
   var isAdmin = false;
   var ADMIN_PASS = '1183';
@@ -11405,6 +11786,7 @@ function openCellBook() {
         isAdmin = true;
         document.getElementById('adminLoginWrap').style.display = 'none';
         refreshAdminPanelMode();
+        if (!myRoomCode) { try { refreshRoomList(); } catch (eR) {} }
         var msg = document.getElementById(myRoomCode ? 'adminMsg' : 'adminHomeMsg');
         if (msg) msg.textContent = '관리자 모드 ON';
       } else {
@@ -12015,6 +12397,44 @@ function openCellBook() {
           room.relicChallenge = null;
           room.announce = { icon: '⏭️', title: '턴 스킵', text: '관리자가 턴을 넘겼습니다', sub: '', ts: Date.now() };
         }
+      } else if (kind === 'forceWin') {
+        if (room.winnerId || room.winnerTeam != null) {
+          document.getElementById('adminMsg').textContent = '이미 승리가 결정된 게임입니다';
+          return;
+        }
+        var tpw = room.players.find(function (p) { return p.id === tid; });
+        if (!tpw) {
+          document.getElementById('adminMsg').textContent = '대상을 찾을 수 없음';
+          return;
+        }
+        var needFW = relicsNeeded(room);
+        if (room.gameMode === 'team') {
+          var teamFW = tpw.team | 0;
+          room.winnerTeam = teamFW;
+          room.status = 'finished';
+          var namesFW = room.players.filter(function (p) { return (p.team | 0) === teamFW; })
+            .map(function (p) { return p.name; }).join(', ');
+          room.announce = {
+            icon: '🏆',
+            title: '팀 ' + TEAM_NAMES[teamFW] + ' 승리! (관리자 지정)',
+            text: '관리자가 강제로 승리를 지정했습니다 · ' + namesFW,
+            sub: '5초 후 로비로',
+            ts: Date.now()
+          };
+        } else {
+          room.winnerId = tpw.id;
+          room.status = 'finished';
+          room.announce = {
+            icon: '🏆',
+            title: tpw.name + ' 승리! (관리자 지정)',
+            text: '관리자가 강제로 승리를 지정했습니다',
+            sub: '5초 후 로비로',
+            ts: Date.now()
+          };
+        }
+        room.victoryAt = Date.now();
+        document.getElementById('adminMsg').textContent = tpw.name + ' 강제 승리 처리됨';
+        try { pushMatchHistory(buildMatchHistoryEntry(room, needFW)); } catch (eH2) { console.warn(eH2); }
       } else if (kind === 'move') {
         var cell = parseInt(document.getElementById('adminCell').value, 10);
         if (isNaN(cell) || cell < 0 || cell >= BOARD_SIZE) {
@@ -12091,6 +12511,7 @@ function openCellBook() {
   var btnAdminMute = document.getElementById('btnAdminMute');
   var btnAdminSkip = document.getElementById('btnAdminSkip');
   var btnAdminMove = document.getElementById('btnAdminMove');
+  var btnAdminForceWin = document.getElementById('btnAdminForceWin');
   function updateClassicBtn(room) {
     var b = document.getElementById('btnAdminClassic');
     if (!b) return;
@@ -12107,6 +12528,13 @@ function openCellBook() {
   if (btnAdminMute) btnAdminMute.onclick = function () { adminAct('mute'); };
   if (btnAdminSkip) btnAdminSkip.onclick = function () { adminAct('skip'); };
   if (btnAdminMove) btnAdminMove.onclick = function () { adminAct('move'); };
+  if (btnAdminForceWin) btnAdminForceWin.onclick = function () {
+    var sel = document.getElementById('adminTarget');
+    var tid = sel && sel.value;
+    if (!tid) { document.getElementById('adminMsg').textContent = '대상 플레이어를 먼저 선택하세요'; return; }
+    if (!confirm('선택한 대상을 즉시 승리 처리할까요?')) return;
+    adminAct('forceWin');
+  };
   var btnAdminGiveRelic = document.getElementById('btnAdminGiveRelic');
   var btnAdminGiveAug = document.getElementById('btnAdminGiveAug');
   var btnAdminGiveItem = document.getElementById('btnAdminGiveItem');
