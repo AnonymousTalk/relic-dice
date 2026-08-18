@@ -3277,6 +3277,7 @@
               r.relicChallenge = null;
               r.augmentPick = null;
               r.pendingRoll = null;
+              r.leftPlayers = [];
               // 플레이어 상태 일부 리셋
               (r.players || []).forEach(function (p) {
                 p.position = 0;
@@ -3344,6 +3345,10 @@
     if (!fbDb || !id) return;
     try { await fbDb.ref(historyPath() + '/' + id).remove(); } catch (e) { console.warn('history delete failed', e); }
   }
+  async function saveMatchHistoryNote(id, note) {
+    if (!fbDb || !id) return;
+    try { await fbDb.ref(historyPath() + '/' + id + '/note').set(String(note || '')); } catch (e) { console.warn('history note save failed', e); }
+  }
   function augNameById(id) {
     var a = AUGMENT_POOL.find(function (x) { return x.id === id; });
     return a ? (a.icon + ' ' + a.name) : id;
@@ -3360,8 +3365,20 @@
         team: mode === 'team' ? (p.team | 0) : null,
         laps: p.laps || 0,
         relics: playerRelics(p).map(relicNameById),
-        augments: playerAugs(p).map(augNameById)
+        augments: playerAugs(p).map(augNameById),
+        left: false
       };
+    });
+    // 게임 도중 나간(탈주) 플레이어도 전적에 표기
+    (room.leftPlayers || []).forEach(function (lp) {
+      playersInfo.push({
+        name: (lp.name || '이름없음') + ' (탈주)',
+        team: mode === 'team' ? (lp.team | 0) : null,
+        laps: lp.laps || 0,
+        relics: lp.relics || [],
+        augments: lp.augments || [],
+        left: true
+      });
     });
     var winnerNames = '';
     if (mode === 'team' && room.winnerTeam != null) {
@@ -4838,6 +4855,7 @@ refreshRoomList();
       room.turnStartedAt = Date.now();
       room.augmentPick = null;
       room.pendingPickExtraTurn = false;
+      room.leftPlayers = [];
       var modeLabel = room.gameMode === 'team' ? '팀전' : '개인전';
       room.announce = {
         icon: '🎮',
@@ -5072,10 +5090,27 @@ refreshRoomList();
   els.btnLeaveLobby.onclick = function () { leaveRoom(); };
   els.btnLeaveGame.onclick = function () { openLeaveConfirm(); };
 
+  // 게임 도중(status === 'playing') 이탈한 플레이어를 전적 기록용으로 스냅샷 저장
+  function trackLeftPlayer(room, p) {
+    if (!room || !p) return;
+    if (room.status !== 'playing') return;
+    room.leftPlayers = room.leftPlayers || [];
+    room.leftPlayers.push({
+      id: p.id,
+      name: p.name || '이름없음',
+      team: room.gameMode === 'team' ? (p.team | 0) : null,
+      laps: p.laps || 0,
+      relics: (typeof playerRelics === 'function' ? playerRelics(p).map(relicNameById) : []),
+      augments: (typeof playerAugs === 'function' ? playerAugs(p).map(augNameById) : []),
+      ts: Date.now()
+    });
+  }
+
   function removePlayerFromRoom(room, pid) {
     if (!room || !pid) return room;
     var idx = (room.players || []).findIndex(function (p) { return p.id === pid; });
     if (idx < 0) return room;
+    try { trackLeftPlayer(room, room.players[idx]); } catch (eTL) {}
     room.players = room.players.filter(function (p) { return p.id !== pid; });
     // 대결/유물/증강 대상이면 정리
     if (room.duel && (room.duel.attackerId === pid || room.duel.defenderId === pid)) {
@@ -11674,16 +11709,35 @@ function openCellBook() {
         var augTxt = (p.augments && p.augments.length) ? p.augments.map(escapeHtml).join(', ') : '없음';
         var relicTxt = (p.relics && p.relics.length) ? p.relics.map(escapeHtml).join(', ') : '없음';
         var teamTxt = (p.team != null && TEAM_NAMES[p.team]) ? (' (팀 ' + escapeHtml(TEAM_NAMES[p.team]) + ')') : '';
-        return '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(165,160,201,0.25);font-size:12px;">' +
-          '<b>' + escapeHtml(p.name || '') + '</b>' + teamTxt + ' · ' + (p.laps || 0) + '바퀴<br/>' +
+        var nameStyle = p.left ? 'color:#fca5a5;' : '';
+        return '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(165,160,201,0.25);font-size:12px;' + (p.left ? 'opacity:0.85;' : '') + '">' +
+          '<b style="' + nameStyle + '">' + escapeHtml(p.name || '') + '</b>' + teamTxt + ' · ' + (p.laps || 0) + '바퀴<br/>' +
           '<span style="color:var(--cyan);">증강&amp;시너지</span> ' + augTxt + '<br/>' +
           '<span style="color:var(--gold);">유물</span> ' + relicTxt +
           '</div>';
       }).join('');
+      var noteHtml;
+      if (adminModeH) {
+        noteHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(165,160,201,0.25);">' +
+          '<div style="font-size:11px;color:#e9d5ff;margin-bottom:4px;">📝 관리자 메모</div>' +
+          '<textarea data-note-ta="' + escapeHtml(rec.id) + '" placeholder="이 전적에 대한 메모를 남겨보세요 (관리자만 보임/작성 가능)" style="width:100%;min-height:50px;resize:vertical;box-sizing:border-box;font-size:12px;padding:6px 8px;border-radius:8px;border:1px solid rgba(233,213,255,0.35);background:rgba(0,0,0,0.25);color:#fff;">' + escapeHtml(rec.note || '') + '</textarea>' +
+          '<div style="text-align:right;margin-top:4px;">' +
+          '<span class="ld-admin-msg-box" data-note-msg="' + escapeHtml(rec.id) + '" style="display:inline-block;margin:0 8px 0 0;font-size:11px;vertical-align:middle;"></span>' +
+          '<button type="button" class="ld-btn ld-btn-primary" style="width:auto;padding:6px 12px;font-size:11px;" data-note-save="' + escapeHtml(rec.id) + '">메모 저장</button>' +
+          '</div></div>';
+      } else if (rec.note) {
+        noteHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(165,160,201,0.25);">' +
+          '<div style="font-size:11px;color:#e9d5ff;margin-bottom:4px;">📝 관리자 메모</div>' +
+          '<div style="font-size:12px;color:var(--text-main);white-space:pre-wrap;">' + escapeHtml(rec.note) + '</div>' +
+          '</div>';
+      } else {
+        noteHtml = '';
+      }
       div.innerHTML =
         '<div class="nm"><span>' + winTitle + '</span></div>' +
         '<div class="ds">' + dateStr + ' · 방 ' + escapeHtml(rec.roomCode || '-') + ' · 유물 목표 ' + (rec.relicsToWin || '') + '개 · 총 ' + (rec.totalLaps || 0) + '바퀴 · 참가자 ' + (rec.players || []).length + '명</div>' +
         playersHtml +
+        noteHtml +
         (adminModeH ? ('<div style="margin-top:8px;text-align:right;"><button type="button" class="ld-btn ld-btn-outline" style="width:auto;padding:6px 12px;font-size:11px;border-color:var(--red);color:var(--red);" data-del="' + escapeHtml(rec.id) + '">🗑 전적 삭제</button></div>') : '');
       list.appendChild(div);
     });
@@ -11700,6 +11754,24 @@ function openCellBook() {
         btn.disabled = true;
         await deleteMatchHistory(btn.getAttribute('data-del'));
         loadInfoBookHistory();
+      };
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-note-save]'), function (btn) {
+      btn.onclick = async function () {
+        if (!(typeof isAdmin !== 'undefined' && isAdmin)) return;
+        var id = btn.getAttribute('data-note-save');
+        var ta = list.querySelector('[data-note-ta="' + id.replace(/"/g, '\\"') + '"]');
+        var msg = list.querySelector('[data-note-msg="' + id.replace(/"/g, '\\"') + '"]');
+        if (!ta) return;
+        btn.disabled = true;
+        if (msg) { msg.textContent = '저장 중...'; msg.style.color = 'var(--text-dim)'; }
+        try {
+          await saveMatchHistoryNote(id, ta.value);
+          if (msg) { msg.textContent = '저장됨'; msg.style.color = 'var(--green)'; }
+        } catch (e) {
+          if (msg) { msg.textContent = '저장 실패'; msg.style.color = 'var(--red)'; }
+        }
+        btn.disabled = false;
       };
     });
   }
@@ -12381,6 +12453,8 @@ function openCellBook() {
       if (!room) return;
       room.muted = room.muted || {};
       if (kind === 'kick') {
+        var kickedP = room.players.find(function (p) { return p.id === tid; });
+        try { trackLeftPlayer(room, kickedP); } catch (eTLk) {}
         room.players = room.players.filter(function (p) { return p.id !== tid; });
         if (!room.players.length) { document.getElementById('adminMsg').textContent = '유저 없음'; return; }
         room.turnIndex = room.turnIndex % room.players.length;
