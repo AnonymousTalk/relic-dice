@@ -2987,7 +2987,7 @@
     { id: 'death_aug', cat: 'life_death', icon: '☠️', name: '사', desc: '턴 시작 시 10% 확률로 죽음 이후 버프 획득 (최대 5스택)', tag: '필드', chance: '10% 확률' },
     { id: 'transcend', cat: 'life_death', icon: '🕊️', name: '초월', desc: '증강 선택으로 획득 불가 · 삶의 이유 5스택 + 죽음 이후 5스택 시 자동 획득 · 죽음 면역 · 항상 이동 +2 · 30% 확률로 공격 방어', tag: '필드', chance: '자동', noPick: true },
     { id: 'phoenix', cat: 'life_death', icon: '🔥', name: '불사조', desc: '죽어도 묘비를 만들지 않고 그 자리에서 즉시 부활', tag: '필드', chance: '패시브' },
-    { id: 'radiance', cat: 'purify', icon: '👩‍🎤', name: '성녀', desc: '이동 후 30% 확률로 앞·뒤 2칸이 성역(2턴) · 성역에선 효과 미발동 · 다른 성역이 있으면 새 성역 생성 안 됨', tag: '필드', chance: '30% 확률' }
+    { id: 'radiance', cat: 'purify', icon: '👩‍🎤', name: '성녀', desc: '이동 후 30% 확률로 앞·뒤 2칸이 성역(2턴) · 성역 안 특수 칸 효과는 발동자 본인만 받음 · 다른 성역이 있으면 새 성역 생성 안 됨', tag: '필드', chance: '30% 확률' }
   ];
 
   function hasAug(player, id) {
@@ -3539,7 +3539,7 @@
     { name: '부활자', icon: '🙏', desc: '부활 직후 얻는 상태 · 성역에 도착하면 교황이 되고, 이단 판정을 받으면 마녀가 됩니다 · 10턴 제한.' },
     { name: '교황', icon: '✝️', desc: '부활자가 성역에 도착하면 되는 상태 · 정화 시너지 V 효과를 받고 다른 사람의 부활을 중재할 수 있습니다.' },
     { name: '마녀', icon: '🧙', desc: '부활자가 이단 판정을 받으면 되는 상태 · 저주 시너지 V 효과를 받고 교황의 부활 중재를 방해합니다.' },
-    { name: '성역', icon: '✨', desc: '일정 턴 동안 모든 칸 효과와 외부 공격이 통하지 않는 안전지대입니다.' },
+    { name: '성역', icon: '✨', desc: '일정 턴 동안 외부 공격이 통하지 않는 안전지대 · 특수 칸 효과(유물 등)는 성역을 발동한 사람만 받을 수 있습니다.' },
     { name: '대결', icon: '⚔️', desc: '같은 칸에 두 플레이어가 있을 때 벌어지는 주사위 대결 · 패자는 뒤로 밀려납니다.' },
     { name: '강탈', icon: '🏴‍☠️', desc: '강탈 칸에서 벌어지는 유물 쟁탈전 · 승리하면 상대의 유물 하나를 빼앗습니다.' },
     { name: '신화 유물', icon: '🌟', desc: '유물 정화로 만들어지는 강화된 유물 · 효과가 2배로 적용됩니다.' },
@@ -4243,11 +4243,25 @@
   }
 
   var selectedHomeAvatar = AVATARS[0];
-  function makePlayer(id, name, colorIdx, avatar, team) {
+  // 방에 이미 있는 플레이어들과 색이 겹치지 않도록 고유 색상을 배정
+  // (기존에는 입장 시점의 인원수로 색을 정해서, 중간에 누가 나가고 다시 들어오면
+  //  다른 사람과 같은 색을 받는 버그가 있었음 — 실제 사용 중인 색을 피해서 배정)
+  function pickUniquePlayerColor(existingPlayers) {
+    var used = {};
+    (existingPlayers || []).forEach(function (p) { if (p && p.color) used[p.color] = true; });
+    for (var i = 0; i < COLORS.length; i++) {
+      if (!used[COLORS[i]]) return COLORS[i];
+    }
+    // COLORS 팔레트보다 인원이 많으면(8명 초과) 어쩔 수 없이 겹칠 수 있으니
+    // 최대한 균등하게 분산되도록 인원수 기반으로 순환 배정
+    var n = existingPlayers ? existingPlayers.length : 0;
+    return COLORS[n % COLORS.length];
+  }
+  function makePlayer(id, name, colorIdx, avatar, team, colorOverride) {
     return {
       id: id,
       name: name,
-      color: COLORS[colorIdx % COLORS.length],
+      color: colorOverride || COLORS[colorIdx % COLORS.length],
       avatar: avatar || AVATARS[colorIdx % AVATARS.length],
       team: team != null ? team : (colorIdx % 2),
       position: 0,
@@ -4448,7 +4462,7 @@ refreshRoomList();
         isPrivate: !!(window.__createPrivate),
         turnStartedAt: null,
         winnerTeam: null,
-        players: [makePlayer(myPlayerId, nickname, 0, selectedHomeAvatar, 0)],
+        players: [makePlayer(myPlayerId, nickname, 0, selectedHomeAvatar, 0, pickUniquePlayerColor([]))],
         log: []
       };
       await saveRoom(room);
@@ -4559,7 +4573,7 @@ refreshRoomList();
         var c1 = room.players.filter(function (p) { return (p.team | 0) === 1; }).length;
         joinTeam = c0 <= c1 ? 0 : 1;
       }
-      room.players.push(makePlayer(myPlayerId, nickname, room.players.length, selectedHomeAvatar, joinTeam));
+      room.players.push(makePlayer(myPlayerId, nickname, room.players.length, selectedHomeAvatar, joinTeam, pickUniquePlayerColor(room.players)));
       await saveRoom(room);
       myRoomCode = code;
       enterLobby(room);
@@ -5334,7 +5348,10 @@ refreshRoomList();
       var v = sanct[k];
       var left = v && typeof v === 'object' ? (v.turns | 0) : (v | 0);
       if (left > 0) {
-        addMark(k, '✨', '성역 (' + left + '턴, 모든 칸 효과 미발동)');
+        var sOwner = v && typeof v === 'object' ? v.ownerId : null;
+        var sOwnerP = sOwner ? (room.players || []).find(function (pp) { return pp.id === sOwner; }) : null;
+        var sOwnerLabel = sOwnerP ? (sOwnerP.name + ' 전용') : '발동자 전용';
+        addMark(k, '✨', '성역 (' + left + '턴, 특수 칸 효과는 ' + sOwnerLabel + ')');
         var n = Number(k);
         if (!isNaN(n)) {
           n = ((n % BOARD_SIZE) + BOARD_SIZE) % BOARD_SIZE;
@@ -6573,7 +6590,7 @@ refreshRoomList();
         var v = room.sanctuary[k];
         var left = (typeof v === 'object' ? (v.turns | 0) : (v | 0)) - 1;
         if (left > 0) {
-          ns[k] = { turns: left };
+          ns[k] = { turns: left, ownerId: (v && typeof v === 'object') ? v.ownerId : null };
         }
       });
       room.sanctuary = ns;
@@ -6659,14 +6676,14 @@ refreshRoomList();
     ];
     cells.forEach(function (c) {
       if (c === 0) return;
-      room.sanctuary[c] = { turns: 2 };
-      room.sanctuary[String(c)] = { turns: 2 };
+      room.sanctuary[c] = { turns: 2, ownerId: player.id };
+      room.sanctuary[String(c)] = { turns: 2, ownerId: player.id };
     });
     room.sanctuaryActive = true;
     room.announce = {
       icon: '👩‍🎤', title: '성역 선포',
       text: player.name + ' — 앞·뒤 2칸이 2턴간 성역',
-      sub: '성역에서는 모든 효과 미발동',
+      sub: '성역에서는 발동자 본인만 특수 칸 효과를 받습니다',
       ts: Date.now()
     };
   }
@@ -7758,22 +7775,29 @@ refreshRoomList();
       return result;
     }
 
-    // 성역: 모든 칸 효과 미발동 (해골·표식 포함 차단 후 통과 기록)
+    // 성역: 성역을 발동한 사람(성녀 본인) 외에는 모든 칸 효과 미발동 (해골·표식 포함 차단 후 통과 기록)
     var sanctMap = room.sanctuary || {};
-    var inSanct = !!(sanctMap[landPos] || sanctMap[String(landPos)]);
+    var sanctEntry = sanctMap[landPos] != null ? sanctMap[landPos] : sanctMap[String(landPos)];
+    var sanctLeft = sanctEntry && typeof sanctEntry === 'object' ? (sanctEntry.turns | 0) : (sanctEntry | 0);
+    var inSanct = sanctLeft > 0;
     if (inSanct) {
-      // 성지순례 보유자: 성역 통과자 수 누적
+      // 성지순례 보유자: 성역 통과자 수 누적 (발동자 본인 포함)
       (room.players || []).forEach(function (pp) {
         if (hasAug(pp, 'baptism')) {
           pp._sanctPassCount = (pp._sanctPassCount || 0) + 1;
         }
       });
-      result.effectText = '✨ 성역 — 효과 없음';
-      result.effectIcon = '✨';
-      result.effectTitle = '성역';
-      result.announce = true;
-      result.skipCellEffect = true;
-      return result;
+      var sanctOwnerId = sanctEntry && typeof sanctEntry === 'object' ? sanctEntry.ownerId : null;
+      var isSanctOwner = !!(sanctOwnerId && player.id === sanctOwnerId);
+      if (!isSanctOwner) {
+        result.effectText = '✨ 성역 — 효과 없음';
+        result.effectIcon = '✨';
+        result.effectTitle = '성역';
+        result.announce = true;
+        result.skipCellEffect = true;
+        return result;
+      }
+      // 성역 발동자 본인은 유물 등 특수 칸 효과를 정상적으로 받음 (아래 로직으로 계속 진행)
     }
     // 집: 아이템 1개 (+ 특수칸이면 아래에서 계속) — 다리 위에서는 본트랙 좌표가 우연히 겹쳐도 무시
     // 집이 설치된 칸 자체는 물론, 그 앞·뒤 1칸 이내에 도착해도 효과가 발동합니다.
