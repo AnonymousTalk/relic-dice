@@ -3168,7 +3168,7 @@
     { id: 'alarm_aug', cat: 'restful', icon: '⏰', name: '자명종', desc: '턴 시작 12% 확률로 자명종 아이템 획득 (최대 1 · 아이템/선물 칸 미등장)', tag: '필드', chance: '12% 확률' },
     // tech — 하이테크
     { id: 'scanner', cat: 'tech', icon: '📡', name: '스캐너', desc: '이동 후 50% 확률로 유물 탐색 → 채굴 → 세척 → 복원 → 획득 (각 단계 50% 확률로 성공 시 다음)', tag: '필드', chance: '50%×5' },
-    { id: 'drone', cat: 'tech', icon: '🛸', name: '드론', desc: '내 턴 시작 시 20% 확률로 칸 선택해 드론 설치 (보드 1개) · 드론 칸 앞·뒤 1칸 도착 시 -1칸 · 새 드론 설치 시 교체', tag: '필드', chance: '20% 확률' },
+    { id: 'drone', cat: 'tech', icon: '🛸', name: '드론', desc: '내 턴 시작 시 20% 확률로 칸 선택해 드론 설치 (보드 1개) · 설치 즉시 그 칸에 있는 인원 -1칸 · 드론 칸 앞·뒤 1칸 도착 시 -1칸 · 새 드론 설치 시 교체', tag: '필드', chance: '20% 확률' },
     { id: 'hack', cat: 'tech', icon: '💻', name: '해킹', desc: '모든 플레이어 아이템 사용 시 5% 확률로 다른 아이템으로 치환되어 사용', tag: '필드', chance: '5% 확률' },
     { id: 'boosterpack', cat: 'tech', icon: '🔋', name: '첨단 주사위', desc: '이동 시 3.5% 확률로 첨단 주사위 획득 (최대 1 · 아이템/선물 칸 미등장) · 사용 시 7~12 굴림', tag: '필드', chance: '3.5% 확률' },
     { id: 'telemod', cat: 'tech', icon: '📶', name: '텔레포트 모듈', desc: '아무 칸 도착 시 10% 확률로 포탈 오픈 → 다른 칸 이동 (도착 칸 특수 효과 미발동)', tag: '필드', chance: '10% 확률' },
@@ -10750,9 +10750,17 @@ refreshRoomList();
           });
           if (droneCell != null && droneCell >= 1 && droneCell < BOARD_SIZE) {
             fresh.droneCell = droneCell;
+            var droneHitNames = [];
+            (fresh.players || []).forEach(function (dp) {
+              if (dp.position === droneCell) {
+                if (tryPushPlayer(fresh, dp, -1, 'drone_install')) {
+                  droneHitNames.push(dp.name);
+                }
+              }
+            });
             fresh.announce = {
               icon: '🛸', title: '드론 설치',
-              text: me.name + ' → 칸 ' + droneCell,
+              text: me.name + ' → 칸 ' + droneCell + (droneHitNames.length ? ' · ' + droneHitNames.join(', ') + ' -1칸' : ''),
               sub: '앞·뒤 1칸 도착 시 -1칸',
               ts: Date.now()
             };
@@ -11206,7 +11214,6 @@ refreshRoomList();
               }
               effect.effectText = (effect.effectText ? effect.effectText + ' · ' : '') + '🏠 집 설치';
               effect.announce = true;
-              giveItemToPlayer(fresh, me, null, 'house');
               didBuild = true;
             }
             if (picks.boost) {
@@ -15167,9 +15174,81 @@ function openCellBook() {
       candidates
     ).then(function (pid) {
       if (!pid) { selectedItemId = null; return; }
+      // 훔치기: 대상 선택 후 훔칠 아이템을 직접 고름 (저주받은 영혼·자명종 제외)
+      if (itemId === 'steal_chip' && !asGift) {
+        var stealTgt = room.players.find(function (p) { return p.id === pid; });
+        var stealables = (stealTgt ? playerItems(stealTgt) : []).filter(function (iid) {
+          return iid !== 'cursed_soul' && iid !== 'alarm_clock';
+        });
+        if (!stealables.length) {
+          if (els.gameError) els.gameError.textContent = '훔칠 수 있는 아이템이 없습니다';
+          selectedItemId = null;
+          return;
+        }
+        openItemChoiceModal(
+          '🦝 훔치기 — 아이템 선택',
+          (stealTgt ? stealTgt.name : '') + '에게서 훔칠 아이템을 고르세요',
+          stealables
+        ).then(function (chosenId) {
+          if (!chosenId) { selectedItemId = null; return; }
+          window.__stealItemId = chosenId;
+          window.__itemTargetId = pid;
+          setItemTargetValue(pid);
+          setTimeout(function () { useSelectedItem(); }, 30);
+        });
+        return;
+      }
       window.__itemTargetId = pid;
       setItemTargetValue(pid);
       setTimeout(function () { useSelectedItem(); }, 30);
+    });
+  }
+
+  function openItemChoiceModal(title, hint, itemIds) {
+    return new Promise(function (resolve) {
+      var modal = document.getElementById('pathChoiceModal');
+      var box = document.getElementById('pathChoiceButtons');
+      var hintEl = document.getElementById('pathChoiceHint');
+      var head = modal && modal.querySelector('h3');
+      if (!modal || !box) { resolve(null); return; }
+      if (head) head.textContent = title || '아이템 선택';
+      if (hintEl) hintEl.textContent = hint || '아이템을 고르세요';
+      box.innerHTML = '';
+      var counts = {};
+      var order = [];
+      (itemIds || []).forEach(function (id) {
+        if (counts[id] == null) { counts[id] = 0; order.push(id); }
+        counts[id]++;
+      });
+      order.forEach(function (id) {
+        var it2 = getItemById(id);
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ld-btn ld-btn-primary';
+        b.style.cssText = 'width:100%;margin-top:6px;text-align:left;';
+        b.textContent = (it2 ? (it2.icon + ' ' + it2.name) : id) + (counts[id] > 1 ? ' x' + counts[id] : '');
+        b.onclick = function () {
+          modal.classList.remove('show');
+          modal.setAttribute('aria-hidden', 'true');
+          resolve(id);
+        };
+        box.appendChild(b);
+      });
+      var no = document.createElement('button');
+      no.type = 'button';
+      no.className = 'ld-btn ld-btn-ghost';
+      no.style.width = '100%';
+      no.style.marginTop = '8px';
+      no.textContent = '취소';
+      no.onclick = function () {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        resolve(null);
+      };
+      box.appendChild(no);
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      try { modal.style.zIndex = '10060'; } catch (ez) {}
     });
   }
 
@@ -15210,7 +15289,7 @@ function openCellBook() {
     return extra;
   }
 
-  function applyItemEffect(room, userId, targetId, itemId) {
+  function applyItemEffect(room, userId, targetId, itemId, stealItemId) {
     var me = room.players.find(function (p) { return p.id === userId; });
     var target = room.players.find(function (p) { return p.id === targetId; });
     if (!me) return '사용자 없음';
@@ -15251,8 +15330,19 @@ function openCellBook() {
     } else if (itemId === 'steal_chip') {
       if (!target) return '대상 없음';
       target.items = playerItems(target);
-      if (target.items.length) {
-        var stolen = target.items.splice(Math.floor(Math.random() * target.items.length), 1)[0];
+      var stealableIdx = [];
+      for (var sti = 0; sti < target.items.length; sti++) {
+        if (target.items[sti] !== 'cursed_soul' && target.items[sti] !== 'alarm_clock') stealableIdx.push(sti);
+      }
+      if (stealableIdx.length) {
+        var pickIdx = -1;
+        if (stealItemId) {
+          for (var pki = 0; pki < stealableIdx.length; pki++) {
+            if (target.items[stealableIdx[pki]] === stealItemId) { pickIdx = stealableIdx[pki]; break; }
+          }
+        }
+        if (pickIdx === -1) pickIdx = stealableIdx[Math.floor(Math.random() * stealableIdx.length)];
+        var stolen = target.items.splice(pickIdx, 1)[0];
         me.items = playerItems(me);
         me.items.push(stolen);
         var sit = getItemById(stolen);
@@ -15409,6 +15499,8 @@ function openCellBook() {
     var sel = document.getElementById('itemTarget');
     var tid = window.__itemTargetId || (sel && sel.value);
     window.__itemTargetId = null;
+    var stealItemId = window.__stealItemId || null;
+    window.__stealItemId = null;
     var itemId = selectedItemId;
     var idx = window.__itemIdx | 0;
     try {
@@ -15537,6 +15629,7 @@ function openCellBook() {
           targetId: tid,
           targetName: target.name,
           itemId: itemId,
+          stealItemId: stealItemId,
           itemName: (it.icon || '') + ' ' + it.name,
           angelIds: angels.map(function (a) { return a.id; }),
           votes: {},
@@ -15567,7 +15660,7 @@ function openCellBook() {
           }
         }
       });
-      var msg = applyItemEffect(room, myPlayerId, tid, itemId);
+      var msg = applyItemEffect(room, myPlayerId, tid, itemId, stealItemId);
       msg += consumeItemCellTriggers(room, myPlayerId);
       // 사다리 → 요새 발리스타
       if (room._ladderFortressShot === myPlayerId) {
@@ -15670,7 +15763,7 @@ function openCellBook() {
         } else {
           // 거부 실패: 아이템 효과가 그대로 적용됨 (아이템은 이미 소모된 상태)
           var itFail = getItemById(pend.itemId);
-          var msgFail = applyItemEffect(room, pend.userId, pend.targetId, pend.itemId);
+          var msgFail = applyItemEffect(room, pend.userId, pend.targetId, pend.itemId, pend.stealItemId);
           msgFail += consumeItemCellTriggers(room, pend.userId);
           var userFail = room.players.find(function (p) { return p.id === pend.userId; });
           room.announce = {
@@ -15709,7 +15802,7 @@ function openCellBook() {
       }
 
       var it = getItemById(pend.itemId);
-      var msg = applyItemEffect(room, pend.userId, pend.targetId, pend.itemId);
+      var msg = applyItemEffect(room, pend.userId, pend.targetId, pend.itemId, pend.stealItemId);
       msg += consumeItemCellTriggers(room, pend.userId);
       var user2 = room.players.find(function (p) { return p.id === pend.userId; });
       room.announce = {
