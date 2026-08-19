@@ -2673,7 +2673,7 @@
     { icon: '🏯', label: '요새', desc: '도착·앞뒤 1칸 이내 시 발리스타로 상대 -1~-3칸 선택 · 1개만' },
     { icon: '🌉', label: '다리', desc: '중앙에서 출발칸→목적칸 이동 · 1개만(교체)' },
     { icon: '💀', label: '해골', desc: '밟으면 다음 이동이 뒤로 · 보드에 1개만' },
-    { icon: '📍', label: '표식', desc: '2턴 함정 · 밟으면 휴식 1턴' },
+    { icon: '📍', label: '표식', desc: '3턴 함정 · 밟으면 휴식 1턴' },
     { icon: '🚀', label: '임시 부스트', desc: '벽돌공 설치 · 보드에 1개 · 도착 시 부스트 효과 · 다음 설치 전까지 유지' },
     { icon: '🪦', label: '묘비', desc: '플레이어 사망 시 그 자리에 생성 · 본인이 밟으면 부활(부활 버프 1턴) · 사망자는 1번 칸으로 이동' },
     { icon: '💜', label: '무덤지대', desc: '묘지기 보유자가 처형 시 묘비 앞·뒤 1칸에 생성 · 보드에 1곳만 · 묘지기가 밟으면 묘비·무덤지대 제거 후 해당 플레이어 이동 칸 선택' }
@@ -2729,8 +2729,8 @@
     { id: 'relic_compass', icon: '🗺️', name: '유물 지도', desc: '가장 가까운 유물 또는 강탈 칸으로 이동', target: 'self' },
     { id: 'item_box', icon: '📦', name: '상자', desc: '랜덤 아이템 2개 중 1개 선택 (특수 주사위 제외)', target: 'self' },
     { id: 'reroll_chip', icon: '🔁', name: '리롤 칩', desc: '다음 이동 주사위 1회 재굴림 제안', target: 'self' },
-    { id: 'mark_trap', icon: '📍', name: '표식', desc: '원하는 칸에 함정 2턴 설치 (밟으면 휴식 1턴)', target: 'cell' },
-    { id: 'magnet', icon: '🧲', name: '자석', desc: '가장 가까운 상대를 내 칸으로 끌어옴 (대결 유도)', target: 'self' },
+    { id: 'mark_trap', icon: '📍', name: '표식', desc: '원하는 칸에 함정 3턴 설치 (밟으면 휴식 1턴)', target: 'cell' },
+    { id: 'magnet', icon: '🧲', name: '자석', desc: '앞뒤 5칸 이내 모든 상대를 내 칸으로 끌어옴 (대결 유도)', target: 'self' },
     { id: 'ladder', icon: '🪜', name: '사다리', desc: '가장 가까운 요새로 이동 후 발리스타 발동 (-1~-3 선택) · 요새 없으면 아이템만 소멸', target: 'self' },
     { id: 'cursed_soul', icon: '💀', name: '저주받은 영혼', desc: '유물 보유 대상에게 사용 · 원하는 유물 종류를 게임에서 파괴 · 아이템 칸·선물 칸에서 등장하지 않음', target: 'enemy', specialOnly: true, maxOne: true },
     { id: 'medkit', icon: '🩹', name: '응급키트', desc: '아군 1명 휴식/스킵 1회 해제', target: 'ally', teamOnly: true },
@@ -8459,8 +8459,8 @@ refreshRoomList();
     if ((player.napTurns || 0) > 0) list.push({ icon: '😴', name: '낮잠(구)', desc: '남은 ' + player.napTurns + '턴' });
     if ((player.lightSleepTurns || 0) > 0) list.push({ icon: '😑', name: '얕은 잠', desc: '수면 상태 · 남은 ' + player.lightSleepTurns + '턴 · 종료 시 개운함' });
     if ((player.deepSleepTurns || 0) > 0) list.push({ icon: '💤', name: '깊은 잠', desc: '수면 상태 · 남은 ' + player.deepSleepTurns + '턴 · 종료 시 상쾌함' });
-    if ((player.refreshedTurns || 0) > 0) list.push({ icon: '🌤️', name: '개운함', desc: '이동 1.4배 · 남은 ' + player.refreshedTurns + '턴' });
-    if ((player.freshTurns || 0) > 0) list.push({ icon: '✨', name: '상쾌함', desc: '이동 1.7배 · 남은 ' + player.freshTurns + '턴' });
+    if ((player.refreshedTurns || 0) > 0) list.push({ icon: '🌤️', name: '개운함', desc: '이동 1.4배 · 25% 한 번 더 · 남은 ' + player.refreshedTurns + '턴' });
+    if ((player.freshTurns || 0) > 0) list.push({ icon: '✨', name: '상쾌함', desc: '이동 1.7배 · 25% 한 번 더 · 남은 ' + player.freshTurns + '턴' });
     if ((player.overheatStacks || 0) > 0) list.push({ icon: '🔥', name: '과열', desc: player.overheatStacks + '/6' });
     if ((player.overclockBuffTurns || 0) > 0) list.push({ icon: '⚡', name: '오버클럭', desc: '다음 이동 12~18' });
     if ((player.underclockBuffTurns || 0) > 0) list.push({ icon: '🧊', name: '언더클럭', desc: '다음 이동 1~2만' });
@@ -8770,6 +8770,11 @@ refreshRoomList();
     }
 
     var extraTurn = false;
+    // 개운함·상쾌함: 25% 확률로 주사위 한 번 더
+    if (((player.refreshedTurns || 0) > 0 || (player.freshTurns || 0) > 0) && Math.random() < restfulPct(player, 0.25)) {
+      extraTurn = true;
+      notes.push((((player.freshTurns || 0) > 0) ? '✨ 상쾌함' : '🌤️ 개운함') + ': 한 번 더!');
+    }
     if (hasAug(player, 'jackpot') && face === 6 && Math.random() < luckPct(player, 0.20)) {
       extraTurn = true;
       notes.push('잭팟: 추가 턴');
@@ -9143,6 +9148,7 @@ refreshRoomList();
     // 성벽 차단은 이동 단계에서 처리
 
     // 해골 칸: 다음 이동 저주 주사위 — 다리 위에서는 본트랙 좌표 우연 일치를 무시
+    var skeletonTriggered = false;
     if (!onBridgeNow && room.skeletonCell != null && (room.skeletonCell | 0) === (landPos | 0)) {
       player.curseDiceNext = true;
       room.skeletonCell = null;
@@ -9150,6 +9156,7 @@ refreshRoomList();
       result.effectIcon = '💀';
       result.effectTitle = '해골';
       result.announce = true;
+      skeletonTriggered = true;
     }
     // 표식 함정 (임시)
     var marks = room.tempMarks || {};
@@ -9167,7 +9174,7 @@ refreshRoomList();
     // 가짜 유물 칸
     var fakeCells = room.fakeRelicCells || [];
     if (!Array.isArray(fakeCells)) fakeCells = Object.keys(fakeCells).map(function (k) { return fakeCells[k]; });
-    if (!onBridgeNow && type === 'relic' && fakeCells.indexOf(landPos) !== -1) {
+    if (!onBridgeNow && !skeletonTriggered && type === 'relic' && fakeCells.indexOf(landPos) !== -1) {
       result.startRelic = true;
       result._fakeRelic = true;
       result.effectText = '🎭 가짜 유물 칸! (획득해도 승리·효과 미포함)';
@@ -9405,8 +9412,10 @@ refreshRoomList();
 
     var shield = (player.shieldCharges || 0) > 0;
     var ct = CELL_TYPES[type];
-    result.effectIcon = ct.icon;
-    result.effectTitle = ct.label;
+    if (!skeletonTriggered) {
+      result.effectIcon = ct.icon;
+      result.effectTitle = ct.label;
+    }
     result.announce = true;
 
     if (hasAug(player, 'anchor') && type === 'swap') {
@@ -9578,6 +9587,8 @@ refreshRoomList();
       var synRest = synergyBonus(player);
       if (hasRelic(player, 'herb')) {
         result.effectText = '🌿 허브: 휴식 무시';
+      } else if ((player.refreshedTurns || 0) > 0 || (player.freshTurns || 0) > 0) {
+        result.effectText = ((player.freshTurns || 0) > 0 ? '✨ 상쾌함' : '🌤️ 개운함') + ': 휴식 무시';
       } else if (synRest.defendImmune && Math.random() < synRest.defendImmune) {
         result.effectText = '🛡️시너지: 휴식 무시';
       } else {
@@ -9751,6 +9762,9 @@ refreshRoomList();
           result.announce = false;
         }
       }
+    } else if (type === 'relic' && skeletonTriggered) {
+      // 유물 칸에 해골이 설치되어 있었을 경우: 유물 칸 효과(유물 도전)는 발동하지 않고
+      // 위에서 적용된 해골 효과만 유지한다.
     } else if (type === 'relic') {
       result.startRelic = true;
       result.effectText = '💎 유물 도전!';
@@ -12604,8 +12618,8 @@ refreshRoomList();
     { id: 'nap', icon: '😴', name: '낮잠 버프 +1', desc: '5스택 시 잠 버프' },
     { id: 'lightsleep', icon: '😑', name: '얕은 잠', desc: '1턴 수면 상태' },
     { id: 'deepsleep', icon: '💤', name: '깊은 잠', desc: '2턴 수면 상태' },
-    { id: 'refreshed', icon: '🌤️', name: '개운함', desc: '2턴 · 이동 1.4배' },
-    { id: 'fresh', icon: '✨', name: '상쾌함', desc: '3턴 · 이동 1.5배' },
+    { id: 'refreshed', icon: '🌤️', name: '개운함', desc: '2턴 · 이동 1.4배 · 25% 한 번 더' },
+    { id: 'fresh', icon: '✨', name: '상쾌함', desc: '3턴 · 이동 1.7배 · 25% 한 번 더' },
     { id: 'fog', icon: '📵', name: '교란', desc: '1턴 · 칸 숨김' },
     { id: 'itemseal', icon: '🔒', name: '아이템 봉인', desc: '다음 아이템 1회 소멸' },
     { id: 'overclock_stack', icon: '⚡', name: '오버클럭 스택 +1', desc: '6스택 시 오버클럭 상태' },
@@ -12811,8 +12825,8 @@ refreshRoomList();
     { icon: '🌙', name: '잠', desc: '낮잠 5스택마다 발동 · 얕은·깊은 잠 확률 영구 +1%(중첩) · 낮잠 스택은 계속 쌓임' },
     { icon: '😑', name: '얕은 잠', desc: '1턴 수면(행동 불가) → 종료 시 개운함 2회(이동 1.4배)' },
     { icon: '💤', name: '깊은 잠', desc: '2턴 수면(행동 불가) → 종료 시 상쾌함 3회(이동 1.7배)' },
-    { icon: '🌤️', name: '개운함', desc: '주사위 2회 · 이동 1.4배 · 개운함/상쾌함 중 수면 면역' },
-    { icon: '✨', name: '상쾌함', desc: '주사위 3회 · 이동 1.7배 · 개운함/상쾌함 중 수면 면역' },
+    { icon: '🌤️', name: '개운함', desc: '주사위 2회 · 이동 1.4배 · 굴릴 때마다 25% 확률로 한 번 더 굴리기 · 개운함/상쾌함 중 수면 면역' },
+    { icon: '✨', name: '상쾌함', desc: '주사위 3회 · 이동 1.7배 · 굴릴 때마다 25% 확률로 한 번 더 굴리기 · 개운함/상쾌함 중 수면 면역' },
     { icon: '📵', name: '교란', desc: '주사위 1회 · 모든 칸 안 보임 · 특수 칸 효과 유지' },
     { icon: '🔒', name: '아이템 봉인', desc: '다음 아이템 1회 사용 시 소멸' },
     { icon: '🔥', name: '과열', desc: '오버클럭 증강 · 20%로 누적 · 6스택 시 오버클럭 · 오버클럭/언더클럭 종료 후 재누적' },
@@ -14984,6 +14998,10 @@ function openCellBook() {
 
   function showSkeletonCellPick(room) {
     if (!room || !room.pendingSkeleton || room.pendingSkeleton.playerId !== myPlayerId) return;
+    var pendingTs = room.pendingSkeleton.ts;
+    // 이미 처리(선택 완료)한 동일 요청이면 서버 반영이 늦어 room이 아직 pendingSkeleton을
+    // 들고 있더라도 모달을 다시 띄우지 않음 (중복 팝업 버그 방지)
+    if (window.__skelHandledTs === pendingTs) return;
     if (window.__skelPicking) return;
     window.__skelPicking = true;
     openCellPickModal({
@@ -14992,8 +15010,7 @@ function openCellBook() {
       allowSkip: false,
       room: room
     }).then(async function (cell) {
-      window.__skelPicking = false;
-      if (cell == null) return;
+      if (cell == null) { window.__skelPicking = false; return; }
       try {
         var fresh = await getRoom(myRoomCode);
         if (!fresh || !fresh.pendingSkeleton || fresh.pendingSkeleton.playerId !== myPlayerId) return;
@@ -15010,7 +15027,13 @@ function openCellBook() {
         lastRoomSnapshot = fresh;
         renderGame(fresh);
         maybeShowAnnounce(fresh);
-      } catch (e) {}
+      } catch (e) {
+      } finally {
+        // 서버 저장이 끝난 뒤에야 잠금을 풀어, 저장 완료 전 도착하는 stale room
+        // 스냅샷(리렌더/폴링)이 모달을 다시 띄우는 것을 막는다
+        window.__skelHandledTs = pendingTs;
+        window.__skelPicking = false;
+      }
     });
   }
 
@@ -15387,22 +15410,27 @@ function openCellBook() {
       }
       if (!(cellN >= 1 && cellN < BOARD_SIZE)) return '칸 번호 오류';
       room.tempMarks = room.tempMarks || {};
-      room.tempMarks[cellN] = { turns: 2, kind: 'rest' };
+      room.tempMarks[cellN] = { turns: 3, kind: 'rest' };
       room.tempMarks[String(cellN)] = room.tempMarks[cellN];
-      msg = me.name + ' 표식 → 칸 ' + cellN + ' (2턴, 밟으면 휴식)';
+      msg = me.name + ' 표식 → 칸 ' + cellN + ' (3턴, 밟으면 휴식)';
     } else if (itemId === 'magnet') {
-      var nearest = null, bestD = 999;
+      var pulled = [], nearest = null, bestD = 999;
       (room.players || []).forEach(function (p) {
         if (p.id === me.id) return;
         if (room.gameMode === 'team' && sameTeam(me, p)) return;
         if (isInSanctuary(room, p)) return;
         var d = Math.min((p.position - me.position + BOARD_SIZE) % BOARD_SIZE, (me.position - p.position + BOARD_SIZE) % BOARD_SIZE);
-        if (d > 0 && d < bestD) { bestD = d; nearest = p; }
+        if (d > 0 && d <= 5) {
+          pulled.push(p);
+          if (d < bestD) { bestD = d; nearest = p; }
+        }
       });
-      if (!nearest) return '끌어올 상대 없음';
-      nearest.position = me.position;
-      msg = '🧲 ' + nearest.name + '을(를) 칸 ' + me.position + '으로 끌어옴';
-      tryHeresyInquisition(room, nearest, me);
+      if (!pulled.length) return '끌어올 상대 없음';
+      pulled.forEach(function (p) {
+        p.position = me.position;
+        tryHeresyInquisition(room, p, me);
+      });
+      msg = '🧲 ' + pulled.map(function (p) { return p.name; }).join(', ') + '을(를) 칸 ' + me.position + '으로 끌어옴';
       if (me.position !== 0) {
         room.duel = {
           attackerId: me.id,
