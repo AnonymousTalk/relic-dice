@@ -901,15 +901,14 @@
     letter-spacing: 0.5px;
   }
   .ld-version span { color: var(--cyan); font-weight: 700; }
-  .ld-version span.ld-version-edit {
-    outline: 1px dashed rgba(251,191,36,0.65);
-    border-radius: 6px; padding: 2px 8px; cursor: text;
-    background: rgba(251,191,36,0.08);
+  .ld-version-edit-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: 6px; width: 20px; height: 20px; padding: 0;
+    border-radius: 6px; border: 1px solid rgba(251,191,36,0.5);
+    background: rgba(251,191,36,0.1); color: var(--gold);
+    font-size: 11px; line-height: 1; cursor: pointer; vertical-align: middle;
   }
-  .ld-version span.ld-version-edit:focus {
-    outline: 1px solid rgba(251,191,36,0.9);
-    background: rgba(251,191,36,0.14);
-  }
+  .ld-version-edit-btn:hover { background: rgba(251,191,36,0.2); }
   .ld-sound-row {
     display: flex; align-items: center; gap: 8px; margin: 8px 0 0;
     padding: 8px 10px; border-radius: 10px;
@@ -1712,23 +1711,61 @@
   <div class="ld-modal" id="infoBookModal" aria-hidden="true">
     <div class="ld-modal-card">
       <div class="ld-modal-head">
-        <h3>📜 게임 설명 &amp; 전적</h3>
+        <h3>📜 패치 노트 &amp; 전적</h3>
         <button type="button" class="ld-btn ld-btn-ghost" id="infoBookClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
       </div>
       <div class="ld-modal-body">
         <div class="ld-tabs" id="infoBookTabs">
-          <button type="button" class="ld-tab active" data-tab="desc">📖 게임 설명</button>
+          <button type="button" class="ld-tab active" data-tab="patch">📋 패치 노트</button>
           <button type="button" class="ld-tab" data-tab="history">🏆 전적</button>
         </div>
-        <div id="infoBookDescPane">
-          <textarea id="infoBookDescText" rows="6" placeholder="게임 설명을 입력하세요" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(165,160,201,0.3);background:rgba(0,0,0,0.25);color:var(--text-main);font-size:13px;line-height:1.5;resize:vertical;font-family:inherit;"></textarea>
-          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-            <button type="button" class="ld-btn ld-btn-primary" id="infoBookDescSave" style="width:auto;padding:8px 14px;">저장</button>
-            <span id="infoBookDescMsg" style="font-size:12px;color:var(--text-dim);"></span>
+        <div id="infoBookPatchPane">
+          <div id="infoBookPatchAdmin" style="display:none;margin-bottom:12px;padding:10px;border:1px solid rgba(165,160,201,0.3);border-radius:10px;background:rgba(0,0,0,0.2);">
+            <div style="font-size:12px;color:#e9d5ff;margin-bottom:6px;">➕ 새 패치 노트 작성 (관리자)</div>
+            <input type="text" id="infoBookPatchVersionInput" placeholder="버전 (예: 1.0.9.23)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(165,160,201,0.3);background:rgba(0,0,0,0.25);color:var(--text-main);font-size:13px;margin-bottom:6px;" />
+            <textarea id="infoBookPatchContentInput" rows="5" placeholder="패치 내용을 입력하세요" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(165,160,201,0.3);background:rgba(0,0,0,0.25);color:var(--text-main);font-size:13px;line-height:1.5;resize:vertical;font-family:inherit;"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+              <button type="button" class="ld-btn ld-btn-primary" id="infoBookPatchAdd" style="width:auto;padding:8px 14px;">패치 노트 추가</button>
+              <span id="infoBookPatchMsg" style="font-size:12px;color:var(--text-dim);"></span>
+            </div>
           </div>
+          <div id="infoBookPatchList"><div class="ld-log-empty">불러오는 중...</div></div>
         </div>
         <div id="infoBookHistoryPane" style="display:none;">
           <div id="infoBookHistoryList"><div class="ld-log-empty">불러오는 중...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ld-modal" id="patchVersionModal" aria-hidden="true">
+    <div class="ld-modal-card" style="max-width:360px;">
+      <div class="ld-modal-head">
+        <h3>🏷 패치 버전 수정</h3>
+        <button type="button" class="ld-btn ld-btn-ghost" id="patchVersionModalClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
+      </div>
+      <div class="ld-modal-body">
+        <input type="text" id="patchVersionModalInput" placeholder="예: 1.0.9.24" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid rgba(165,160,201,0.3);background:rgba(0,0,0,0.25);color:var(--text-main);font-size:14px;" />
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+          <button type="button" class="ld-btn ld-btn-primary" id="patchVersionModalSave" style="width:auto;padding:8px 14px;">저장</button>
+          <span id="patchVersionModalMsg" style="font-size:12px;color:var(--text-dim);"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ld-modal" id="patchNoteEditModal" aria-hidden="true">
+    <div class="ld-modal-card" style="max-width:420px;">
+      <div class="ld-modal-head">
+        <h3>✏️ 패치 노트 수정</h3>
+        <button type="button" class="ld-btn ld-btn-ghost" id="patchNoteEditModalClose" style="width:auto;padding:6px 12px;font-size:12px;">닫기</button>
+      </div>
+      <div class="ld-modal-body">
+        <input type="text" id="patchNoteEditVersionInput" placeholder="버전 (예: 1.0.9.24)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(165,160,201,0.3);background:rgba(0,0,0,0.25);color:var(--text-main);font-size:13px;margin-bottom:8px;" />
+        <textarea id="patchNoteEditContentInput" rows="6" placeholder="패치 내용을 입력하세요" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(165,160,201,0.3);background:rgba(0,0,0,0.25);color:var(--text-main);font-size:13px;line-height:1.5;resize:vertical;font-family:inherit;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+          <button type="button" class="ld-btn ld-btn-primary" id="patchNoteEditSave" style="width:auto;padding:8px 14px;">저장</button>
+          <span id="patchNoteEditMsg" style="font-size:12px;color:var(--text-dim);"></span>
         </div>
       </div>
     </div>
@@ -1882,7 +1919,7 @@
         <span class="ld-title-icon right">🎲</span>
       </div>
       <p class="ld-subtitle">증강·대결·유물 수집 — 최대 8인 · 개인전/팀전</p>
-      <div class="ld-version">패치 <span id="patchVersionLabel">v1.0.9.22</span></div>
+      <div class="ld-version">패치 <span id="patchVersionLabel">v1.0.9.23</span><button type="button" id="patchVersionEditBtn" class="ld-version-edit-btn" style="display:none;" title="패치 버전 수정">✏️</button></div>
       <div class="ld-theme-wrap">
         <button type="button" class="ld-btn ld-btn-ghost ld-theme-btn" id="btnThemeHome">테마</button>
         <div class="ld-theme-panel" id="themePanelHome">
@@ -1903,7 +1940,7 @@
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeItem">🎒 아이템</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeCell">🗺️ 특수 칸</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeBuff">✨ 버프&상태</button>
-          <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeInfo">📜 게임 설명&전적</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookHomeInfo">📜 패치노트&전적</button>
         </div>
         <div class="ld-field-label" style="margin-top:0;">닉네임</div>
         <input class="ld-input" id="homeNickname" placeholder="예: 행운의주사위" maxlength="10" />
@@ -1952,7 +1989,7 @@
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyItem">🎒 아이템</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyCell">🗺️ 특수 칸</button>
           <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyBuff">✨ 버프&상태</button>
-          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyInfo">📜 게임 설명&전적</button>
+          <button type="button" class="ld-aug-book-btn" id="btnAugBookLobbyInfo">📜 패치노트&전적</button>
         </div>
         <div class="ld-panel">
           <div class="ld-field-label" style="margin-top:0;">참가자</div>
@@ -2152,7 +2189,7 @@
 <script>
 (function () {
   var MAX_PLAYERS = 8;
-  var GAME_VERSION = '1.0.9.22';
+  var GAME_VERSION = '1.0.9.23';
   var TURN_SECONDS_DEFAULT = 45;
   var COLORS = ['#8b5cf6', '#22d3ee', '#f87171', '#34d399', '#fb923c', '#f0abfc', '#60a5fa', '#a3e635'];
   var TEAM_COLORS = ['#3b82f6', '#ef4444'];
@@ -2825,20 +2862,20 @@
   var RELIC_TYPES = [
     { id: 'sun', icon: '☀️', name: '태양 유물', desc: '이동 +1칸 (항상)' },
     { id: 'moon', icon: '🌙', name: '달 유물', desc: '함정 피해 -2 · 대결·강탈 방어 주사위 +1 · 대결 패배 벌칙 -2' },
-    { id: 'star', icon: '⭐', name: '별 유물', desc: '1~3이 나오면 18% 확률로 재굴림 제안 (수락 시 다시 굴림)' },
-    { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 확률로 재굴림 제안 (수락 시 다시 굴림)' },
+    { id: 'star', icon: '⭐', name: '별 유물', desc: '1~3이 나오면 18% 확률로 재굴림 제안 (수락 시 다시 굴림) · 신화 등급 시 확률 2배' },
+    { id: 'tide', icon: '🌊', name: '파도 유물', desc: '3~6이 나오면 18% 확률로 재굴림 제안 (수락 시 다시 굴림) · 신화 등급 시 확률 2배' },
     { id: 'herb', icon: '🌿', name: '허브 유물', desc: '휴식 칸 무시 · 스킵 턴 1회 자동 회복' },
     { id: 'flame', icon: '🔥', name: '불꽃 유물', desc: '대결·강탈에서 내가 굴리는 주사위 +1' },
-    { id: 'wind', icon: '💨', name: '바람 유물', desc: '내 턴 시작 시 22% 확률로 모든 플레이어 현재 위치에서 +3칸 이동 · 한 바퀴 시 전체 바퀴 카운트 +2 (전체 플레이어 적용, 증강 선택은 1회)' },
+    { id: 'wind', icon: '💨', name: '바람 유물', desc: '내 턴 시작 시 22% 확률로 모든 플레이어 현재 위치에서 +3칸 이동 · 한 바퀴 시 전체 바퀴 카운트 +2 (전체 플레이어 적용, 증강 선택은 1회) · 신화 등급 시 확률 2배' },
     { id: 'crystal', icon: '💠', name: '수정 유물', desc: '일반 칸 착지 시 45% 확률로 근처 특수 칸으로 이동' },
     { id: 'thunder', icon: '⚡', name: '번개 유물', desc: '짝수 눈이면 이동 +2' },
     { id: 'bloom', icon: '🌸', name: '꽃 유물', desc: '홀수 눈이면 이동 +2' },
-    { id: 'compass', icon: '🧭', name: '나침반 유물', desc: '이동 시 8% 확률로 1~굴린칸 중 도착 칸 선택' },
+    { id: 'compass', icon: '🧭', name: '나침반 유물', desc: '이동 시 8% 확률로 1~굴린칸 중 도착 칸 선택 · 신화 등급 시 확률 2배' },
     { id: 'shadow', icon: '🌑', name: '그림자 유물', desc: '앞·뒤 3칸 이내 상대가 있으면 그 위치로 이동 (해당 칸 효과 발동)' },
     { id: 'ore', icon: '⛏️', name: '광석 유물', desc: '유물 칸 착지 시 15% 확률로 바로 앞 유물 칸으로 한 번 더 이동 (그 칸 효과 재발동)' },
-    { id: 'demon', icon: '😈', name: '악마 유물', desc: '방 안에 보유자가 있으면 누구든 주사위를 굴릴 때마다 20% 확률로 모든 이동·특수 이동이 반대로 발동 (앞↔뒤) · 저주 시너지 4 이상 시 악마 유물의 능력으로 뒤로 이동하지 않음' },
-    { id: 'angel', icon: '😇', name: '천사 유물', desc: '다른 플레이어의 아이템 사용을 거부 시도 가능 (타인 대상 포함) · 허용은 100%, 거부는 20% 확률로 성공 · 거부 성공 시 아이템 소멸' },
-    { id: 'rock', icon: '🪨', name: '암석 유물', desc: '보유 중 모든 증강 및 유물 확률 +3%' }
+    { id: 'demon', icon: '😈', name: '악마 유물', desc: '방 안에 보유자가 있으면 누구든 주사위를 굴릴 때마다 20% 확률로 모든 이동·특수 이동이 반대로 발동 (앞↔뒤) · 저주 시너지 4 이상 시 악마 유물의 능력으로 뒤로 이동하지 않음 · 신화 등급 보유자가 있으면 확률 2배' },
+    { id: 'angel', icon: '😇', name: '천사 유물', desc: '다른 플레이어의 아이템 사용을 거부 시도 가능 (타인 대상 포함) · 허용은 100%, 거부는 기본 20% 확률로 성공(유물 확률 증가 적용 · 신화 등급 시 확률 2배) · 거부 성공 시 아이템 소멸' },
+    { id: 'rock', icon: '🪨', name: '암석 유물', desc: '보유 중 모든 증강 및 유물 확률 +3% · 신화 등급 시 +6%' }
   ];
 
   // 유물 칸 이벤트 3종 (랜덤 1개)
@@ -2905,13 +2942,14 @@
     return playerMythicRelics(player).indexOf(id) !== -1 ? 2 : 1;
   }
   // 유물 발동 확률 (+ 유틸 시너지 allAugBonus)
+  // 암석 유물 보너스도 신화 등급이면 2배(+3%→+6%) 적용 (2026-08 수정)
   function relicPct(player, base) {
     var syn = synergyBonus(player);
-    var rock = (player && hasRelic(player, 'rock')) ? 0.03 : 0;
+    var rock = 0.03 * relicMult(player, 'rock');
     return Math.min(0.95, (base || 0) + (syn.allAugBonus || 0) + rock);
   }
   function rockBonus(player) {
-    return (player && hasRelic(player, 'rock')) ? 0.03 : 0;
+    return 0.03 * relicMult(player, 'rock');
   }
   function playerRelicsForWin(p) {
     var r = playerRelics(p);
@@ -3475,21 +3513,36 @@
     }, 1000);
   }
 
-  // ---- 게임 설명 & 전적 기록 ----
+  // ---- 패치 노트 & 전적 기록 ----
   function notesPath() { return 'luckydice/notes'; }
   function historyPath() { return 'luckydice/history'; }
-  var DEFAULT_GAME_DESC = '방에 설정된 유물 개수를 모두 모으면 승리! 보드를 한 바퀴 돌 때마다 증강을 하나 선택할 수 있어요.';
-  async function getGameDesc() {
-    if (!fbDb) return DEFAULT_GAME_DESC;
-    try {
-      var snap = await fbDb.ref(notesPath() + '/desc').once('value');
-      var v = snap.val();
-      return (v == null || v === '') ? DEFAULT_GAME_DESC : String(v);
-    } catch (e) { return DEFAULT_GAME_DESC; }
-  }
-  async function setGameDesc(text) {
+  function patchNotesPath() { return 'luckydice/patchNotes'; }
+  async function pushPatchNote(entry) {
     if (!fbDb) throw new Error('no db');
-    await fbDb.ref(notesPath() + '/desc').set(String(text || ''));
+    if (!entry) return null;
+    var ref = fbDb.ref(patchNotesPath()).push();
+    entry.id = ref.key;
+    await ref.set(entry);
+    return entry;
+  }
+  async function getPatchNotes() {
+    if (!fbDb) return [];
+    try {
+      var snap = await fbDb.ref(patchNotesPath()).once('value');
+      var val = snap.val();
+      if (!val) return [];
+      var list = Object.keys(val).map(function (k) { var v = val[k] || {}; v.id = v.id || k; return v; });
+      list.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+      return list;
+    } catch (e) { return []; }
+  }
+  async function deletePatchNote(id) {
+    if (!fbDb || !id) return;
+    try { await fbDb.ref(patchNotesPath() + '/' + id).remove(); } catch (e) { console.warn('patch note delete failed', e); }
+  }
+  async function updatePatchNote(id, version, content) {
+    if (!fbDb || !id) throw new Error('no db');
+    await fbDb.ref(patchNotesPath() + '/' + id).update({ version: String(version || ''), content: String(content || '') });
   }
   function defaultPatchLabel() {
     return 'v' + String(GAME_VERSION || '1.0.0');
@@ -3523,43 +3576,146 @@
     }
   }
   function setPatchVersionEditable(on) {
-    var el = document.getElementById('patchVersionLabel');
-    if (!el) return;
+    var btn = document.getElementById('patchVersionEditBtn');
+    if (!btn) return;
     if (on) {
-      el.contentEditable = 'true';
-      el.classList.add('ld-version-edit');
-      el.title = '관리자: 클릭하여 패치 버전 수정 · Enter 또는 포커스 아웃 시 저장';
-      el.setAttribute('spellcheck', 'false');
-      if (!el._patchBound) {
-        el._patchBound = true;
-        el.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            el.blur();
-          }
-        });
-        el.addEventListener('blur', async function () {
+      btn.style.display = 'inline-flex';
+      if (!btn._patchBound) {
+        btn._patchBound = true;
+        btn.addEventListener('click', function () {
           if (!isAdmin) return;
-          var next = (el.textContent || '').trim();
-          if (!next) next = defaultPatchLabel();
-          el.textContent = next;
-          try {
-            await setPatchVersion(next);
-            var msg = document.getElementById(myRoomCode ? 'adminMsg' : 'adminHomeMsg');
-            if (msg) msg.textContent = '패치 버전 저장: ' + next;
-          } catch (err) {
-            var msg2 = document.getElementById(myRoomCode ? 'adminMsg' : 'adminHomeMsg');
-            if (msg2) msg2.textContent = '패치 버전 저장 실패';
-            try { await loadPatchVersionLabel(); } catch (e2) {}
-          }
+          openPatchVersionModal();
         });
       }
     } else {
-      el.contentEditable = 'false';
-      el.classList.remove('ld-version-edit');
-      el.title = '';
+      btn.style.display = 'none';
     }
   }
+  function openPatchVersionModal() {
+    var modal = document.getElementById('patchVersionModal');
+    var input = document.getElementById('patchVersionModalInput');
+    var msg = document.getElementById('patchVersionModalMsg');
+    if (!modal || !input) return;
+    var el = document.getElementById('patchVersionLabel');
+    input.value = (el && el.textContent) ? el.textContent.trim() : defaultPatchLabel();
+    if (msg) msg.textContent = '';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(function () { input.focus(); input.select(); }, 30);
+  }
+  function closePatchVersionModal() {
+    var modal = document.getElementById('patchVersionModal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  async function savePatchVersionFromModal() {
+    if (!isAdmin) return;
+    var input = document.getElementById('patchVersionModalInput');
+    var msg = document.getElementById('patchVersionModalMsg');
+    var saveBtn = document.getElementById('patchVersionModalSave');
+    if (!input) return;
+    var next = (input.value || '').trim();
+    if (!next) next = defaultPatchLabel();
+    if (saveBtn) saveBtn.disabled = true;
+    if (msg) { msg.textContent = '저장 중...'; msg.style.color = 'var(--text-dim)'; }
+    try {
+      await setPatchVersion(next);
+      applyPatchVersionLabel(next);
+      var adminMsg = document.getElementById(myRoomCode ? 'adminMsg' : 'adminHomeMsg');
+      if (adminMsg) adminMsg.textContent = '패치 버전 저장: ' + next;
+      if (msg) { msg.textContent = '저장됨'; msg.style.color = 'var(--green)'; }
+      setTimeout(closePatchVersionModal, 400);
+    } catch (err) {
+      if (msg) { msg.textContent = '저장 실패'; msg.style.color = 'var(--red)'; }
+      var adminMsg2 = document.getElementById(myRoomCode ? 'adminMsg' : 'adminHomeMsg');
+      if (adminMsg2) adminMsg2.textContent = '패치 버전 저장 실패';
+    }
+    if (saveBtn) saveBtn.disabled = false;
+  }
+  (function initPatchVersionModal() {
+    var modal = document.getElementById('patchVersionModal');
+    var close = document.getElementById('patchVersionModalClose');
+    var saveBtn = document.getElementById('patchVersionModalSave');
+    var input = document.getElementById('patchVersionModalInput');
+    if (close) close.onclick = closePatchVersionModal;
+    if (modal) {
+      modal.addEventListener('click', function (e) { if (e.target === modal) closePatchVersionModal(); });
+    }
+    if (saveBtn) saveBtn.onclick = savePatchVersionFromModal;
+    if (input) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          savePatchVersionFromModal();
+        } else if (e.key === 'Escape') {
+          closePatchVersionModal();
+        }
+      });
+    }
+  })();
+  var patchNoteEditId = null;
+  function openPatchNoteEditModal(note) {
+    if (!note) return;
+    var modal = document.getElementById('patchNoteEditModal');
+    var verInput = document.getElementById('patchNoteEditVersionInput');
+    var contentInput = document.getElementById('patchNoteEditContentInput');
+    var msg = document.getElementById('patchNoteEditMsg');
+    if (!modal || !verInput || !contentInput) return;
+    patchNoteEditId = note.id;
+    verInput.value = note.version || '';
+    contentInput.value = note.content || '';
+    if (msg) msg.textContent = '';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(function () { verInput.focus(); }, 30);
+  }
+  function closePatchNoteEditModal() {
+    var modal = document.getElementById('patchNoteEditModal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    patchNoteEditId = null;
+  }
+  async function savePatchNoteEditFromModal() {
+    if (!isAdmin || !patchNoteEditId) return;
+    var verInput = document.getElementById('patchNoteEditVersionInput');
+    var contentInput = document.getElementById('patchNoteEditContentInput');
+    var msg = document.getElementById('patchNoteEditMsg');
+    var saveBtn = document.getElementById('patchNoteEditSave');
+    if (!verInput || !contentInput) return;
+    var version = (verInput.value || '').trim();
+    var content = (contentInput.value || '').trim();
+    if (!version) {
+      if (msg) { msg.textContent = '버전을 입력하세요'; msg.style.color = 'var(--red)'; }
+      return;
+    }
+    if (!content) {
+      if (msg) { msg.textContent = '패치 내용을 입력하세요'; msg.style.color = 'var(--red)'; }
+      return;
+    }
+    if (saveBtn) saveBtn.disabled = true;
+    if (msg) { msg.textContent = '저장 중...'; msg.style.color = 'var(--text-dim)'; }
+    try {
+      await updatePatchNote(patchNoteEditId, version, content);
+      if (msg) { msg.textContent = '저장됨'; msg.style.color = 'var(--green)'; }
+      loadInfoBookPatch();
+      setTimeout(closePatchNoteEditModal, 400);
+    } catch (e) {
+      if (msg) { msg.textContent = '저장 실패'; msg.style.color = 'var(--red)'; }
+    }
+    if (saveBtn) saveBtn.disabled = false;
+  }
+  (function initPatchNoteEditModal() {
+    var modal = document.getElementById('patchNoteEditModal');
+    var close = document.getElementById('patchNoteEditModalClose');
+    var saveBtn = document.getElementById('patchNoteEditSave');
+    if (close) close.onclick = closePatchNoteEditModal;
+    if (modal) {
+      modal.addEventListener('click', function (e) { if (e.target === modal) closePatchNoteEditModal(); });
+    }
+    if (saveBtn) saveBtn.onclick = savePatchNoteEditFromModal;
+  })();
   async function pushMatchHistory(entry) {
     if (!fbDb || !entry) return;
     try {
@@ -9882,7 +10038,8 @@ refreshRoomList();
       }
 
       // 바람 유물: 내 턴 시작 시 22% 확률로 모든 플레이어를 현재 위치에서 +3칸 이동
-      if (hasRelic(turnP, 'wind') && Math.random() < relicPct(turnP, 0.22)) {
+      // (신화 등급이면 확률 2배, 2026-08 수정)
+      if (hasRelic(turnP, 'wind') && Math.random() < relicPct(turnP, 0.22) * (relicMult(turnP, 'wind') || 1)) {
         (room.players || []).forEach(function (wp) {
           if (!wp) return;
           var oldWPos = wp.position | 0;
@@ -10654,9 +10811,9 @@ refreshRoomList();
           rawFace = 1 + Math.floor(Math.random() * 6);
         }
       }
-      if (hasRelic(me, 'star') && rawFace >= 1 && rawFace <= 3 && Math.random() < relicPct(me, 0.18)) {
+      if (hasRelic(me, 'star') && rawFace >= 1 && rawFace <= 3 && Math.random() < relicPct(me, 0.18) * (relicMult(me, 'star') || 1)) {
         rerollKind = 'star';
-      } else if (hasRelic(me, 'tide') && rawFace >= 3 && rawFace <= 6 && Math.random() < relicPct(me, 0.18)) {
+      } else if (hasRelic(me, 'tide') && rawFace >= 3 && rawFace <= 6 && Math.random() < relicPct(me, 0.18) * (relicMult(me, 'tide') || 1)) {
         rerollKind = 'tide';
       }
       if (rerollKind) {
@@ -10794,8 +10951,8 @@ refreshRoomList();
       }
       if (rerollNotes.length) mod.notes = rerollNotes.concat(mod.notes || []);
 
-      // 나침반 유물: 8% 확률로 1~moveSteps 중 선택
-      if (hasRelic(me, 'compass') && moveSteps >= 2 && Math.random() < relicPct(me, 0.08)) {
+      // 나침반 유물: 8% 확률로 1~moveSteps 중 선택 (신화 등급이면 확률 2배, 2026-08 수정)
+      if (hasRelic(me, 'compass') && moveSteps >= 2 && Math.random() < relicPct(me, 0.08) * (relicMult(me, 'compass') || 1)) {
         try { SFX.special(); } catch (e) {}
         if (finalFace !== lastAnimatedFace) {
           spinCube(finalFace);
@@ -12869,14 +13026,14 @@ function openCellBook() {
     gameEndHandled = true;
   }
 
-  // ---- 게임 설명 & 전적 모달 ----
-  var infoBookTab = 'desc';
+  // ---- 패치 노트 & 전적 모달 ----
+  var infoBookTab = 'patch';
   function openInfoBook() {
     var modal = document.getElementById('infoBookModal');
     if (!modal) return;
-    infoBookTab = 'desc';
+    infoBookTab = 'patch';
     renderInfoBookTabs();
-    loadInfoBookDesc();
+    loadInfoBookPatch();
     loadInfoBookHistory();
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
@@ -12889,31 +13046,78 @@ function openCellBook() {
     modal.setAttribute('aria-hidden', 'true');
   }
   function renderInfoBookTabs() {
-    var descPane = document.getElementById('infoBookDescPane');
+    var patchPane = document.getElementById('infoBookPatchPane');
     var histPane = document.getElementById('infoBookHistoryPane');
     var tabs = document.querySelectorAll('#infoBookTabs .ld-tab');
     tabs.forEach(function (t) {
       var on = t.getAttribute('data-tab') === infoBookTab;
       t.className = 'ld-tab' + (on ? ' active' : '');
     });
-    if (descPane) descPane.style.display = infoBookTab === 'desc' ? '' : 'none';
+    if (patchPane) patchPane.style.display = infoBookTab === 'patch' ? '' : 'none';
     if (histPane) histPane.style.display = infoBookTab === 'history' ? '' : 'none';
   }
-  async function loadInfoBookDesc() {
-    var ta = document.getElementById('infoBookDescText');
-    if (!ta) return;
-    var msg = document.getElementById('infoBookDescMsg');
-    var saveBtn = document.getElementById('infoBookDescSave');
+  async function loadInfoBookPatch() {
+    var adminBox = document.getElementById('infoBookPatchAdmin');
+    var list = document.getElementById('infoBookPatchList');
+    if (!list) return;
     var adminMode = (typeof isAdmin !== 'undefined' && isAdmin);
-    ta.readOnly = !adminMode;
-    ta.style.opacity = adminMode ? '1' : '0.75';
-    ta.style.cursor = adminMode ? 'text' : 'default';
-    if (saveBtn) saveBtn.style.display = adminMode ? '' : 'none';
-    if (msg) {
-      msg.textContent = adminMode ? '' : '🔒 게임 설명 수정은 관리자만 가능합니다';
-      msg.style.color = 'var(--text-dim)';
+    if (adminBox) adminBox.style.display = adminMode ? '' : 'none';
+    list.innerHTML = '<div class="ld-log-empty">불러오는 중...</div>';
+    var notes = await getPatchNotes();
+    if (!notes.length) {
+      list.innerHTML = '<div class="ld-log-empty">아직 작성된 패치 노트가 없습니다</div>';
+      return;
     }
-    ta.value = await getGameDesc();
+    list.innerHTML = '';
+    notes.forEach(function (n) {
+      var wrap = document.createElement('div');
+      wrap.className = 'ld-book-aug';
+      wrap.style.cssText = 'text-align:left;padding:0;overflow:hidden;';
+      var dt = n.ts ? new Date(n.ts) : null;
+      var pad2 = function (v) { return (v < 10 ? '0' : '') + v; };
+      var dateStr = dt ? (dt.getFullYear() + '.' + pad2(dt.getMonth() + 1) + '.' + pad2(dt.getDate())) : '';
+      var head = document.createElement('button');
+      head.type = 'button';
+      head.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;background:transparent;border:none;color:var(--text-main);font-size:13px;font-weight:800;cursor:pointer;text-align:left;';
+      head.innerHTML = '<span>🏷 ' + escapeHtml(n.version || '') + ' 패치 노트</span>' +
+        '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
+        '<span style="font-size:11px;color:var(--text-dim);font-weight:400;">' + dateStr + '</span>' +
+        '<span class="ld-patch-caret" style="font-size:10px;color:var(--text-dim);transition:transform .15s;">▶</span>' +
+        '</span>';
+      var body = document.createElement('div');
+      body.style.cssText = 'display:none;padding:0 14px 12px;font-size:12.5px;line-height:1.6;color:#cfc8ef;white-space:pre-wrap;border-top:1px dashed rgba(165,160,201,0.25);';
+      body.textContent = n.content || '';
+      var open = false;
+      head.onclick = function () {
+        open = !open;
+        body.style.display = open ? 'block' : 'none';
+        body.style.paddingTop = open ? '10px' : '0';
+        var caret = head.querySelector('.ld-patch-caret');
+        if (caret) caret.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+      };
+      wrap.appendChild(head);
+      wrap.appendChild(body);
+      if (adminMode) {
+        var delRow = document.createElement('div');
+        delRow.style.cssText = 'padding:0 14px 12px;text-align:right;display:flex;gap:6px;justify-content:flex-end;';
+        delRow.innerHTML = '<button type="button" class="ld-btn ld-btn-outline" style="width:auto;padding:5px 10px;font-size:11px;">✏️ 수정</button>' +
+          '<button type="button" class="ld-btn ld-btn-outline" style="width:auto;padding:5px 10px;font-size:11px;border-color:var(--red);color:var(--red);">🗑 삭제</button>';
+        var editBtn = delRow.querySelectorAll('button')[0];
+        var delBtn = delRow.querySelectorAll('button')[1];
+        editBtn.onclick = function (e) {
+          e.stopPropagation();
+          openPatchNoteEditModal(n);
+        };
+        delBtn.onclick = async function (e) {
+          e.stopPropagation();
+          if (!confirm('이 패치 노트를 삭제할까요?')) return;
+          await deletePatchNote(n.id);
+          loadInfoBookPatch();
+        };
+        wrap.appendChild(delRow);
+      }
+      list.appendChild(wrap);
+    });
   }
   async function loadInfoBookHistory() {
     var list = document.getElementById('infoBookHistoryList');
@@ -12967,11 +13171,26 @@ function openCellBook() {
         noteHtml = '';
       }
       div.innerHTML =
-        '<div class="nm"><span>' + winTitle + '</span></div>' +
-        '<div class="ds">' + dateStr + ' · 방 ' + escapeHtml(rec.roomCode || '-') + ' · 유물 목표 ' + (rec.relicsToWin || '') + '개 · 총 ' + (rec.totalLaps || 0) + '바퀴 · 참가자 ' + (rec.players || []).length + '명</div>' +
-        playersHtml +
-        noteHtml +
-        (adminModeH ? ('<div style="margin-top:8px;text-align:right;"><button type="button" class="ld-btn ld-btn-outline" style="width:auto;padding:6px 12px;font-size:11px;border-color:var(--red);color:var(--red);" data-del="' + escapeHtml(rec.id) + '">🗑 전적 삭제</button></div>') : '');
+        '<div class="ld-hist-summary" style="cursor:pointer;">' +
+          '<div class="nm" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>' + winTitle + '</span><span class="ld-hist-caret" style="font-size:10px;color:var(--text-dim);transition:transform .15s;flex-shrink:0;">▶</span></div>' +
+          '<div class="ds">' + dateStr + ' · 방 ' + escapeHtml(rec.roomCode || '-') + ' · 유물 목표 ' + (rec.relicsToWin || '') + '개 · 총 ' + (rec.totalLaps || 0) + '바퀴 · 참가자 ' + (rec.players || []).length + '명</div>' +
+        '</div>' +
+        '<div class="ld-hist-body" style="display:none;">' +
+          playersHtml +
+          noteHtml +
+          (adminModeH ? ('<div style="margin-top:8px;text-align:right;"><button type="button" class="ld-btn ld-btn-outline" style="width:auto;padding:6px 12px;font-size:11px;border-color:var(--red);color:var(--red);" data-del="' + escapeHtml(rec.id) + '">🗑 전적 삭제</button></div>') : '') +
+        '</div>';
+      var summaryEl = div.querySelector('.ld-hist-summary');
+      var bodyEl = div.querySelector('.ld-hist-body');
+      if (summaryEl && bodyEl) {
+        summaryEl.onclick = function () {
+          var isOpen = bodyEl.style.display !== 'none';
+          bodyEl.style.display = isOpen ? 'none' : 'block';
+          if (!isOpen) bodyEl.style.marginTop = '4px';
+          var caret = summaryEl.querySelector('.ld-hist-caret');
+          if (caret) caret.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+        };
+      }
       list.appendChild(div);
     });
     if (!adminModeH) {
@@ -13023,21 +13242,35 @@ function openCellBook() {
     Array.prototype.forEach.call(tabs, function (t) {
       t.onclick = function () { infoBookTab = t.getAttribute('data-tab'); renderInfoBookTabs(); };
     });
-    var saveBtn = document.getElementById('infoBookDescSave');
-    if (saveBtn) {
-      saveBtn.onclick = async function () {
+    var patchAddBtn = document.getElementById('infoBookPatchAdd');
+    if (patchAddBtn) {
+      patchAddBtn.onclick = async function () {
         if (!(typeof isAdmin !== 'undefined' && isAdmin)) return;
-        var ta = document.getElementById('infoBookDescText');
-        var msg = document.getElementById('infoBookDescMsg');
-        if (!ta) return;
-        saveBtn.disabled = true;
+        var verInput = document.getElementById('infoBookPatchVersionInput');
+        var contentInput = document.getElementById('infoBookPatchContentInput');
+        var msg = document.getElementById('infoBookPatchMsg');
+        if (!verInput || !contentInput) return;
+        var version = (verInput.value || '').trim();
+        var content = (contentInput.value || '').trim();
+        if (!version) {
+          if (msg) { msg.textContent = '버전을 입력하세요'; msg.style.color = 'var(--red)'; }
+          return;
+        }
+        if (!content) {
+          if (msg) { msg.textContent = '패치 내용을 입력하세요'; msg.style.color = 'var(--red)'; }
+          return;
+        }
+        patchAddBtn.disabled = true;
         try {
-          await setGameDesc(ta.value);
+          await pushPatchNote({ ts: Date.now(), version: version, content: content });
+          verInput.value = '';
+          contentInput.value = '';
           if (msg) { msg.textContent = '저장됨'; msg.style.color = 'var(--green)'; }
+          loadInfoBookPatch();
         } catch (e) {
           if (msg) { msg.textContent = '저장 실패'; msg.style.color = 'var(--red)'; }
         }
-        saveBtn.disabled = false;
+        patchAddBtn.disabled = false;
       };
     }
   })();
@@ -15413,14 +15646,15 @@ function openCellBook() {
       pend.votes[myPlayerId] = decision; // 'allow' | 'deny'
 
       if (decision === 'deny') {
-        var denySuccess = Math.random() < 0.20; // 거부는 20% 확률로만 성공
+        // 거부 확률도 다른 유물처럼 유물 확률 증가(rock/시너지) 및 신화 2배 적용 (2026-08 수정)
         var denier = room.players.find(function (p) { return p.id === myPlayerId; });
+        var denySuccess = Math.random() < relicPct(denier, 0.20) * (relicMult(denier, 'angel') || 1); // 기본 20% + 유물 확률 증가
         if (denySuccess) {
           // 거부 성공: 아이템은 환급 없이 소멸
           room.announce = {
             icon: '😇', title: '천사가 거부!',
             text: (denier ? denier.name : '천사') + ' — ' + pend.userName + '의 ' + pend.itemName + ' 무효 (소멸)',
-            sub: '거부 성공 (20%)',
+            sub: '거부 성공 (기본 20%+유물 보정)',
             ts: Date.now()
           };
           room.log = room.log || [];
@@ -15441,7 +15675,7 @@ function openCellBook() {
           var userFail = room.players.find(function (p) { return p.id === pend.userId; });
           room.announce = {
             icon: '😇', title: '천사의 거부 실패!',
-            text: (denier ? denier.name : '천사') + ' 거부 시도 실패 (20%) → ' + msgFail,
+            text: (denier ? denier.name : '천사') + ' 거부 시도 실패 (기본 20%+유물 보정) → ' + msgFail,
             sub: '아이템 효과가 적용되었습니다',
             ts: Date.now()
           };
